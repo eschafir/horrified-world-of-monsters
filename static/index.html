@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horrified: World of Monsters - Online</title>
+    <link rel="stylesheet" href="style.css?v=3">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app" class="glass-container">
+        <!-- LOBBY SCREEN -->
+        <div id="lobby-screen" class="screen">
+            <header class="lobby-header">
+                <h1 class="glow-text">HORRIFIED</h1>
+                <p class="subtitle">WORLD OF MONSTERS</p>
+            </header>
+
+            <div class="lobby-card glass">
+                <div id="setup-view">
+                    <div class="input-group">
+                        <label for="player-name">Your Name</label>
+                        <input type="text" id="player-name" placeholder="Enter name..." autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label for="room-code">Room Code (4 Letters)</label>
+                        <input type="text" id="room-code" placeholder="ABCD" maxlength="4" style="text-transform: uppercase;">
+                    </div>
+                    <div class="button-row">
+                        <button id="btn-create" class="btn btn-primary">Create Room</button>
+                        <button id="btn-join" class="btn btn-secondary">Join Room</button>
+                    </div>
+                </div>
+
+                <div id="waiting-view" class="hidden">
+                    <div class="room-info">
+                        <h3>Room Code: <span id="display-room-code" class="highlight-text">----</span></h3>
+                        <p class="status-tag">Waiting for players...</p>
+                    </div>
+
+                    <div class="lobby-cols">
+                        <!-- Hero Select -->
+                        <div class="lobby-col glass-inner">
+                            <h4>Select Your Hero</h4>
+                            <div id="hero-options" class="hero-options-grid">
+                                <!-- Loaded dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Game Settings (Host Only) -->
+                        <div class="lobby-col glass-inner" id="host-settings">
+                            <h4>Choose Monsters</h4>
+                            <div class="monster-choices">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="mon-yeti" checked>
+                                    <span class="checkmark"></span>
+                                    The Yeti (Easy)
+                                </label>
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="mon-jiangshi" checked>
+                                    <span class="checkmark"></span>
+                                    The Jiangshi (Medium)
+                                </label>
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="mon-sphinx">
+                                    <span class="checkmark"></span>
+                                    The Sphinx (Hard)
+                                </label>
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="mon-cthulhu">
+                                    <span class="checkmark"></span>
+                                    Cthulhu (Very Hard)
+                                </label>
+                            </div>
+                            <button id="btn-start" class="btn btn-start glow-button">Start Video Game</button>
+                        </div>
+
+                        <!-- Player List -->
+                        <div class="lobby-col glass-inner">
+                            <h4>Connected Players</h4>
+                            <ul id="connected-players" class="player-list">
+                                <!-- Loaded dynamically -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN GAMEPLAY SCREEN -->
+        <div id="game-screen" class="screen hidden">
+            <div class="game-layout">
+                <!-- MAP CONTAINER -->
+                <div class="board-container glass">
+                    <!-- Floating Map HUD -->
+                    <div class="map-hud-top">
+                        <div class="hud-item">
+                            <span class="hud-label">Room</span>
+                            <span id="game-room-display" class="hud-value">----</span>
+                        </div>
+                        <div class="hud-separator"></div>
+                        <div class="hud-item">
+                            <span class="hud-label">Turn</span>
+                            <span id="game-turn-display" class="hud-value highlight-text">--</span>
+                        </div>
+                        <div class="hud-separator"></div>
+                        <div class="hud-item terror-hud">
+                            <span class="hud-label">Terror</span>
+                            <div class="hud-progress-container">
+                                <div id="terror-progress" class="hud-progress-bar" style="width: 0%;"></div>
+                            </div>
+                            <span class="hud-value"><span id="game-terror-val">0</span>/10</span>
+                        </div>
+                        <div class="hud-separator"></div>
+                        <div class="hud-item">
+                            <span class="hud-label">Deck</span>
+                            <span id="game-deck-display" class="hud-value">--</span>
+                        </div>
+                        <div class="hud-separator"></div>
+                        <button id="btn-show-perks" class="btn-hud">My Perks</button>
+                        <div class="hud-separator"></div>
+                        <div class="hud-item audio-control">
+                            <span class="audio-icon" title="Background Music Volume">🎵</span>
+                            <input type="range" id="bg-music-volume" min="0" max="100" value="20" class="volume-slider">
+                        </div>
+                    </div>
+
+                    <!-- Left Deck (Perks) -->
+                    <div class="deck-panel deck-left">
+                        <div class="deck-title">Perk Deck</div>
+                        <div class="card-stack perks-stack">
+                            <div class="card-back perk-card-back"></div>
+                        </div>
+                    </div>
+
+                    <!-- Right Deck (Monsters) -->
+                    <div class="deck-panel deck-right">
+                        <div class="deck-title">Monster Deck</div>
+                        <div class="card-stack monsters-stack">
+                            <div class="card-back monster-card-back">
+                                <div class="deck-count-badge"><span id="hud-deck-count">0</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SVG Interactive Map -->
+                    <svg id="game-map" viewBox="0 0 1304 1206">
+                        <defs>
+                            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                                <feGaussianBlur stdDeviation="8" result="blur" />
+                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                            </filter>
+                        </defs>
+                        <!-- Background Map Image -->
+                        <image href="/Images/Map.png?v=2" x="0" y="0" width="1304" height="1206" />
+                        <!-- Paths, nodes, characters, and items will be rendered dynamically here -->
+                    </svg>
+                </div>
+
+                <!-- SIDEBAR -->
+                <aside class="sidebar glass">
+                    <!-- MONSTERS STATUS -->
+                    <section class="sidebar-section glass-inner" id="sec-monsters">
+                        <h4>Active Monsters & Challenges</h4>
+                        <div id="monsters-status-container">
+                            <!-- Loaded dynamically -->
+                        </div>
+                    </section>
+
+                    <!-- ACTION BUTTONS -->
+                    <section class="sidebar-section glass-inner" id="sec-actions">
+                        <h4>Hero Actions (<span id="action-points-left">0</span> AP)</h4>
+                        <div class="actions-grid">
+                            <button id="action-move" class="btn-action">Move (1 AP)</button>
+                            <button id="action-pickup" class="btn-action">Pick Up (1 AP)</button>
+                            <button id="action-share" class="btn-action">Share (1 AP)</button>
+                            <button id="action-advance" class="btn-action">Advance (1 AP)</button>
+                            <button id="action-defeat" class="btn-action">Defeat (1 AP)</button>
+                            <button id="action-special" class="btn-action">Special Power</button>
+                        </div>
+                        <button id="action-end-turn" class="btn btn-danger end-turn-btn">End Turn</button>
+                    </section>
+
+                    <!-- PLAYER PANEL -->
+                    <section class="sidebar-section glass-inner" id="sec-player">
+                        <h4 id="player-panel-title">My Character</h4>
+                        <div class="player-details">
+                            <p class="ability-desc"><strong>Ability:</strong> <span id="player-ability">--</span></p>
+                            <div class="inventory-section">
+                                <h5>Inventory (Max 4 Items)</h5>
+                                <div id="player-inventory" class="inventory-grid">
+                                    <!-- Items loaded dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- CHAT & GAME LOG -->
+                    <section class="sidebar-section glass-inner logs-chats-sec">
+                        <div class="tabs">
+                            <button class="tab-btn active" data-tab="tab-log">Game Log</button>
+                            <button class="tab-btn" data-tab="tab-chat">Chat</button>
+                        </div>
+                        
+                        <div id="tab-log" class="tab-content">
+                            <div id="game-log-box" class="log-box">
+                                <!-- Log loaded dynamically -->
+                            </div>
+                        </div>
+                        
+                        <div id="tab-chat" class="tab-content hidden">
+                            <div id="chat-box" class="log-box"></div>
+                            <div class="chat-input-row">
+                                <input type="text" id="chat-input" placeholder="Type a message...">
+                                <button id="btn-chat-send" class="btn btn-primary">Send</button>
+                            </div>
+                        </div>
+                    </section>
+                </aside>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARDS / MODAL DIALOGS -->
+    <div id="modal-container" class="modal hidden">
+        <div class="modal-content glass">
+            <span class="close-modal">&times;</span>
+            <div id="modal-body">
+                <!-- Dynamic body content -->
+            </div>
+        </div>
+    </div>
+    
+    <script src="game.js?v=10"></script>
+</body>
+</html>
