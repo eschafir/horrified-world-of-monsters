@@ -278,12 +278,13 @@ class GameRoom:
         for p in self.players:
             hero_class = p["hero"]
             config = HERO_CLASSES[hero_class]
+            starting_perk = [self.perk_deck.pop(0)] if self.perk_deck else []
             self.heroes_state[p["name"]] = {
                 "name": p["name"],
                 "hero": hero_class,
                 "location": config["start"],
                 "items": [],
-                "perks": [],
+                "perks": starting_perk,
                 "ap": config["ap"],
                 "max_ap": config["ap"],
                 "ability_used": False
@@ -456,38 +457,7 @@ class GameRoom:
         state["ap"] -= 1
         self.add_log(f"{player_name} moved to {target}.")
         
-        # Guide active citizens along with the hero
-        for cit_name, cit in self.citizens.items():
-            if cit["active"] and cit["location"] == current:
-                cit["location"] = target
-                self.add_log(f"{player_name} guided legend {cit_name} to {target}.")
-                # Check safe zone
-                if target == cit["safe"]:
-                    cit["active"] = False
-                    cit["location"] = "Rescued"
-                    self.add_log(f"Legend {cit_name} has been rescued!")
-                    # Draw a Perk card
-                    if self.perk_deck:
-                        perk = self.perk_deck.pop(0)
-                        state["perks"].append(perk)
-                        self.add_log(f"{player_name} received Perk Card: {perk['name']}.")
-                        
-        # Guide Yeti children along with the hero
-        if "Yeti" in self.active_monsters:
-            y_state = self.monster_states["Yeti"]
-            for child in y_state["children"]:
-                if not child["rescued"] and child["location"] == current:
-                    child["location"] = target
-                    self.add_log(f"{player_name} guided Yeti Child {child['id']} to {target}.")
-                    # Yeti children are rescued when they reach the True Lair!
-                    true_lair_loc = next((l["location"] for l in y_state["lairs"] if l["is_true"]), None)
-                    if target == true_lair_loc:
-                        child["rescued"] = True
-                        self.add_log(f"Yeti Child {child['id']} has reached the True Lair!")
-                        if self.perk_deck:
-                            perk = self.perk_deck.pop(0)
-                            state["perks"].append(perk)
-                            self.add_log(f"{player_name} received Perk Card: {perk['name']}.")
+
                             
         return True
 
