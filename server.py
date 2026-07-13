@@ -460,19 +460,133 @@ class GameRoom:
         for cit_name, cit in self.citizens.items():
             if cit["active"] and cit["location"] == current:
                 cit["location"] = target
-                self.add_log(f"{player_name} guided citizen {cit_name} to {target}.")
+                self.add_log(f"{player_name} guided legend {cit_name} to {target}.")
                 # Check safe zone
                 if target == cit["safe"]:
                     cit["active"] = False
                     cit["location"] = "Rescued"
-                    self.add_log(f"Citizen {cit_name} has been rescued!")
+                    self.add_log(f"Legend {cit_name} has been rescued!")
                     # Draw a Perk card
                     if self.perk_deck:
                         perk = self.perk_deck.pop(0)
                         state["perks"].append(perk)
                         self.add_log(f"{player_name} received Perk Card: {perk['name']}.")
                         
+        # Guide Yeti children along with the hero
+        if "Yeti" in self.active_monsters:
+            y_state = self.monster_states["Yeti"]
+            for child in y_state["children"]:
+                if not child["rescued"] and child["location"] == current:
+                    child["location"] = target
+                    self.add_log(f"{player_name} guided Yeti Child {child['id']} to {target}.")
+                    # Yeti children are rescued when they reach the True Lair!
+                    true_lair_loc = next((l["location"] for l in y_state["lairs"] if l["is_true"]), None)
+                    if target == true_lair_loc:
+                        child["rescued"] = True
+                        self.add_log(f"Yeti Child {child['id']} has reached the True Lair!")
+                        if self.perk_deck:
+                            perk = self.perk_deck.pop(0)
+                            state["perks"].append(perk)
+                            self.add_log(f"{player_name} received Perk Card: {perk['name']}.")
+                            
         return True
+
+    def execute_guide(self, player_name: str, legend_name: str, target: str) -> bool:
+        if not self.check_turn(player_name):
+            return False
+            
+        state = self.heroes_state[player_name]
+        current_loc = state["location"]
+        adjacent_to_hero = ADJACENCY_LIST.get(current_loc, [])
+        
+        # Check standard citizens
+        cit = self.citizens.get(legend_name)
+        if cit and cit["active"]:
+            legend_loc = cit["location"]
+            valid = False
+            if legend_loc == current_loc:
+                if target in adjacent_to_hero:
+                    valid = True
+            elif legend_loc in adjacent_to_hero:
+                if target == current_loc:
+                    valid = True
+                    
+            if not valid or state["ap"] < 1:
+                self.add_log(f"Invalid Guide action for {legend_name}.")
+                return False
+                
+            cit["location"] = target
+            state["ap"] -= 1
+            self.add_log(f"{player_name} guided legend {legend_name} to {target}.")
+            
+            # Check safe zone
+            if target == cit["safe"]:
+                cit["active"] = False
+                cit["location"] = "Rescued"
+                self.add_log(f"Legend {legend_name} has been rescued!")
+                if self.perk_deck:
+                    perk = self.perk_deck.pop(0)
+                    state["perks"].append(perk)
+                    self.add_log(f"{player_name} received Perk Card: {perk['name']}.")
+            return True
+            
+        # Check Yeti children
+        y_state = self.monster_states.get("Yeti")
+        child = next((c for c in y_state["children"] if f"Yeti Child {c['id']}" == legend_name and not c["rescued"]), None) if y_state else None
+        if child:
+            legend_loc = child["location"]
+            valid = False
+            if legend_loc == current_loc:
+                if target in adjacent_to_hero:
+                    valid = True
+            elif legend_loc in adjacent_to_hero:
+                if target == current_loc:
+                    valid = True
+                    
+            if not valid or state["ap"] < 1:
+                self.add_log(f"Invalid Guide action for {legend_name}.")
+                return False
+                
+            child["location"] = target
+            state["ap"] -= 1
+            self.add_log(f"{player_name} guided Yeti Child {child['id']} to {target}.")
+            
+            # Check true lair
+            true_lair_loc = next((l["location"] for l in y_state["lairs"] if l["is_true"]), None)
+            if target == true_lair_loc:
+                child["rescued"] = True
+                self.add_log(f"Yeti Child {child['id']} has reached the True Lair!")
+                if self.perk_deck:
+                    perk = self.perk_deck.pop(0)
+                    state["perks"].append(perk)
+                    self.add_log(f"{player_name} received Perk Card: {perk['name']}.")
+            return True
+            
+        self.add_log(f"Legend {legend_name} not found or not active.")
+        return False
+
+    def execute_reveal_lair(self, player_name: str) -> bool:
+        if not self.check_turn(player_name):
+            return False
+            
+        state = self.heroes_state[player_name]
+        if state["ap"] < 1:
+            return False
+            
+        loc = state["location"]
+        
+        if "Yeti" in self.active_monsters:
+            yeti_state = self.monster_states["Yeti"]
+            for lair in yeti_state["lairs"]:
+                if lair["location"] == loc and not lair["flipped"]:
+                    lair["flipped"] = True
+                    state["ap"] -= 1
+                    is_true = lair["is_true"]
+                    self.add_log(f"{player_name} revealed the lair token at {loc}. It is {'the TRUE lair!' if is_true else 'a DECOY.'}")
+                    return True
+                    
+        self.add_log("No unrevealed lair token at your current location.")
+        return False
 
     def execute_pickup(self, player_name: str, item_ids: List[str]) -> bool:
         if not self.check_turn(player_name):
@@ -1297,6 +1411,14 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
             elif action == "move":
                 target = msg.get("target")
                 room.execute_move(player_name, target)
+                
+            elif action == "guide":
+                legend = msg.get("legend")
+                target = msg.get("target")
+                room.execute_guide(player_name, legend, target)
+                
+            elif action == "reveal_lair":
+                room.execute_reveal_lair(player_name)
                 
             elif action == "pickup":
                 item_ids = msg.get("item_ids", [])

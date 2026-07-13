@@ -1051,6 +1051,99 @@ document.getElementById("action-move").addEventListener("click", () => {
     renderSVGMap();
 });
 
+// Guide action trigger
+document.getElementById("action-guide").addEventListener("click", () => {
+    const myState = gameState.heroes_state[playerName];
+    if (!myState) return;
+    
+    const currentLoc = myState.location;
+    const adjacent = gameState.adjacency_list[currentLoc] || [];
+    
+    const eligibleLegends = [];
+    
+    // Check standard citizens/legends
+    for (const name in gameState.citizens) {
+        const cit = gameState.citizens[name];
+        if (cit.active && (cit.location === currentLoc || adjacent.includes(cit.location))) {
+            eligibleLegends.push({ name: name, loc: cit.location, type: 'citizen' });
+        }
+    }
+    
+    // Check Yeti children (legends)
+    if (gameState.active_monsters.includes("Yeti") && gameState.monster_states["Yeti"]) {
+        const y_state = gameState.monster_states["Yeti"];
+        y_state.children.forEach(child => {
+            if (!child.rescued && (child.location === currentLoc || adjacent.includes(child.location))) {
+                eligibleLegends.push({ name: `Yeti Child ${child.id}`, loc: child.location, type: 'child' });
+            }
+        });
+    }
+    
+    if (eligibleLegends.length === 0) {
+        alert("There are no active Legends (citizens or Yeti children) at or adjacent to your location to guide.");
+        return;
+    }
+    
+    let html = `<h3>Guide Legend</h3><p>Choose a legend to guide to/from an adjacent location (1 AP)</p><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">`;
+    html += `<label style="display:block; margin-bottom:12px;">Choose Legend: <select id="guide-select-legend" style="width:100%; background:#1b152d; color:#fff; border:1px solid #4a3b70; padding:6px; border-radius:4px; margin-top:4px;" onchange="updateGuideTargetOptions()"></select></label>`;
+    html += `<label style="display:block; margin-bottom:15px;">Target Location: <select id="guide-target-loc" style="width:100%; background:#1b152d; color:#fff; border:1px solid #4a3b70; padding:6px; border-radius:4px; margin-top:4px;"></select></label>`;
+    html += `<button class="btn btn-primary" onclick="confirmGuideAction()" style="width:100%;">Guide Legend</button>`;
+    
+    elModalBody.innerHTML = html;
+    
+    const selLegend = document.getElementById("guide-select-legend");
+    eligibleLegends.forEach((leg, idx) => {
+        const opt = document.createElement("option");
+        opt.value = idx;
+        opt.textContent = `${leg.name} (at ${leg.loc})`;
+        selLegend.appendChild(opt);
+    });
+    
+    window.guideData = {
+        legends: eligibleLegends,
+        currentLoc: currentLoc,
+        adjacent: adjacent
+    };
+    
+    window.updateGuideTargetOptions = () => {
+        const idx = document.getElementById("guide-select-legend").value;
+        const leg = window.guideData.legends[idx];
+        const selTarget = document.getElementById("guide-target-loc");
+        selTarget.innerHTML = "";
+        
+        if (leg.loc === window.guideData.currentLoc) {
+            window.guideData.adjacent.forEach(loc => {
+                const opt = document.createElement("option");
+                opt.value = loc;
+                opt.textContent = loc;
+                selTarget.appendChild(opt);
+            });
+        } else {
+            const opt = document.createElement("option");
+            opt.value = window.guideData.currentLoc;
+            opt.textContent = window.guideData.currentLoc;
+            selTarget.appendChild(opt);
+        }
+    };
+    
+    window.updateGuideTargetOptions();
+    elModalContainer.classList.remove("hidden");
+});
+
+window.confirmGuideAction = () => {
+    const idx = document.getElementById("guide-select-legend").value;
+    const leg = window.guideData.legends[idx];
+    const targetLoc = document.getElementById("guide-target-loc").value;
+    
+    sendMsg({
+        action: "guide",
+        legend: leg.name,
+        target: targetLoc
+    });
+    
+    elModalContainer.classList.add("hidden");
+};
+
 document.getElementById("action-pickup").addEventListener("click", () => {
     const myState = gameState.heroes_state[playerName];
     const items = gameState.items_on_board[myState.location] || [];
@@ -1186,6 +1279,27 @@ document.getElementById("action-defeat").addEventListener("click", () => {
         action: "defeat",
         monster: targetMonster
     });
+});
+
+// Reveal Lair action
+document.getElementById("action-reveal").addEventListener("click", () => {
+    const myState = gameState.heroes_state[playerName];
+    if (!myState) return;
+    
+    let hasLair = false;
+    if (gameState.active_monsters.includes("Yeti") && gameState.monster_states["Yeti"]) {
+        const lairs = gameState.monster_states["Yeti"].lairs;
+        hasLair = lairs.some(l => l.location === myState.location && !l.flipped);
+    }
+    
+    if (!hasLair) {
+        alert("There is no unrevealed Yeti lair token at your current location.");
+        return;
+    }
+    
+    if (confirm(`Would you like to spend 1 AP to reveal the lair token at ${myState.location}?`)) {
+        sendMsg({ action: "reveal_lair" });
+    }
 });
 
 // Special power action
