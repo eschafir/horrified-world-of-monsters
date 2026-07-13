@@ -733,6 +733,9 @@ let lastHoverSoundTime = 0;
 let bgGainNode = null;
 let droneOscs = [];
 let melodyInterval = null;
+let bgAudioElement = null;
+let bgSourceNode = null;
+let usingSynthesizedBackup = false;
 
 function initAudio() {
     if (!audioCtx) {
@@ -751,11 +754,58 @@ function startBackgroundMusic() {
 
     bgGainNode = audioCtx.createGain();
     
-    // Scale volume: maximum gain of 0.15 is very peaceful and soft
+    // Scale volume: maximum gain of 0.3 for MP3 (keep it gentle)
     const slider = document.getElementById("bg-music-volume");
     const sliderVal = slider ? parseFloat(slider.value) / 100 : 0.2;
-    bgGainNode.gain.setValueAtTime(sliderVal * 0.15, audioCtx.currentTime);
+    bgGainNode.gain.setValueAtTime(sliderVal * 0.3, audioCtx.currentTime);
     bgGainNode.connect(audioCtx.destination);
+
+    // Try playing the custom MP3 file first
+    bgAudioElement = new Audio();
+    bgAudioElement.src = "/Music/Background Music.mp3";
+    bgAudioElement.loop = true;
+    bgAudioElement.crossOrigin = "anonymous";
+
+    // When the file is ready, attempt playback
+    bgAudioElement.addEventListener("canplaythrough", () => {
+        if (usingSynthesizedBackup) return;
+        try {
+            if (!bgSourceNode) {
+                bgSourceNode = audioCtx.createMediaElementSource(bgAudioElement);
+                bgSourceNode.connect(bgGainNode);
+            }
+            bgAudioElement.play().catch(err => {
+                console.warn("Failed to play MP3 background track, falling back:", err);
+                startSynthesizedBackup();
+            });
+        } catch (e) {
+            console.warn("MediaElementSource connection failed, falling back:", e);
+            startSynthesizedBackup();
+        }
+    });
+
+    // Fallback if loading fails/network fails
+    bgAudioElement.addEventListener("error", (err) => {
+        console.warn("Error loading background MP3, falling back to synth:", err);
+        startSynthesizedBackup();
+    });
+
+    // Trigger loading
+    bgAudioElement.load();
+}
+
+function startSynthesizedBackup() {
+    if (usingSynthesizedBackup) return;
+    usingSynthesizedBackup = true;
+    
+    if (bgAudioElement) {
+        try { bgAudioElement.pause(); } catch(e){}
+    }
+
+    const slider = document.getElementById("bg-music-volume");
+    const sliderVal = slider ? parseFloat(slider.value) / 100 : 0.2;
+    // Scale volume: maximum gain of 0.15 for synthesized audio
+    bgGainNode.gain.setValueAtTime(sliderVal * 0.15, audioCtx.currentTime);
 
     // Detuned low drone oscillators (A2 at 110Hz, slightly detuned at 110.5Hz, E3 fifth at 165Hz)
     const frequencies = [110.00, 110.50, 165.00];
@@ -820,8 +870,9 @@ function updateMusicVolume() {
     const val = parseFloat(slider.value) / 100;
 
     if (bgGainNode) {
-        // Smooth transition to prevent audio popping
-        bgGainNode.gain.linearRampToValueAtTime(val * 0.15, audioCtx.currentTime + 0.15);
+        // Use proper volume scale depending on active source
+        const factor = usingSynthesizedBackup ? 0.15 : 0.3;
+        bgGainNode.gain.linearRampToValueAtTime(val * factor, audioCtx.currentTime + 0.15);
     } else if (val > 0) {
         startBackgroundMusic();
     }

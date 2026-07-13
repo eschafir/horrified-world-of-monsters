@@ -1,0 +1,11 @@
+# Ignore large local music assets
+Music/
+
+# Ignore virtual environments
+venv/
+.venv/
+env/
+
+# OS metadata
+.DS_Store
+Thumbs.db

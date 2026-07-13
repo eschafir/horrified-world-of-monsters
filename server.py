@@ -1455,6 +1455,8 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
 
 # Serve Images
 app.mount("/Images", StaticFiles(directory="Images"), name="images")
+# Serve Music
+app.mount("/Music", StaticFiles(directory="Music"), name="music")
 # Serve Frontend static files
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
