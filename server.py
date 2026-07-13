@@ -312,12 +312,14 @@ class GameRoom:
                     {"location": "House of Dusk", "is_true": True, "flipped": False}
                 ]
                 random.shuffle(lairs)
+                child_locs = ["House of Dusk", "Thornvine Woods", "Stewards Spire"]
+                random.shuffle(child_locs)
                 self.monster_states["Yeti"] = {
                     "lairs": lairs,
                     "children": [
-                        {"id": 1, "location": "Steam Plant", "rescued": False},
-                        {"id": 2, "location": "Crossroads Center", "rescued": False},
-                        {"id": 3, "location": "Stewards Spire", "rescued": False}
+                        {"id": 1, "location": child_locs[0], "rescued": False},
+                        {"id": 2, "location": child_locs[1], "rescued": False},
+                        {"id": 3, "location": child_locs[2], "rescued": False}
                     ]
                 }
             elif monster == "Jiangshi":
