@@ -111,86 +111,11 @@
         <!-- MAIN GAMEPLAY SCREEN -->
         <div id="game-screen" class="screen hidden">
             <div class="game-layout">
-                <!-- MAP CONTAINER -->
-                <div class="board-container glass">
-                    <!-- Floating Map HUD -->
-                    <div class="map-hud-top">
-                        <div class="hud-item">
-                            <span class="hud-label">Room</span>
-                            <span id="game-room-display" class="hud-value">----</span>
-                        </div>
-                        <div class="hud-separator"></div>
-                        <div class="hud-item">
-                            <span class="hud-label">Turn</span>
-                            <span id="game-turn-display" class="hud-value highlight-text">--</span>
-                        </div>
-                        <div class="hud-separator"></div>
-                        <div class="hud-item terror-hud">
-                            <span class="hud-label">Terror</span>
-                            <div class="hud-progress-container">
-                                <div id="terror-progress" class="hud-progress-bar" style="width: 0%;"></div>
-                            </div>
-                            <span class="hud-value"><span id="game-terror-val">0</span>/10</span>
-                        </div>
-                        <div class="hud-separator"></div>
-                        <div class="hud-item">
-                            <span class="hud-label">Deck</span>
-                            <span id="game-deck-display" class="hud-value">--</span>
-                        </div>
-                        <div class="hud-separator"></div>
-                        <button id="btn-show-perks" class="btn-hud">My Perks</button>
-                        <div class="hud-separator"></div>
-                        <div class="hud-item audio-control">
-                            <span class="audio-icon" title="Background Music Volume">🎵</span>
-                            <input type="range" id="bg-music-volume" min="0" max="100" value="20" class="volume-slider">
-                        </div>
-                    </div>
 
-                    <!-- Left Deck (Perks) -->
-                    <div class="deck-panel deck-left">
-                        <div class="deck-title">Perk Deck</div>
-                        <div class="card-stack perks-stack">
-                            <div class="card-back perk-card-back"></div>
-                        </div>
-                    </div>
-
-                    <!-- Right Deck (Monsters) -->
-                    <div class="deck-panel deck-right">
-                        <div class="deck-title">Monster Deck</div>
-                        <div class="card-stack monsters-stack">
-                            <div class="card-back monster-card-back">
-                                <div class="deck-count-badge"><span id="hud-deck-count">0</span></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- SVG Interactive Map -->
-                    <svg id="game-map" viewBox="0 0 1304 1206">
-                        <defs>
-                            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                                <feGaussianBlur stdDeviation="8" result="blur" />
-                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                            </filter>
-                        </defs>
-                        <!-- Background Map Image -->
-                        <image href="/Images/Map.png?v=2" x="0" y="0" width="1304" height="1206" />
-                        <!-- Paths, nodes, characters, and items will be rendered dynamically here -->
-                    </svg>
-                </div>
-
-                <!-- SIDEBAR -->
+                <!-- LEFT SIDEBAR: permanent hero phase + monster phase -->
                 <aside class="sidebar glass">
-                    <!-- MONSTERS STATUS -->
-                    <section class="sidebar-section glass-inner" id="sec-monsters">
-                        <h4>Active Monsters & Challenges</h4>
-                        <div id="monsters-status-container">
-                            <!-- Loaded dynamically -->
-                        </div>
-                    </section>
-
-                    <!-- ACTION BUTTONS -->
                     <section class="sidebar-section glass-inner" id="sec-actions">
-                        <h4>Hero Actions (<span id="action-points-left">0</span> AP)</h4>
+                        <h4>Hero Phase (<span id="action-points-left">0</span> AP)</h4>
                         <div class="actions-grid">
                             <button id="action-move" class="btn-action">Move (1 AP)</button>
                             <button id="action-guide" class="btn-action">Guide (1 AP)</button>
@@ -204,33 +129,150 @@
                         <button id="action-end-turn" class="btn btn-danger end-turn-btn">End Turn</button>
                     </section>
 
-                    <!-- PLAYER PANEL -->
-                    <section class="sidebar-section glass-inner" id="sec-player">
-                        <h4 id="player-panel-title">My Character</h4>
-                        <div class="player-details">
-                            <p class="ability-desc"><strong>Ability:</strong> <span id="player-ability">--</span></p>
-                            <div class="inventory-section">
-                                <h5>Inventory (Max 4 Items)</h5>
-                                <div id="player-inventory" class="inventory-grid">
-                                    <!-- Items loaded dynamically -->
+                    <section class="sidebar-section glass-inner" id="sec-monster-phase">
+                        <h4>Monster Phase</h4>
+                        <p class="phase-hint">After ending your turn, a Monster Card is drawn and resolved — monsters move, spawn, or strike.</p>
+                    </section>
+                </aside>
+
+                <!-- GAME CENTER: top tab panels + map + bottom log -->
+                <div class="game-center">
+
+                    <!-- TOP TAB BUTTONS -->
+                    <div class="game-top-tabs">
+                        <button class="game-tab-btn" id="gtab-btn-monsters" data-panel="gtab-panel-monsters">
+                            <svg class="gtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 3a8 8 0 0 1 8 8c0 3.1-1.8 5.8-4.5 7.1V20h-7v-1.9C5.8 16.8 4 14.1 4 11a8 8 0 0 1 8-8z"/>
+                                <circle cx="9.5" cy="11" r="1.2" fill="currentColor" stroke="none"/>
+                                <circle cx="14.5" cy="11" r="1.2" fill="currentColor" stroke="none"/>
+                                <line x1="9" y1="20" x2="15" y2="20"/>
+                            </svg>
+                            Active Monsters
+                        </button>
+                        <button class="game-tab-btn" id="gtab-btn-hero" data-panel="gtab-panel-hero">
+                            <svg class="gtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                            My Hero
+                        </button>
+                    </div>
+
+                    <!-- ACTIVE MONSTERS PANEL (collapsible) -->
+                    <div class="game-top-panel hidden" id="gtab-panel-monsters">
+                        <div id="monsters-status-container">
+                            <!-- Loaded dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- MY HERO PANEL (collapsible) -->
+                    <div class="game-top-panel hidden" id="gtab-panel-hero">
+                        <div class="hero-tab-layout">
+                            <img id="hero-tab-portrait" src="" alt="" class="hero-tab-portrait-img">
+                            <div class="hero-tab-details">
+                                <h4 id="player-panel-title">My Hero</h4>
+                                <p class="ability-desc"><span id="player-ability">--</span></p>
+                                <div class="inventory-section">
+                                    <h5>Inventory</h5>
+                                    <div id="player-inventory" class="inventory-grid"></div>
                                 </div>
                             </div>
                         </div>
-                    </section>
+                    </div>
 
-                    <!-- CHAT & GAME LOG -->
-                    <section class="sidebar-section glass-inner logs-chats-sec">
+                    <!-- MAP CONTAINER -->
+                    <div class="board-container glass">
+                        <!-- Floating Map HUD -->
+                        <div class="map-hud-top">
+                            <div class="hud-item">
+                                <span class="hud-label">Room</span>
+                                <span id="game-room-display" class="hud-value">----</span>
+                            </div>
+                            <div class="hud-separator"></div>
+                            <div class="hud-item">
+                                <span class="hud-label">Turn</span>
+                                <span id="game-turn-display" class="hud-value highlight-text">--</span>
+                            </div>
+                            <div class="hud-separator"></div>
+                            <div class="hud-item terror-hud">
+                                <span class="hud-label">Terror</span>
+                                <div class="hud-progress-container">
+                                    <div id="terror-progress" class="hud-progress-bar" style="width: 0%;"></div>
+                                </div>
+                                <span class="hud-value"><span id="game-terror-val">0</span>/10</span>
+                            </div>
+                            <div class="hud-separator"></div>
+                            <div class="hud-item">
+                                <span class="hud-label">Deck</span>
+                                <span id="game-deck-display" class="hud-value">--</span>
+                            </div>
+                            <div class="hud-separator"></div>
+                            <button id="btn-show-perks" class="btn-hud">My Perks</button>
+                            <div class="hud-separator"></div>
+                            <div class="hud-item audio-control">
+                                <span class="audio-icon" title="Background Music Volume">🎵</span>
+                                <input type="range" id="bg-music-volume" min="0" max="100" value="20" class="volume-slider">
+                            </div>
+                        </div>
+
+                        <!-- Left Deck (Perks) -->
+                        <div class="deck-panel deck-left">
+                            <div class="deck-title">Perk Deck</div>
+                            <div class="card-stack perks-stack">
+                                <div class="card-back perk-card-back"></div>
+                            </div>
+                        </div>
+
+                        <!-- Right Deck (Monsters) -->
+                        <div class="deck-panel deck-right">
+                            <div class="deck-title">Monster Deck</div>
+                            <div class="card-stack monsters-stack">
+                                <div class="card-back monster-card-back">
+                                    <div class="deck-count-badge"><span id="hud-deck-count">0</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SVG Interactive Map -->
+                        <svg id="game-map" viewBox="0 0 1304 1206">
+                            <defs>
+                                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feGaussianBlur stdDeviation="8" result="blur" />
+                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                </filter>
+                            </defs>
+                            <!-- Background Map Image -->
+                            <image href="/Images/Map.png?v=2" x="0" y="0" width="1304" height="1206" />
+                            <!-- Paths, nodes, characters, and items will be rendered dynamically here -->
+                        </svg>
+                    </div>
+
+                    <!-- BOTTOM TOGGLE BAR -->
+                    <div class="game-bottom-bar">
+                        <button class="game-bottom-toggle" id="btn-toggle-log">
+                            <span class="bottom-toggle-left">
+                                <svg class="gtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                                    <line x1="8" y1="6" x2="21" y2="6"/>
+                                    <line x1="8" y1="12" x2="21" y2="12"/>
+                                    <line x1="8" y1="18" x2="21" y2="18"/>
+                                    <circle cx="3" cy="6" r="0.8" fill="currentColor" stroke="none"/>
+                                    <circle cx="3" cy="12" r="0.8" fill="currentColor" stroke="none"/>
+                                    <circle cx="3" cy="18" r="0.8" fill="currentColor" stroke="none"/>
+                                </svg>
+                                Game Log &amp; Chat
+                            </span>
+                            <span id="log-toggle-arrow" class="toggle-arrow">&#9650;</span>
+                        </button>
+                    </div>
+
+                    <!-- BOTTOM PANEL: Game Log & Chat -->
+                    <div class="game-bottom-panel hidden" id="bottom-log-panel">
                         <div class="tabs">
                             <button class="tab-btn active" data-tab="tab-log">Game Log</button>
                             <button class="tab-btn" data-tab="tab-chat">Chat</button>
                         </div>
-                        
                         <div id="tab-log" class="tab-content">
-                            <div id="game-log-box" class="log-box">
-                                <!-- Log loaded dynamically -->
-                            </div>
+                            <div id="game-log-box" class="log-box"></div>
                         </div>
-                        
                         <div id="tab-chat" class="tab-content hidden">
                             <div id="chat-box" class="log-box"></div>
                             <div class="chat-input-row">
@@ -238,8 +280,9 @@
                                 <button id="btn-chat-send" class="btn btn-primary">Send</button>
                             </div>
                         </div>
-                    </section>
-                </aside>
+                    </div>
+
+                </div>
             </div>
         </div>
     </div>
@@ -254,6 +297,6 @@
         </div>
     </div>
     
-    <script src="game.js?v=20"></script>
+    <script src="game.js?v=21"></script>
 </body>
 </html>

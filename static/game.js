@@ -82,12 +82,40 @@ elChatInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") sendChatMessage();
 });
 
-// Sidebar Tabs
+// Game top tabs (Active Monsters / My Hero) — clicking active tab closes it
+document.querySelectorAll(".game-tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const panelId = btn.dataset.panel;
+        const panel = document.getElementById(panelId);
+        const isActive = btn.classList.contains("active");
+
+        // Close all
+        document.querySelectorAll(".game-tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".game-top-panel").forEach(p => p.classList.add("hidden"));
+
+        // If it wasn't active, open this one
+        if (!isActive) {
+            btn.classList.add("active");
+            panel.classList.remove("hidden");
+        }
+    });
+});
+
+// Bottom log/chat panel toggle
+document.getElementById("btn-toggle-log").addEventListener("click", () => {
+    const panel = document.getElementById("bottom-log-panel");
+    const arrow = document.getElementById("log-toggle-arrow");
+    const isHidden = panel.classList.contains("hidden");
+    panel.classList.toggle("hidden");
+    arrow.textContent = isHidden ? "▼" : "▲";
+});
+
+// Log/Chat sub-tabs
 document.querySelectorAll(".tab-btn").forEach(btn => {
     btn.addEventListener("click", () => {
         document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
         document.querySelectorAll(".tab-content").forEach(c => c.classList.add("hidden"));
-        
+
         btn.classList.add("active");
         document.getElementById(btn.dataset.tab).classList.remove("hidden");
     });
@@ -309,7 +337,13 @@ function renderPlayerPanel() {
     const myState = gameState.heroes_state[playerName];
     if (!myState) return;
 
-    document.getElementById("player-panel-title").innerText = `My Hero: ${myState.hero}`;
+    document.getElementById("player-panel-title").innerText = myState.hero;
+
+    const portrait = document.getElementById("hero-tab-portrait");
+    if (portrait) {
+        portrait.src = `/Images/Heroes/${myState.hero}.svg`;
+        portrait.alt = myState.hero;
+    }
     
     let abilityDesc = "";
     if (myState.hero === "The Guardian") abilityDesc = "Guide: Move a hero at your location to adjacent (0 AP).";
