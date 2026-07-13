@@ -1102,24 +1102,21 @@ function animateItemFly(fromLoc, itemColor, itemLabel, itemName) {
     }, { once: true });
 }
 
-function triggerNodePulse(locName, pulseColor) {
-    const coord = gameState.node_coordinates[locName];
-    if (!coord) return;
-    
+function triggerNodePulse(svgX, svgY, radius, pulseColor) {
     const pulseCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    pulseCircle.setAttribute("cx", coord.x);
-    pulseCircle.setAttribute("cy", coord.y);
-    pulseCircle.setAttribute("r", coord.r || 35);
+    pulseCircle.setAttribute("cx", svgX);
+    pulseCircle.setAttribute("cy", svgY);
+    pulseCircle.setAttribute("r", radius);
     pulseCircle.setAttribute("fill", "none");
     pulseCircle.setAttribute("stroke", pulseColor);
-    pulseCircle.setAttribute("stroke-width", "4");
+    pulseCircle.setAttribute("stroke-width", "3");
     pulseCircle.setAttribute("opacity", "0.9");
     
     const animR = document.createElementNS("http://www.w3.org/2000/svg", "animate");
     animR.setAttribute("attributeName", "r");
-    animR.setAttribute("from", coord.r || 35);
-    animR.setAttribute("to", (coord.r || 35) + 40);
-    animR.setAttribute("dur", "0.8s");
+    animR.setAttribute("from", radius);
+    animR.setAttribute("to", radius + 20);
+    animR.setAttribute("dur", "0.7s");
     animR.setAttribute("fill", "freeze");
     pulseCircle.appendChild(animR);
 
@@ -1127,7 +1124,7 @@ function triggerNodePulse(locName, pulseColor) {
     animOp.setAttribute("attributeName", "opacity");
     animOp.setAttribute("from", "0.9");
     animOp.setAttribute("to", "0");
-    animOp.setAttribute("dur", "0.8s");
+    animOp.setAttribute("dur", "0.7s");
     animOp.setAttribute("fill", "freeze");
     pulseCircle.appendChild(animOp);
     
@@ -1135,7 +1132,7 @@ function triggerNodePulse(locName, pulseColor) {
         elGameMap.appendChild(pulseCircle);
         setTimeout(() => {
             pulseCircle.remove();
-        }, 850);
+        }, 750);
     }
 }
 
@@ -1143,7 +1140,14 @@ function animateItemSpawn(item, locName) {
     const coord = gameState.node_coordinates[locName];
     if (!coord) return;
     
-    const screenEnd = getScreenCoordsOfSVGPoint(coord.x, coord.y);
+    const items = gameState.items_on_board[locName] || [];
+    const index = items.findIndex(it => it.id === item.id);
+    const offset = getItemOffset(index !== -1 ? index : 0, coord.r || 35);
+    
+    const targetSvgX = coord.x + offset.x;
+    const targetSvgY = coord.y + offset.y;
+    
+    const screenEnd = getScreenCoordsOfSVGPoint(targetSvgX, targetSvgY);
     const cardPanel = document.getElementById("sec-monster-phase");
     if (!cardPanel) return;
     const screenStart = cardPanel.getBoundingClientRect();
@@ -1212,7 +1216,7 @@ function animateItemSpawn(item, locName) {
     }));
     
     fly.addEventListener("transitionend", () => {
-        triggerNodePulse(locName, circleColor);
+        triggerNodePulse(targetSvgX, targetSvgY, 12, circleColor);
         fly.remove();
     }, { once: true });
 }
