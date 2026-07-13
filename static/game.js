@@ -616,7 +616,7 @@ function renderSVGMap() {
     pattern.setAttribute("patternContentUnits", "objectBoundingBox");
 
     const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
-    img.setAttribute("href", "/Images/Monsters/Yeti.jpg");
+    img.setAttribute("href", "/Images/Monsters/Yeti.png");
     img.setAttribute("x", "0");
     img.setAttribute("y", "0");
     img.setAttribute("height", "1");
