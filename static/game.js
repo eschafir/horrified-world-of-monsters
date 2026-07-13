@@ -497,23 +497,51 @@ function renderMonsterPhasePanel() {
         return;
     }
 
+    // Check if this is a new card that we haven't animated yet
+    if (card.id !== lastDrawnCardId) {
+        if (!isCardFlying) {
+            isCardFlying = true;
+            pendingCardData = card;
+            lastDrawnCardId = card.id;
+
+            // Pre-render the card back in the panel so it's ready to flip on arrival
+            section.innerHTML = `<h4>Monster Phase</h4><div class="mp-flip-container">
+                <div class="mp-card-inner" id="mp-card-inner">
+                    <div class="mp-card-back"><img src="/Images/Monster_Card.png" alt="Monster Card"></div>
+                    <div class="mp-card-face"></div>
+                </div>
+            </div>`;
+
+            const deckEl = document.querySelector(".deck-right");
+            const panelEl = document.getElementById("sec-monster-phase");
+
+            animateCardFly(deckEl, panelEl, () => {
+                isCardFlying = false;
+                document.querySelector(".deck-right")?.classList.remove("monster-phase-active");
+
+                const currentCard = pendingCardData || gameState.current_card;
+                pendingCardData = null;
+
+                if (currentCard) {
+                    section.innerHTML = `<h4>Monster Phase</h4>` + buildCardHTML(currentCard, false);
+                    requestAnimationFrame(() => requestAnimationFrame(() => {
+                        const inner = document.getElementById("mp-card-inner");
+                        if (inner) inner.classList.add("flipped");
+                    }));
+                }
+            });
+            return;
+        }
+        lastDrawnCardId = card.id;
+    }
+
     // If the card is in flight, store it but don't update the panel yet
     if (isCardFlying) {
         pendingCardData = card;
         return;
     }
 
-    const isNewCard = (card.id !== lastDrawnCardId);
-    lastDrawnCardId = card.id;
-
-    section.innerHTML = `<h4>Monster Phase</h4>` + buildCardHTML(card, !isNewCard);
-
-    if (isNewCard) {
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-            const inner = document.getElementById("mp-card-inner");
-            if (inner) inner.classList.add("flipped");
-        }));
-    }
+    section.innerHTML = `<h4>Monster Phase</h4>` + buildCardHTML(card, true);
 }
 
 // ---- Card fly animation ----
