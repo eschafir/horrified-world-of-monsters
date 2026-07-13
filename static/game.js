@@ -646,6 +646,28 @@ function renderSVGMap() {
     patternSphinx.appendChild(imgSphinx);
     defs.appendChild(patternSphinx);
 
+    // Create patterns for Yeti children face markers
+    for (let i = 1; i <= 3; i++) {
+        const patChild = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
+        patChild.setAttribute("id", `pattern-yeti-child-${i}`);
+        patChild.setAttribute("x", "0");
+        patChild.setAttribute("y", "0");
+        patChild.setAttribute("height", "1");
+        patChild.setAttribute("width", "1");
+        patChild.setAttribute("patternContentUnits", "objectBoundingBox");
+
+        const imgChild = document.createElementNS("http://www.w3.org/2000/svg", "image");
+        imgChild.setAttribute("href", `/Images/Monsters/Yeti Child ${i}.png`);
+        imgChild.setAttribute("x", "0");
+        imgChild.setAttribute("y", "0");
+        imgChild.setAttribute("height", "1");
+        imgChild.setAttribute("width", "1");
+        imgChild.setAttribute("preserveAspectRatio", "xMidYMid slice");
+
+        patChild.appendChild(imgChild);
+        defs.appendChild(patChild);
+    }
+
     elGameMap.appendChild(defs);
 
     // Create Background Map Image programmatically (namespace-safe)
@@ -882,8 +904,10 @@ function renderSVGMap() {
         characters.forEach((char, index) => {
             const isYeti = (char.name === "Yeti");
             const isSphinx = (char.name === "Sphinx");
+            const isYetiChild = char.name.startsWith("Yeti Child");
+            const childId = isYetiChild ? char.name.replace("Yeti Child ", "") : null;
             const isCustomMonster = isYeti || isSphinx;
-            const charR = isCustomMonster ? 35 : 12; // Custom monsters are bigger (radius 35 vs 12)
+            const charR = isCustomMonster ? 35 : (isYetiChild ? 18 : 12); // Yeti kids are medium size (18)
 
             const offset = getCharOffset(index, characters.length, coord.r || 35);
             const charG = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -905,13 +929,19 @@ function renderSVGMap() {
                 charCircle.setAttribute("stroke", "#ffcc00"); // Golden border
                 charCircle.setAttribute("stroke-width", "2.5");
                 charCircle.setAttribute("filter", "drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
+            } else if (isYetiChild) {
+                charCircle.setAttribute("class", "yeti-child-token");
+                charCircle.setAttribute("fill", `url(#pattern-yeti-child-${childId})`);
+                charCircle.setAttribute("stroke", "#33ccff"); // Ice blue border
+                charCircle.setAttribute("stroke-width", "2");
+                charCircle.setAttribute("filter", "drop-shadow(0 2px 4px rgba(0,0,0,0.4))");
             } else {
                 charCircle.setAttribute("class", `token-character char-${char.type}`);
             }
             charG.appendChild(charCircle);
 
             // Render text label only for standard (non-custom) tokens
-            if (!isCustomMonster) {
+            if (!isCustomMonster && !isYetiChild) {
                 const charVal = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 charVal.setAttribute("x", coord.x + offset.x);
                 charVal.setAttribute("y", coord.y + offset.y + 4);

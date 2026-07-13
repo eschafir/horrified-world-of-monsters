@@ -1030,3 +1030,16 @@ body {
     stroke-width: 3.5px !important;
     filter: drop-shadow(0 4px 12px rgba(255, 204, 0, 0.8)) !important; /* Glowing golden hover shadow! */
 }
+
+.yeti-child-token {
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 0.22s cubic-bezier(0.25, 0.8, 0.25, 1), stroke-width 0.22s, filter 0.22s;
+    cursor: pointer;
+}
+
+.yeti-child-token:hover {
+    transform: scale(1.8); /* Scale Yeti children to 1.8x on hover */
+    stroke-width: 3px !important;
+    filter: drop-shadow(0 3px 8px rgba(51, 204, 255, 0.85)) !important; /* Ice blue glow */
+}
