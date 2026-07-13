@@ -180,6 +180,7 @@ function setupConnection(isHost) {
             if (gameState.game_phase !== "MonsterPhase") {
                 hasDrawnThisPhase = false;
             }
+            detectAndAnimateSpawns();
             updateGameUI();
         }
     };
@@ -1099,6 +1100,159 @@ function animateItemFly(fromLoc, itemColor, itemLabel, itemName) {
     fly.addEventListener("transitionend", () => {
         fly.remove();
     }, { once: true });
+}
+
+function triggerNodePulse(locName, pulseColor) {
+    const coord = gameState.node_coordinates[locName];
+    if (!coord) return;
+    
+    const pulseCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    pulseCircle.setAttribute("cx", coord.x);
+    pulseCircle.setAttribute("cy", coord.y);
+    pulseCircle.setAttribute("r", coord.r || 35);
+    pulseCircle.setAttribute("fill", "none");
+    pulseCircle.setAttribute("stroke", pulseColor);
+    pulseCircle.setAttribute("stroke-width", "4");
+    pulseCircle.setAttribute("opacity", "0.9");
+    
+    const animR = document.createElementNS("http://www.w3.org/2000/svg", "animate");
+    animR.setAttribute("attributeName", "r");
+    animR.setAttribute("from", coord.r || 35);
+    animR.setAttribute("to", (coord.r || 35) + 40);
+    animR.setAttribute("dur", "0.8s");
+    animR.setAttribute("fill", "freeze");
+    pulseCircle.appendChild(animR);
+
+    const animOp = document.createElementNS("http://www.w3.org/2000/svg", "animate");
+    animOp.setAttribute("attributeName", "opacity");
+    animOp.setAttribute("from", "0.9");
+    animOp.setAttribute("to", "0");
+    animOp.setAttribute("dur", "0.8s");
+    animOp.setAttribute("fill", "freeze");
+    pulseCircle.appendChild(animOp);
+    
+    if (elGameMap) {
+        elGameMap.appendChild(pulseCircle);
+        setTimeout(() => {
+            pulseCircle.remove();
+        }, 850);
+    }
+}
+
+function animateItemSpawn(item, locName) {
+    const coord = gameState.node_coordinates[locName];
+    if (!coord) return;
+    
+    const screenEnd = getScreenCoordsOfSVGPoint(coord.x, coord.y);
+    const cardPanel = document.getElementById("sec-monster-phase");
+    if (!cardPanel) return;
+    const screenStart = cardPanel.getBoundingClientRect();
+    
+    const fly = document.createElement("div");
+    fly.className = "flying-item-token";
+    
+    const colorMap = {
+        blue: "#33ccff",
+        red: "#ff3366",
+        yellow: "#ffd533"
+    };
+    const circleColor = colorMap[item.color.toLowerCase()] || "#a491c3";
+
+    fly.style.cssText = `
+        position: fixed;
+        left: ${screenStart.left + screenStart.width / 2 - 12}px;
+        top: ${screenStart.top + screenStart.height / 2 - 12}px;
+        width: 24px;
+        height: 24px;
+        background: ${circleColor};
+        border: 2px solid #fff;
+        border-radius: 50%;
+        color: #000;
+        font-family: sans-serif;
+        font-size: 11px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        pointer-events: none;
+        box-shadow: 0 0 12px ${circleColor}, 0 4px 10px rgba(0,0,0,0.5);
+        opacity: 0;
+        transform: scale(0.5);
+        transition: left 0.9s cubic-bezier(0.25, 1, 0.5, 1),
+                    top 0.9s cubic-bezier(0.25, 1, 0.5, 1),
+                    transform 0.9s cubic-bezier(0.25, 1, 0.5, 1),
+                    opacity 0.9s ease;
+    `;
+    fly.textContent = item.strength;
+    
+    const labelSpan = document.createElement("span");
+    labelSpan.textContent = item.name;
+    labelSpan.style.cssText = `
+        position: absolute;
+        top: 28px;
+        white-space: nowrap;
+        background: rgba(27, 21, 45, 0.9);
+        color: #e5d4ff;
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    `;
+    fly.appendChild(labelSpan);
+    
+    document.body.appendChild(fly);
+    
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        fly.style.left = `${screenEnd.left - 12}px`;
+        fly.style.top = `${screenEnd.top - 12}px`;
+        fly.style.transform = "scale(1.2)";
+        fly.style.opacity = "1";
+    }));
+    
+    fly.addEventListener("transitionend", () => {
+        triggerNodePulse(locName, circleColor);
+        fly.remove();
+    }, { once: true });
+}
+
+function detectAndAnimateSpawns() {
+    if (!gameState || !gameState.items_on_board) return;
+    
+    if (!window.knownItemIds) {
+        window.knownItemIds = new Set();
+        for (const loc in gameState.items_on_board) {
+            gameState.items_on_board[loc].forEach(item => window.knownItemIds.add(item.id));
+        }
+        for (const name in gameState.heroes_state) {
+            gameState.heroes_state[name].items.forEach(item => window.knownItemIds.add(item.id));
+        }
+        return;
+    }
+    
+    const newSpawns = [];
+    for (const loc in gameState.items_on_board) {
+        gameState.items_on_board[loc].forEach(item => {
+            if (!window.knownItemIds.has(item.id)) {
+                newSpawns.push({ item, loc });
+                window.knownItemIds.add(item.id);
+            }
+        });
+    }
+    
+    // Also track items in players' hands to prevent double detection
+    for (const name in gameState.heroes_state) {
+        gameState.heroes_state[name].items.forEach(item => {
+            window.knownItemIds.add(item.id);
+        });
+    }
+    
+    newSpawns.forEach((spawn, idx) => {
+        setTimeout(() => {
+            animateItemSpawn(spawn.item, spawn.loc);
+        }, idx * 350);
+    });
 }
 
 function renderSVGMap() {
