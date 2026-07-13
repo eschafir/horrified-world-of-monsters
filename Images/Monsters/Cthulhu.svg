@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" fill="#060c10"/>
+  <!-- Body mass -->
+  <ellipse cx="50" cy="70" rx="32" ry="26" fill="#0b2820"/>
+  <!-- Wings suggestion -->
+  <path d="M18 55 Q8 45 12 30 Q22 50 34 60" fill="#091e18"/>
+  <path d="M82 55 Q92 45 88 30 Q78 50 66 60" fill="#091e18"/>
+  <!-- Head -->
+  <ellipse cx="50" cy="40" rx="22" ry="22" fill="#0d2e22"/>
+  <!-- Glowing eyes -->
+  <ellipse cx="41" cy="36" rx="6" ry="7" fill="#00ee77"/>
+  <ellipse cx="59" cy="36" rx="6" ry="7" fill="#00ee77"/>
+  <ellipse cx="41" cy="36" rx="3" ry="3.5" fill="#001a0e"/>
+  <ellipse cx="59" cy="36" rx="3" ry="3.5" fill="#001a0e"/>
+  <!-- Face tentacles (5) -->
+  <path d="M36 50 Q28 60 27 70" stroke="#124030" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+  <path d="M42 54 Q38 64 37 74" stroke="#124030" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+  <path d="M50 56 Q50 66 50 76" stroke="#124030" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+  <path d="M58 54 Q62 64 63 74" stroke="#124030" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+  <path d="M64 50 Q72 60 73 70" stroke="#124030" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+  <!-- Lower body tentacles -->
+  <path d="M28 88 Q20 96 18 100" stroke="#0d3a26" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M50 90 Q50 96 50 100" stroke="#0d3a26" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M72 88 Q80 96 82 100" stroke="#0d3a26" stroke-width="5" fill="none" stroke-linecap="round"/>
+</svg>

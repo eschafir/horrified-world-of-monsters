@@ -63,7 +63,8 @@ body {
    --------------------------------------------------------- */
 .lobby-header {
     text-align: center;
-    margin: 20px 0 10px 0;
+    margin: 10px 0 6px 0;
+    flex-shrink: 0;
 }
 
 .glow-text {
@@ -92,15 +93,17 @@ body {
 
 .lobby-card {
     flex: 1;
+    min-height: 0;
     border-radius: 16px;
-    padding: 30px;
+    padding: 18px 28px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    max-width: 1000px;
+    max-width: 1500px;
     width: 100%;
     margin: 0 auto;
+    overflow: hidden;
 }
 
 .input-group {
@@ -196,12 +199,44 @@ body {
     width: 100%;
     display: flex;
     flex-direction: column;
-    height: 100%;
+    flex: 1;
+    min-height: 0;
 }
 
 .room-info {
     text-align: center;
-    margin-bottom: 25px;
+    margin-bottom: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.room-code-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(51, 204, 255, 0.06);
+    border: 1px solid rgba(51, 204, 255, 0.2);
+    border-radius: 12px;
+    padding: 8px 24px;
+}
+
+.room-code-label {
+    font-size: 0.72rem;
+    color: #6a5a8a;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.room-code-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    color: #33ccff;
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 0 14px rgba(51, 204, 255, 0.5);
 }
 
 .highlight-text {
@@ -210,166 +245,355 @@ body {
 }
 
 .status-tag {
-    font-size: 0.9rem;
-    color: #a491c3;
-    margin-top: 5px;
+    font-size: 0.8rem;
+    color: #6a5a8a;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.status-tag::before {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #20e889;
+    box-shadow: 0 0 6px rgba(32, 232, 137, 0.7);
+    animation: blink 2s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
 }
 
 .lobby-cols {
     display: flex;
-    gap: 20px;
+    gap: 16px;
     flex: 1;
+    min-height: 0;
     width: 100%;
+    overflow: hidden;
 }
 
+/* Hero column gets extra width for the 2-col card grid */
 .lobby-col {
     flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    min-height: 350px;
+    overflow: hidden;
+}
+
+.lobby-col:first-child {
+    flex: 1.2;
+}
+
+/* Monster column gets more room */
+.lobby-col:nth-child(2) {
+    flex: 1.8;
+}
+
+/* Players column */
+.lobby-col:last-child {
+    flex: 0.9;
 }
 
 .lobby-col h4 {
-    margin-bottom: 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 12px;
     padding-bottom: 8px;
-    color: #c9bade;
-    font-size: 1.1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    color: #a090c8;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
 }
 
 /* Hero selection grids */
 .hero-options-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
     overflow-y: auto;
-    max-height: 320px;
+    flex: 1;
+    min-height: 0;
     padding-right: 5px;
 }
 
 .hero-card {
-    padding: 12px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 14px 10px 12px;
+    border-radius: 12px;
+    background: linear-gradient(160deg, rgba(30,15,60,0.7) 0%, rgba(10,5,25,0.85) 100%);
+    border: 1px solid rgba(153, 51, 255, 0.15);
     cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: left;
+    transition: all 0.25s ease;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
 }
 
-.hero-card h5 {
-    font-size: 1.05rem;
-    color: #fff;
-    margin-bottom: 4px;
-}
-
-.hero-card p {
-    font-size: 0.8rem;
-    color: #b0a0cf;
+.hero-card:hover {
+    border-color: rgba(153, 51, 255, 0.45);
+    background: linear-gradient(160deg, rgba(50,20,90,0.75) 0%, rgba(20,8,45,0.9) 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 12px rgba(153,51,255,0.15);
 }
 
 .hero-card.selected {
     border-color: #9933ff;
-    background: rgba(153, 51, 255, 0.15);
-    box-shadow: 0 0 10px rgba(153, 51, 255, 0.2);
+    background: linear-gradient(160deg, rgba(80,20,140,0.7) 0%, rgba(30,10,60,0.9) 100%);
+    box-shadow: 0 0 18px rgba(153, 51, 255, 0.4), inset 0 0 12px rgba(153,51,255,0.08);
 }
 
-/* Monster choices */
-.monster-choices {
+.hero-card-portrait {
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    border: 2.5px solid #33ccff;
+    box-shadow: 0 0 10px rgba(51, 204, 255, 0.45);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.hero-card.selected .hero-card-portrait {
+    border-color: #ffd533;
+    box-shadow: 0 0 16px rgba(255, 213, 51, 0.65);
+}
+
+.hero-card-portrait img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.hero-card-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #f0e8ff;
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+}
+
+.hero-card-ap {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #ffd533;
+    background: rgba(255, 213, 51, 0.1);
+    border: 1px solid rgba(255, 213, 51, 0.3);
+    border-radius: 10px;
+    padding: 2px 9px;
+    letter-spacing: 0.04em;
+}
+
+.hero-card-loc {
+    font-size: 0.67rem;
+    color: #9a88bb;
+    line-height: 1.3;
+}
+
+.hero-card-ability {
+    font-size: 0.68rem;
+    color: #b0a0cf;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    padding-top: 7px;
+    width: 100%;
+    text-align: center;
+    line-height: 1.45;
+    font-style: italic;
+}
+
+/* Monster selection cards */
+.monster-cards-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.monster-select-card {
+    padding: 10px 8px 9px;
+    border-radius: 10px;
+    background: linear-gradient(160deg, rgba(20,8,35,0.65) 0%, rgba(8,3,18,0.8) 100%);
+    border: 1.5px solid rgba(255, 255, 255, 0.07);
+    cursor: pointer;
+    transition: all 0.22s ease;
+    text-align: center;
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    margin-bottom: 25px;
+    align-items: center;
+    gap: 6px;
+    opacity: 0.5;
 }
 
-.checkbox-container {
-    display: block;
-    position: relative;
-    padding-left: 35px;
-    margin-bottom: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    color: #e0d0f5;
-    user-select: none;
+.monster-select-card:hover {
+    opacity: 0.78;
+    transform: translateY(-2px);
 }
 
-.checkbox-container input {
+.monster-select-card input[type="checkbox"] {
     position: absolute;
     opacity: 0;
-    cursor: pointer;
-    height: 0;
     width: 0;
+    height: 0;
+    pointer-events: none;
 }
 
-.checkmark {
-    position: absolute;
-    top: 2px;
-    left: 0;
-    height: 20px;
-    width: 20px;
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-    transition: all 0.2s;
+/* Checked state per monster */
+.monster-select-card.monster-yeti:has(input:checked) {
+    opacity: 1;
+    border-color: rgba(51, 204, 255, 0.65);
+    box-shadow: 0 0 14px rgba(51, 204, 255, 0.2);
+    background: linear-gradient(160deg, rgba(8,20,40,0.75) 0%, rgba(4,10,22,0.9) 100%);
+}
+.monster-select-card.monster-jiangshi:has(input:checked) {
+    opacity: 1;
+    border-color: rgba(255, 51, 102, 0.65);
+    box-shadow: 0 0 14px rgba(255, 51, 102, 0.2);
+    background: linear-gradient(160deg, rgba(38,5,15,0.75) 0%, rgba(18,3,8,0.9) 100%);
+}
+.monster-select-card.monster-sphinx:has(input:checked) {
+    opacity: 1;
+    border-color: rgba(255, 204, 0, 0.65);
+    box-shadow: 0 0 14px rgba(255, 204, 0, 0.2);
+    background: linear-gradient(160deg, rgba(35,28,4,0.75) 0%, rgba(18,14,3,0.9) 100%);
+}
+.monster-select-card.monster-cthulhu:has(input:checked) {
+    opacity: 1;
+    border-color: rgba(153, 51, 255, 0.65);
+    box-shadow: 0 0 14px rgba(153, 51, 255, 0.2);
+    background: linear-gradient(160deg, rgba(22,5,40,0.75) 0%, rgba(10,3,20,0.9) 100%);
 }
 
-.checkbox-container:hover input ~ .checkmark {
-    background-color: rgba(255, 255, 255, 0.1);
+.monster-select-portrait {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+    transition: border-color 0.22s;
 }
+.monster-yeti:has(input:checked)     .monster-select-portrait { border-color: rgba(51,204,255,0.5); }
+.monster-jiangshi:has(input:checked) .monster-select-portrait { border-color: rgba(255,51,102,0.5); }
+.monster-sphinx:has(input:checked)   .monster-select-portrait { border-color: rgba(255,204,0,0.5); }
+.monster-cthulhu:has(input:checked)  .monster-select-portrait { border-color: rgba(153,51,255,0.5); }
 
-.checkbox-container input:checked ~ .checkmark {
-    background-color: #9933ff;
-    border-color: #9933ff;
-}
-
-.checkmark:after {
-    content: "";
-    position: absolute;
-    display: none;
-}
-
-.checkbox-container input:checked ~ .checkmark:after {
+.monster-select-portrait img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
     display: block;
 }
 
-.checkbox-container .checkmark:after {
-    left: 7px;
-    top: 3px;
-    width: 5px;
-    height: 10px;
-    border: solid white;
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
+.monster-select-name {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #f0e8ff;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
 }
 
+.monster-select-diff {
+    font-size: 0.62rem;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 2px 7px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+.diff-easy   { color: #20e889; background: rgba(32,232,137,0.1);  border: 1px solid rgba(32,232,137,0.28); }
+.diff-medium { color: #ffd533; background: rgba(255,213,51,0.1);  border: 1px solid rgba(255,213,51,0.28); }
+.diff-hard   { color: #ff8833; background: rgba(255,136,51,0.1);  border: 1px solid rgba(255,136,51,0.28); }
+.diff-vhard  { color: #ff3366; background: rgba(255,51,102,0.1);  border: 1px solid rgba(255,51,102,0.28); }
+
 .btn-start {
-    margin-top: auto;
-    width: 100%;
+    flex: 0 0 auto;
+    align-self: center;
+    width: auto;
+    border-radius: 8px;
     background: linear-gradient(135deg, #ff3366 0%, #9933ff 100%);
     color: #fff;
-    padding: 15px;
-    font-size: 1.1rem;
+    padding: 10px 28px;
+    font-size: 0.9rem;
+    letter-spacing: 0.04em;
+}
+
+.host-start-wrap {
+    display: flex;
+    justify-content: center;
+    padding-top: 12px;
+    margin-top: auto;
+    flex: 0 0 auto;
+}
+
+.monster-select-desc {
+    font-size: 0.68rem;
+    color: rgba(180, 160, 220, 0.75);
+    line-height: 1.35;
+    text-align: center;
+    padding: 4px 4px 0;
+    font-style: italic;
 }
 
 .player-list {
     list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
 }
 
 .player-list li {
-    padding: 10px 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    padding: 9px 12px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 9px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 10px;
+}
+
+.player-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #20e889;
+    box-shadow: 0 0 7px rgba(32, 232, 137, 0.75);
+    flex-shrink: 0;
+}
+
+.player-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.player-name {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #f0e8ff;
+}
+
+.player-hero-tag {
+    font-size: 0.7rem;
+    color: #7a6a9a;
+    margin-top: 2px;
 }
 
 .player-list li .host-badge {
-    background: rgba(51, 204, 255, 0.2);
-    border: 1px solid #33ccff;
+    background: rgba(51, 204, 255, 0.12);
+    border: 1px solid rgba(51, 204, 255, 0.4);
     color: #33ccff;
-    font-size: 0.75rem;
-    padding: 2px 6px;
-    border-radius: 4px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    flex-shrink: 0;
 }
 
 /* ---------------------------------------------------------
@@ -847,11 +1071,60 @@ body {
    MONSTER DETAIL PANELS
    --------------------------------------------------------- */
 .monster-status-card {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
+    background: linear-gradient(160deg, rgba(25,8,20,0.75) 0%, rgba(8,4,15,0.9) 100%);
+    border: 1px solid rgba(255, 51, 102, 0.15);
+    border-radius: 10px;
     padding: 10px;
     margin-bottom: 8px;
+    overflow: hidden;
+}
+
+.monster-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.monster-card-portrait {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 51, 102, 0.55);
+    box-shadow: 0 0 8px rgba(255, 51, 102, 0.3);
+    overflow: hidden;
+    flex-shrink: 0;
+    background: rgba(0,0,0,0.4);
+}
+
+.monster-card-portrait img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.monster-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.monster-card-info h5 {
+    font-size: 0.88rem;
+    color: #fff;
+    margin: 0 0 3px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.monster-card-loc {
+    font-size: 0.7rem;
+    color: #a491c3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .monster-status-card h5 {
@@ -1042,4 +1315,30 @@ body {
     transform: scale(1.8); /* Scale Yeti children to 1.8x on hover */
     stroke-width: 3px !important;
     filter: drop-shadow(0 3px 8px rgba(51, 204, 255, 0.85)) !important; /* Ice blue glow */
+}
+
+.hero-token {
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 0.22s cubic-bezier(0.25, 0.8, 0.25, 1), stroke-width 0.22s, filter 0.22s;
+    cursor: pointer;
+}
+
+.hero-token:hover {
+    transform: scale(1.8);
+    stroke-width: 4.5px !important;
+    filter: drop-shadow(0 0 16px rgba(255, 213, 51, 1)) !important;
+}
+
+.citizen-token {
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 0.22s cubic-bezier(0.25, 0.8, 0.25, 1), stroke-width 0.22s, filter 0.22s;
+    cursor: pointer;
+}
+
+.citizen-token:hover {
+    transform: scale(1.8);
+    stroke-width: 3.5px !important;
+    filter: drop-shadow(0 0 11px rgba(32, 232, 137, 0.95)) !important;
 }

@@ -29,6 +29,7 @@ const elDisplayRoomCode = document.getElementById("display-room-code");
 const elHeroOptions = document.getElementById("hero-options");
 const elConnectedPlayers = document.getElementById("connected-players");
 const elHostSettings = document.getElementById("host-settings");
+const elHostStartWrap = document.getElementById("host-start-wrap");
 const elBtnCreate = document.getElementById("btn-create");
 const elBtnJoin = document.getElementById("btn-join");
 const elBtnStart = document.getElementById("btn-start");
@@ -176,29 +177,35 @@ function sendChatMessage() {
 
 function renderHeroSelectOptions() {
     elHeroOptions.innerHTML = "";
+
+    const heroData = {
+        "The Guardian":         { ap: 5, start: "Arcane Forge",        ability: "Guide a hero at your location to an adjacent space — no AP cost." },
+        "The Investigator":     { ap: 4, start: "South Station",       ability: "Discard 2 items to retrieve any 1 item from the discard pile." },
+        "The Buccaneer":        { ap: 3, start: "The Scuttled Siren",  ability: "Discard 1 item at turn start to gain +4 AP this turn." },
+        "The Fortune Teller":   { ap: 4, start: "The Fool's Journey",  ability: "Peek at the top Monster Card for free, once per turn." },
+        "The Parapsychologist": { ap: 4, start: "Weir's Observatory",  ability: "Send any item from your hand to any player anywhere on the board." }
+    };
+
     HEROES_LIST.forEach(hero => {
+        const data = heroData[hero];
         const card = document.createElement("div");
         card.className = `hero-card ${chosenHero === hero ? "selected" : ""}`;
-        
-        let desc = "";
-        if (hero === "The Guardian") desc = "Start: Arcane Forge (5 Actions). Guide a Hero without taking an action.";
-        else if (hero === "The Investigator") desc = "Start: South Station (4 Actions). Swap two items for one from discard.";
-        else if (hero === "The Buccaneer") desc = "Start: The Scuttled Siren (3 Actions). Discard 1 item to gain +4 actions.";
-        else if (hero === "The Fortune Teller") desc = "Start: The Fool's Journey (4 Actions). View top Monster Card for free.";
-        else if (hero === "The Parapsychologist") desc = "Start: Weir's Observatory (4 Actions). Distribute items to players anywhere.";
 
         card.innerHTML = `
-            <h5>${hero}</h5>
-            <p>${desc}</p>
+            <div class="hero-card-portrait">
+                <img src="/Images/Heroes/${hero}.svg" alt="${hero}">
+            </div>
+            <div class="hero-card-name">${hero}</div>
+            <div class="hero-card-ap">${data.ap} AP</div>
+            <div class="hero-card-loc">&#128205; ${data.start}</div>
+            <div class="hero-card-ability">${data.ability}</div>
         `;
+
         card.addEventListener("click", () => {
             chosenHero = hero;
             document.querySelectorAll(".hero-card").forEach(c => c.classList.remove("selected"));
             card.classList.add("selected");
-            sendMsg({
-                action: "select_hero",
-                hero: hero
-            });
+            sendMsg({ action: "select_hero", hero: hero });
         });
         elHeroOptions.appendChild(card);
     });
@@ -221,7 +228,11 @@ function updateGameUI() {
         gameState.players.forEach(p => {
             const li = document.createElement("li");
             li.innerHTML = `
-                <span><strong>${p.name}</strong> as ${p.hero}</span>
+                <div class="player-dot"></div>
+                <div class="player-info">
+                    <div class="player-name">${p.name}</div>
+                    <div class="player-hero-tag">${p.hero}</div>
+                </div>
                 ${p.is_host ? '<span class="host-badge">Host</span>' : ''}
             `;
             elConnectedPlayers.appendChild(li);
@@ -231,8 +242,10 @@ function updateGameUI() {
         const me = gameState.players.find(p => p.name === playerName);
         if (me && me.is_host) {
             elHostSettings.classList.remove("hidden");
+            elHostStartWrap.classList.remove("hidden");
         } else {
             elHostSettings.classList.add("hidden");
+            elHostStartWrap.classList.add("hidden");
         }
     } else {
         // The game has started!
@@ -334,11 +347,38 @@ function renderMonstersStatusPanel() {
         return;
     }
 
+    const monsterPortraits = {
+        "Yeti":     "/Images/Monsters/Yeti.png",
+        "Sphinx":   "/Images/Monsters/Sphinx.png",
+        "Jiangshi": "/Images/Monsters/Jiangshi.svg",
+        "Cthulhu":  "/Images/Monsters/Cthulhu.svg"
+    };
+    const monsterAccents = {
+        "Yeti":     { border: "rgba(51,204,255,0.6)",  glow: "rgba(51,204,255,0.3)"  },
+        "Sphinx":   { border: "rgba(255,204,0,0.6)",   glow: "rgba(255,204,0,0.3)"   },
+        "Jiangshi": { border: "rgba(255,51,102,0.6)",  glow: "rgba(255,51,102,0.3)"  },
+        "Cthulhu":  { border: "rgba(153,51,255,0.6)",  glow: "rgba(153,51,255,0.3)"  }
+    };
+
     gameState.active_monsters.forEach(m => {
         const card = document.createElement("div");
-        card.className = "monster-status-card glass";
-        
-        let details = `<h5>${m}</h5>`;
+        card.className = "monster-status-card";
+
+        const loc = (gameState.monster_locations && gameState.monster_locations[m]) || "Unknown";
+        const portrait = monsterPortraits[m] || "";
+        const accent = monsterAccents[m] || monsterAccents["Jiangshi"];
+
+        let details = `
+            <div class="monster-card-header">
+                <div class="monster-card-portrait" style="border-color:${accent.border}; box-shadow: 0 0 9px ${accent.glow};">
+                    ${portrait ? `<img src="${portrait}" alt="${m}">` : ""}
+                </div>
+                <div class="monster-card-info">
+                    <h5>${m}</h5>
+                    <div class="monster-card-loc">&#128205; ${loc}</div>
+                </div>
+            </div>
+        `;
         
         if (m === "Yeti") {
             const y_state = gameState.monster_states["Yeti"];
@@ -668,6 +708,48 @@ function renderSVGMap() {
         defs.appendChild(patChild);
     }
 
+    // Create image patterns for heroes
+    const heroClasses = ["The Guardian", "The Investigator", "The Buccaneer", "The Fortune Teller", "The Parapsychologist"];
+    heroClasses.forEach(heroClass => {
+        const patHero = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
+        patHero.setAttribute("id", `pattern-hero-${heroClass.replaceAll(" ", "_")}`);
+        patHero.setAttribute("x", "0");
+        patHero.setAttribute("y", "0");
+        patHero.setAttribute("height", "1");
+        patHero.setAttribute("width", "1");
+        patHero.setAttribute("patternContentUnits", "objectBoundingBox");
+        const imgHero = document.createElementNS("http://www.w3.org/2000/svg", "image");
+        imgHero.setAttribute("href", `/Images/Heroes/${heroClass}.svg`);
+        imgHero.setAttribute("x", "0");
+        imgHero.setAttribute("y", "0");
+        imgHero.setAttribute("height", "1");
+        imgHero.setAttribute("width", "1");
+        imgHero.setAttribute("preserveAspectRatio", "xMidYMid slice");
+        patHero.appendChild(imgHero);
+        defs.appendChild(patHero);
+    });
+
+    // Create image patterns for citizens
+    const citizenNames = ["Delilah", "Mayor Finch", "Professor Higgins", "The Blacksmith", "The Drunkard"];
+    citizenNames.forEach(citName => {
+        const patCit = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
+        patCit.setAttribute("id", `pattern-citizen-${citName.replaceAll(" ", "_")}`);
+        patCit.setAttribute("x", "0");
+        patCit.setAttribute("y", "0");
+        patCit.setAttribute("height", "1");
+        patCit.setAttribute("width", "1");
+        patCit.setAttribute("patternContentUnits", "objectBoundingBox");
+        const imgCit = document.createElementNS("http://www.w3.org/2000/svg", "image");
+        imgCit.setAttribute("href", `/Images/Citizens/${citName}.svg`);
+        imgCit.setAttribute("x", "0");
+        imgCit.setAttribute("y", "0");
+        imgCit.setAttribute("height", "1");
+        imgCit.setAttribute("width", "1");
+        imgCit.setAttribute("preserveAspectRatio", "xMidYMid slice");
+        patCit.appendChild(imgCit);
+        defs.appendChild(patCit);
+    });
+
     elGameMap.appendChild(defs);
 
     // Create Background Map Image programmatically (namespace-safe)
@@ -872,7 +954,7 @@ function renderSVGMap() {
                     const cth_track = gameState.monster_states["Cthulhu"].player_tracks[pName];
                     if (cth_track !== -1 && cth_track !== undefined) continue;
                 }
-                characters.push({ type: "hero", name: pName, label: h.hero.charAt(0) });
+                characters.push({ type: "hero", name: pName, heroClass: h.hero, label: h.hero.charAt(0) });
             }
         }
 
@@ -907,7 +989,14 @@ function renderSVGMap() {
             const isYetiChild = char.name.startsWith("Yeti Child");
             const childId = isYetiChild ? char.name.replace("Yeti Child ", "") : null;
             const isCustomMonster = isYeti || isSphinx;
-            const charR = isCustomMonster ? 35 : (isYetiChild ? 18 : 12); // Yeti kids are medium size (18)
+            const isHero = (char.type === "hero");
+            const isCitizen = (char.type === "citizen") && !isYetiChild;
+            let charR;
+            if (isCustomMonster) charR = 35;
+            else if (isYetiChild) charR = 18;
+            else if (isHero) charR = 24;
+            else if (isCitizen) charR = 18;
+            else charR = 14;
 
             const offset = getCharOffset(index, characters.length, coord.r || 35);
             const charG = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -935,13 +1024,30 @@ function renderSVGMap() {
                 charCircle.setAttribute("stroke", "#33ccff"); // Ice blue border
                 charCircle.setAttribute("stroke-width", "2");
                 charCircle.setAttribute("filter", "drop-shadow(0 2px 4px rgba(0,0,0,0.4))");
+            } else if (isHero) {
+                const patId = `pattern-hero-${char.heroClass.replaceAll(" ", "_")}`;
+                const isMe = (char.name === playerName);
+                const isActiveTurn = (gameState.players[gameState.turn_player_idx].name === char.name);
+                charCircle.setAttribute("class", "hero-token");
+                charCircle.setAttribute("fill", `url(#${patId})`);
+                charCircle.setAttribute("stroke", (isMe || isActiveTurn) ? "#ffd533" : "#33ccff");
+                charCircle.setAttribute("stroke-width", (isMe || isActiveTurn) ? "3.5" : "2.5");
+                charCircle.setAttribute("filter", `drop-shadow(0 0 ${(isMe || isActiveTurn) ? 12 : 6}px ${(isMe || isActiveTurn) ? "rgba(255,213,51,0.9)" : "rgba(51,204,255,0.7)"})`);
+            } else if (isCitizen) {
+                const patId = `pattern-citizen-${char.name.replaceAll(" ", "_")}`;
+                charCircle.setAttribute("class", "citizen-token");
+                charCircle.setAttribute("fill", `url(#${patId})`);
+                charCircle.setAttribute("stroke", "#20e889");
+                charCircle.setAttribute("stroke-width", "2.5");
+                charCircle.setAttribute("filter", "drop-shadow(0 0 7px rgba(32,232,137,0.7))");
             } else {
+                // Remaining monsters without portrait images (Jiangshi, Cthulhu)
                 charCircle.setAttribute("class", `token-character char-${char.type}`);
             }
             charG.appendChild(charCircle);
 
-            // Render text label only for standard (non-custom) tokens
-            if (!isCustomMonster && !isYetiChild) {
+            // Render text label only for monsters without portrait images
+            if (!isCustomMonster && !isYetiChild && !isHero && !isCitizen) {
                 const charVal = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 charVal.setAttribute("x", coord.x + offset.x);
                 charVal.setAttribute("y", coord.y + offset.y + 4);

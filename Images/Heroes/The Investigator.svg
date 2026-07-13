@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" fill="#081e0f"/>
+  <!-- Lens -->
+  <circle cx="42" cy="42" r="23" fill="#0a3820" stroke="#20e889" stroke-width="8"/>
+  <!-- Handle -->
+  <line x1="59" y1="59" x2="82" y2="82" stroke="#20e889" stroke-width="10" stroke-linecap="round"/>
+  <!-- Inner reflection -->
+  <circle cx="36" cy="36" r="7" fill="rgba(32,232,137,0.35)"/>
+</svg>

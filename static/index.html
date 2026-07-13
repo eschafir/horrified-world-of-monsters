@@ -34,8 +34,11 @@
 
                 <div id="waiting-view" class="hidden">
                     <div class="room-info">
-                        <h3>Room Code: <span id="display-room-code" class="highlight-text">----</span></h3>
-                        <p class="status-tag">Waiting for players...</p>
+                        <div class="room-code-badge">
+                            <span class="room-code-label">Room</span>
+                            <span id="display-room-code" class="room-code-value">----</span>
+                        </div>
+                        <p class="status-tag">Waiting for players to join...</p>
                     </div>
 
                     <div class="lobby-cols">
@@ -50,37 +53,55 @@
                         <!-- Game Settings (Host Only) -->
                         <div class="lobby-col glass-inner" id="host-settings">
                             <h4>Choose Monsters</h4>
-                            <div class="monster-choices">
-                                <label class="checkbox-container">
+                            <div class="monster-cards-grid">
+                                <label class="monster-select-card monster-yeti">
                                     <input type="checkbox" id="mon-yeti" checked>
-                                    <span class="checkmark"></span>
-                                    The Yeti (Easy)
+                                    <div class="monster-select-portrait">
+                                        <img src="/Images/Monsters/Yeti.png" alt="The Yeti">
+                                    </div>
+                                    <div class="monster-select-name">The Yeti</div>
+                                    <div class="monster-select-diff diff-easy">Easy</div>
+                                    <div class="monster-select-desc">Reunite the children with the Yeti — but first reveal the true lair.</div>
                                 </label>
-                                <label class="checkbox-container">
+                                <label class="monster-select-card monster-jiangshi">
                                     <input type="checkbox" id="mon-jiangshi" checked>
-                                    <span class="checkmark"></span>
-                                    The Jiangshi (Medium)
+                                    <div class="monster-select-portrait">
+                                        <img src="/Images/Monsters/Jiangshi.svg" alt="The Jiangshi">
+                                    </div>
+                                    <div class="monster-select-name">The Jiangshi</div>
+                                    <div class="monster-select-diff diff-medium">Medium</div>
+                                    <div class="monster-select-desc">Assemble the three-part Jade Sword and drive it home.</div>
                                 </label>
-                                <label class="checkbox-container">
+                                <label class="monster-select-card monster-sphinx">
                                     <input type="checkbox" id="mon-sphinx">
-                                    <span class="checkmark"></span>
-                                    The Sphinx (Hard)
+                                    <div class="monster-select-portrait">
+                                        <img src="/Images/Monsters/Sphinx.png" alt="The Sphinx">
+                                    </div>
+                                    <div class="monster-select-name">The Sphinx</div>
+                                    <div class="monster-select-diff diff-hard">Hard</div>
+                                    <div class="monster-select-desc">Deliver blue items that sum to exactly 10 to defeat the riddle-keeper.</div>
                                 </label>
-                                <label class="checkbox-container">
+                                <label class="monster-select-card monster-cthulhu">
                                     <input type="checkbox" id="mon-cthulhu">
-                                    <span class="checkmark"></span>
-                                    Cthulhu (Very Hard)
+                                    <div class="monster-select-portrait">
+                                        <img src="/Images/Monsters/Cthulhu.svg" alt="Cthulhu">
+                                    </div>
+                                    <div class="monster-select-name">Cthulhu</div>
+                                    <div class="monster-select-diff diff-vhard">Very Hard</div>
+                                    <div class="monster-select-desc">Shatter 4 Elder Runes then cross Corpse City to banish the Ancient One.</div>
                                 </label>
                             </div>
-                            <button id="btn-start" class="btn btn-start glow-button">Start Video Game</button>
                         </div>
 
                         <!-- Player List -->
                         <div class="lobby-col glass-inner">
-                            <h4>Connected Players</h4>
+                            <h4>Players</h4>
                             <ul id="connected-players" class="player-list">
                                 <!-- Loaded dynamically -->
                             </ul>
+                            <div id="host-start-wrap" class="hidden host-start-wrap">
+                                <button id="btn-start" class="btn btn-start glow-button">Begin Adventure</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -233,6 +254,6 @@
         </div>
     </div>
     
-    <script src="game.js?v=14"></script>
+    <script src="game.js?v=20"></script>
 </body>
 </html>
