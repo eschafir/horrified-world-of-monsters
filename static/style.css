@@ -1017,3 +1017,16 @@ body {
     stroke-width: 3.5px !important;
     filter: drop-shadow(0 4px 12px rgba(255, 51, 102, 0.8)) !important; /* Glowing hover shadow! */
 }
+
+.sphinx-token {
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), stroke-width 0.25s, filter 0.25s;
+    cursor: pointer;
+}
+
+.sphinx-token:hover {
+    transform: scale(2.2); /* Double and a bit more the size of the Sphinx on hover! */
+    stroke-width: 3.5px !important;
+    filter: drop-shadow(0 4px 12px rgba(255, 204, 0, 0.8)) !important; /* Glowing golden hover shadow! */
+}

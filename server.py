@@ -300,7 +300,7 @@ class GameRoom:
         self.monster_locations = {}
         self.monster_states = {}
         for monster in self.active_monsters:
-            self.monster_locations[monster] = "The Void"
+            self.monster_locations[monster] = "The Roaming Wolf"
             if monster == "Yeti":
                 # Lair tokens
                 lairs = [

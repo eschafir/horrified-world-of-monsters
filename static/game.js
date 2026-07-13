@@ -616,7 +616,7 @@ function renderSVGMap() {
     pattern.setAttribute("patternContentUnits", "objectBoundingBox");
 
     const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
-    img.setAttribute("href", "/Images/Monsters/Yeti.png");
+    img.setAttribute("href", "/Images/Monsters/Yeti.jpg");
     img.setAttribute("x", "0");
     img.setAttribute("y", "0");
     img.setAttribute("height", "1");
@@ -625,6 +625,26 @@ function renderSVGMap() {
 
     pattern.appendChild(img);
     defs.appendChild(pattern);
+
+    // Create pattern for Sphinx face marker
+    const patternSphinx = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
+    patternSphinx.setAttribute("id", "pattern-sphinx");
+    patternSphinx.setAttribute("x", "0");
+    patternSphinx.setAttribute("y", "0");
+    patternSphinx.setAttribute("height", "1");
+    patternSphinx.setAttribute("width", "1");
+    patternSphinx.setAttribute("patternContentUnits", "objectBoundingBox");
+
+    const imgSphinx = document.createElementNS("http://www.w3.org/2000/svg", "image");
+    imgSphinx.setAttribute("href", "/Images/Monsters/Sphinx.png");
+    imgSphinx.setAttribute("x", "0");
+    imgSphinx.setAttribute("y", "0");
+    imgSphinx.setAttribute("height", "1");
+    imgSphinx.setAttribute("width", "1");
+    imgSphinx.setAttribute("preserveAspectRatio", "xMidYMid slice");
+
+    patternSphinx.appendChild(imgSphinx);
+    defs.appendChild(patternSphinx);
 
     elGameMap.appendChild(defs);
 
@@ -859,10 +879,11 @@ function renderSVGMap() {
             });
         }
 
-        // Draw character tokens slightly offset from center
         characters.forEach((char, index) => {
             const isYeti = (char.name === "Yeti");
-            const charR = isYeti ? 35 : 12; // Yeti is bigger (radius 35 vs 12)
+            const isSphinx = (char.name === "Sphinx");
+            const isCustomMonster = isYeti || isSphinx;
+            const charR = isCustomMonster ? 35 : 12; // Custom monsters are bigger (radius 35 vs 12)
 
             const offset = getCharOffset(index, characters.length, coord.r || 35);
             const charG = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -878,13 +899,19 @@ function renderSVGMap() {
                 charCircle.setAttribute("stroke", "#ff3366"); // Bold neon crimson border
                 charCircle.setAttribute("stroke-width", "2.5");
                 charCircle.setAttribute("filter", "drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
+            } else if (isSphinx) {
+                charCircle.setAttribute("class", "sphinx-token");
+                charCircle.setAttribute("fill", "url(#pattern-sphinx)");
+                charCircle.setAttribute("stroke", "#ffcc00"); // Golden border
+                charCircle.setAttribute("stroke-width", "2.5");
+                charCircle.setAttribute("filter", "drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
             } else {
                 charCircle.setAttribute("class", `token-character char-${char.type}`);
             }
             charG.appendChild(charCircle);
 
-            // Render text label only for non-Yeti tokens
-            if (!isYeti) {
+            // Render text label only for standard (non-custom) tokens
+            if (!isCustomMonster) {
                 const charVal = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 charVal.setAttribute("x", coord.x + offset.x);
                 charVal.setAttribute("y", coord.y + offset.y + 4);
