@@ -1430,10 +1430,16 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
                 room.end_turn(player_name)
 
             elif action == "draw_monster_card":
-                if room.game_phase == "MonsterPhase":
+                if room.game_phase == "MonsterPhase" and not getattr(room, "monster_phase_running", False):
+                    room.monster_phase_running = True
                     async def _bcast():
                         await room_manager.broadcast_state(room_code)
-                    asyncio.create_task(room.run_monster_phase(_bcast))
+                    async def run_with_lock():
+                        try:
+                            await room.run_monster_phase(_bcast)
+                        finally:
+                            room.monster_phase_running = False
+                    asyncio.create_task(run_with_lock())
 
             elif action == "chat":
                 text = msg.get("text")

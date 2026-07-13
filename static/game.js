@@ -9,6 +9,7 @@ let gameState = null;
 let selectedAction = null;
 let lastDrawnCardId = null;
 let isCardFlying = false;
+let hasDrawnThisPhase = false;
 let pendingCardData = null;
 let selectedItemsForAction = []; // Track item selections for trades/scaffold
 let destinationNodeSelection = null; // Track movement target
@@ -175,6 +176,9 @@ function setupConnection(isHost) {
         const data = JSON.parse(event.data);
         if (data.type === "state") {
             gameState = data.state;
+            if (gameState.game_phase !== "MonsterPhase") {
+                hasDrawnThisPhase = false;
+            }
             updateGameUI();
         }
     };
@@ -546,9 +550,10 @@ function animateCardFly(sourceEl, targetEl, onComplete) {
 document.querySelector(".deck-right").addEventListener("click", () => {
     if (!gameState || gameState.game_phase !== "MonsterPhase") return;
     if (gameState.deck_count === 0) return;
-    if (isCardFlying) return;
+    if (isCardFlying || hasDrawnThisPhase) return;
 
     isCardFlying = true;
+    hasDrawnThisPhase = true;
     pendingCardData = null;
 
     // Pre-render the card back in the panel so it's ready to flip on arrival
