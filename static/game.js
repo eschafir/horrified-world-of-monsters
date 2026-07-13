@@ -967,6 +967,99 @@ function drawMovementTrail(fromX, fromY, toX, toY) {
     }
 }
 
+function getScreenCoordsOfSVGPoint(svgX, svgY) {
+    const svgEl = document.getElementById("game-map");
+    if (!svgEl) return { left: 0, top: 0 };
+    try {
+        const pt = svgEl.createSVGPoint();
+        pt.x = svgX;
+        pt.y = svgY;
+        const globalPt = pt.matrixTransform(svgEl.getScreenCTM());
+        return {
+            left: globalPt.x,
+            top: globalPt.y
+        };
+    } catch(e) {
+        console.warn("Error converting SVG point to screen coordinate:", e);
+        return { left: 0, top: 0 };
+    }
+}
+
+function animateItemFly(fromLoc, itemColor, itemLabel, itemName) {
+    const coord = gameState.node_coordinates[fromLoc];
+    if (!coord) return;
+    
+    const screenStart = getScreenCoordsOfSVGPoint(coord.x, coord.y);
+    const invPanel = document.getElementById("player-inventory") || document.getElementById("sec-player");
+    if (!invPanel) return;
+    const screenEnd = invPanel.getBoundingClientRect();
+    
+    const fly = document.createElement("div");
+    fly.className = "flying-item-token";
+    
+    const colorMap = {
+        blue: "#33ccff",
+        red: "#ff3366",
+        yellow: "#ffd533"
+    };
+    const circleColor = colorMap[itemColor.toLowerCase()] || "#a491c3";
+
+    fly.style.cssText = `
+        position: fixed;
+        left: ${screenStart.left - 12}px;
+        top: ${screenStart.top - 12}px;
+        width: 24px;
+        height: 24px;
+        background: ${circleColor};
+        border: 2px solid #fff;
+        border-radius: 50%;
+        color: #000;
+        font-family: sans-serif;
+        font-size: 11px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        pointer-events: none;
+        box-shadow: 0 0 12px ${circleColor}, 0 4px 10px rgba(0,0,0,0.5);
+        transition: left 0.7s cubic-bezier(0.25, 1, 0.5, 1),
+                    top 0.7s cubic-bezier(0.25, 1, 0.5, 1),
+                    transform 0.7s cubic-bezier(0.25, 1, 0.5, 1),
+                    opacity 0.7s ease;
+    `;
+    fly.textContent = itemLabel;
+    
+    const labelSpan = document.createElement("span");
+    labelSpan.textContent = itemName;
+    labelSpan.style.cssText = `
+        position: absolute;
+        top: 28px;
+        white-space: nowrap;
+        background: rgba(27, 21, 45, 0.9);
+        color: #e5d4ff;
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    `;
+    fly.appendChild(labelSpan);
+    
+    document.body.appendChild(fly);
+    
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        fly.style.left = `${screenEnd.left + screenEnd.width / 2 - 12}px`;
+        fly.style.top = `${screenEnd.top + screenEnd.height / 2 - 12}px`;
+        fly.style.transform = "scale(0.8)";
+        fly.style.opacity = "0.5";
+    }));
+    
+    fly.addEventListener("transitionend", () => {
+        fly.remove();
+    }, { once: true });
+}
+
 function renderSVGMap() {
     // Force the SVG viewBox to match the coordinate system of the new Map.png (1304x1206)
     elGameMap.setAttribute("viewBox", "0 0 1304 1206");
@@ -1676,6 +1769,23 @@ document.getElementById("action-pickup").addEventListener("click", () => {
 });
 
 window.triggerPickSingle = (itemId) => {
+    let fromLoc = null;
+    let itemData = null;
+    if (gameState && gameState.items_on_board) {
+        for (const loc in gameState.items_on_board) {
+            const found = gameState.items_on_board[loc].find(it => it.id === itemId);
+            if (found) {
+                fromLoc = loc;
+                itemData = found;
+                break;
+            }
+        }
+    }
+
+    if (fromLoc && itemData) {
+        animateItemFly(fromLoc, itemData.color, itemData.strength, itemData.name);
+    }
+
     sendMsg({
         action: "pickup",
         item_ids: [itemId]
