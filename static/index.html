@@ -182,8 +182,6 @@
                                 <span id="game-deck-display" class="hud-value">--</span>
                             </div>
                             <div class="hud-separator"></div>
-                            <button id="btn-show-perks" class="btn-hud">My Perks</button>
-                            <div class="hud-separator"></div>
                             <div class="hud-item audio-control">
                                 <span class="audio-icon" title="Background Music Volume">🎵</span>
                                 <input type="range" id="bg-music-volume" min="0" max="100" value="20" class="volume-slider">
@@ -227,10 +225,9 @@
                         <div class="deck-panel deck-right">
                             <div class="deck-title">Monster Deck</div>
                             <div class="card-stack monsters-stack">
-                                <div class="card-back monster-card-back">
-                                    <div class="deck-count-badge"><span id="hud-deck-count">0</span></div>
-                                </div>
+                                <div class="card-back monster-card-back"></div>
                             </div>
+                            <div class="deck-count-badge" style="margin-top: 10px; font-size: 0.9rem; padding: 4px 10px;">Cards: <span id="hud-deck-count">0</span></div>
                         </div>
 
                         <!-- SVG Interactive Map -->

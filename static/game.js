@@ -36,7 +36,7 @@ const elHostStartWrap = document.getElementById("host-start-wrap");
 const elBtnCreate = document.getElementById("btn-create");
 const elBtnJoin = document.getElementById("btn-join");
 const elBtnStart = document.getElementById("btn-start");
-const elBtnShowPerks = document.getElementById("btn-show-perks");
+
 const elGameMap = document.getElementById("game-map");
 const elLogBox = document.getElementById("game-log-box");
 const elChatBox = document.getElementById("chat-box");
@@ -382,7 +382,7 @@ function renderPlayerPanel() {
     const elInv = document.getElementById("player-inventory");
     elInv.innerHTML = "";
     
-    if (myState.items.length === 0) {
+    if (myState.items.length === 0 && myState.perks.length === 0) {
         elInv.innerHTML = `<p style="font-size: 0.8rem; color: #a491c3; text-align: center;">Empty Inventory</p>`;
     } else {
         myState.items.forEach(item => {
@@ -391,6 +391,20 @@ function renderPlayerPanel() {
             row.innerHTML = `
                 <span>${item.name}</span>
                 <span class="item-val">${item.color} ${item.strength}</span>
+            `;
+            elInv.appendChild(row);
+        });
+        
+        myState.perks.forEach(perk => {
+            const row = document.createElement("div");
+            row.className = `item-row perk-row`;
+            row.style.cssText = "background: rgba(153, 51, 255, 0.15); border-left: 3px solid #9933ff; flex-direction: column; align-items: flex-start; gap: 4px; padding: 8px;";
+            row.innerHTML = `
+                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                    <strong style="color: #ffd533; font-size: 0.85rem; letter-spacing: 0.5px;">${perk.name}</strong>
+                    <button class="btn-hud" style="font-size: 0.7rem; padding: 3px 8px; cursor: pointer;" onclick="playPerkCard('${perk.id}', '${perk.name}')">Play</button>
+                </div>
+                <div style="font-size: 0.75rem; color: #e0d0ff; line-height: 1.3;">${perk.text}</div>
             `;
             elInv.appendChild(row);
         });
@@ -1809,31 +1823,6 @@ document.getElementById("action-end-turn").addEventListener("click", () => {
     sendMsg({ action: "end_turn" });
 });
 
-// Perks display modal
-elBtnShowPerks.addEventListener("click", () => {
-    const myState = gameState.heroes_state[playerName];
-    if (!myState) return;
-
-    let html = `<h3>My Perk Cards</h3><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">`;
-    if (myState.perks.length === 0) {
-        html += `<p style="text-align:center;">You have no Perk cards.</p>`;
-    } else {
-        myState.perks.forEach(perk => {
-            html += `
-                <div class="glass-inner" style="padding:10px; margin-bottom:8px; border-radius:6px; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <strong style="color:#ffd533">${perk.name}</strong>
-                        <p style="font-size:0.75rem; color:#b0a0cf; margin-top:2px;">${perk.text}</p>
-                    </div>
-                    <button class="btn btn-primary btn-small" onclick="playPerkCard('${perk.id}', '${perk.name}')">Play</button>
-                </div>
-            `;
-        });
-    }
-
-    elModalBody.innerHTML = html;
-    elModalContainer.classList.remove("hidden");
-});
 
 window.playPerkCard = (perkId, perkName) => {
     // Perk specific arguments
