@@ -466,10 +466,13 @@ function renderMonsterPhasePanel() {
     const section = document.getElementById("sec-monster-phase");
     if (!section) return;
 
+    const activePlayer = gameState.players[gameState.turn_player_idx]?.name;
+    const isMyTurn = (playerName === activePlayer);
+
     // Update deck glow based on whether a draw is needed
     const deckRight = document.querySelector(".deck-right");
     if (deckRight) {
-        if (gameState.game_phase === "MonsterPhase" && !isCardFlying) {
+        if (gameState.game_phase === "MonsterPhase" && isMyTurn && !isCardFlying && !hasDrawnThisPhase) {
             deckRight.classList.add("monster-phase-active");
         } else {
             deckRight.classList.remove("monster-phase-active");
@@ -480,9 +483,14 @@ function renderMonsterPhasePanel() {
 
     if (!card) {
         if (!isCardFlying) {
-            const drawHint = gameState.game_phase === "MonsterPhase"
-                ? '<p class="phase-hint mp-draw-hint">&#9660; Click the Monster Deck to draw a card.</p>'
-                : '<p class="phase-hint">After ending your turn, click the Monster Deck to draw a card.</p>';
+            let drawHint = "";
+            if (gameState.game_phase === "MonsterPhase") {
+                drawHint = isMyTurn 
+                    ? '<p class="phase-hint mp-draw-hint">&#9660; Click the Monster Deck to draw a card.</p>'
+                    : `<p class="phase-hint">Waiting for ${activePlayer} to draw a Monster Card...</p>`;
+            } else {
+                drawHint = '<p class="phase-hint">After ending your turn, click the Monster Deck to draw a card.</p>';
+            }
             section.innerHTML = `<h4>Monster Phase</h4>${drawHint}`;
             lastDrawnCardId = null;
         }
@@ -550,6 +558,11 @@ function animateCardFly(sourceEl, targetEl, onComplete) {
 // ---- Monster Deck click: draw during Monster Phase ----
 document.querySelector(".deck-right").addEventListener("click", () => {
     if (!gameState || gameState.game_phase !== "MonsterPhase") return;
+
+    // Only the player whose turn just ended is allowed to draw the monster card!
+    const activePlayer = gameState.players[gameState.turn_player_idx]?.name;
+    if (playerName !== activePlayer) return;
+
     if (gameState.deck_count === 0) return;
     if (isCardFlying || hasDrawnThisPhase) return;
 

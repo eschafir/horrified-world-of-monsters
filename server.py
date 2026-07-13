@@ -1430,7 +1430,8 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
                 room.end_turn(player_name)
 
             elif action == "draw_monster_card":
-                if room.game_phase == "MonsterPhase" and not getattr(room, "monster_phase_running", False):
+                active_player = room.players[room.turn_player_idx]["name"]
+                if player_name == active_player and room.game_phase == "MonsterPhase" and not getattr(room, "monster_phase_running", False):
                     room.monster_phase_running = True
                     async def _bcast():
                         await room_manager.broadcast_state(room_code)
