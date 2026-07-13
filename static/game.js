@@ -10,6 +10,7 @@ let selectedAction = null;
 let lastDrawnCardId = null;
 let isCardFlying = false;
 let hasDrawnThisPhase = false;
+let lastCharacterPositions = {};
 let pendingCardData = null;
 let selectedItemsForAction = []; // Track item selections for trades/scaffold
 let destinationNodeSelection = null; // Track movement target
@@ -924,6 +925,48 @@ function playHoverSound() {
 // ---------------------------------------------------------
 // SVG INTERACTIVE BOARD RENDERER
 // ---------------------------------------------------------
+function drawMovementTrail(fromX, fromY, toX, toY) {
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", `M ${fromX} ${fromY} L ${toX} ${toY}`);
+    path.setAttribute("stroke", "#ffd533"); // glowing gold
+    path.setAttribute("stroke-width", "4");
+    path.setAttribute("stroke-dasharray", "8, 6");
+    path.setAttribute("fill", "none");
+    path.setAttribute("opacity", "0.8");
+    path.setAttribute("filter", "url(#glow)");
+    
+    // Animate dasharray offset for moving dash effect
+    const animDash = document.createElementNS("http://www.w3.org/2000/svg", "animate");
+    animDash.setAttribute("attributeName", "stroke-dashoffset");
+    animDash.setAttribute("from", "0");
+    animDash.setAttribute("to", "-30");
+    animDash.setAttribute("dur", "0.6s");
+    animDash.setAttribute("repeatCount", "indefinite");
+    path.appendChild(animDash);
+
+    // Animate opacity fade out
+    const animOpacity = document.createElementNS("http://www.w3.org/2000/svg", "animate");
+    animOpacity.setAttribute("attributeName", "opacity");
+    animOpacity.setAttribute("from", "0.8");
+    animOpacity.setAttribute("to", "0");
+    animOpacity.setAttribute("dur", "1.2s");
+    animOpacity.setAttribute("fill", "freeze");
+    path.appendChild(animOpacity);
+    
+    // Append to map right after background map image
+    if (elGameMap) {
+        const bgImg = elGameMap.querySelector("image");
+        if (bgImg && bgImg.nextSibling) {
+            elGameMap.insertBefore(path, bgImg.nextSibling);
+        } else {
+            elGameMap.insertBefore(path, elGameMap.firstChild);
+        }
+        setTimeout(() => {
+            path.remove();
+        }, 1200);
+    }
+}
+
 function renderSVGMap() {
     // Force the SVG viewBox to match the coordinate system of the new Map.png (1304x1206)
     elGameMap.setAttribute("viewBox", "0 0 1304 1206");
@@ -1308,10 +1351,31 @@ function renderSVGMap() {
             const offset = getCharOffset(index, characters.length, coord.r || 35);
             const charG = document.createElementNS("http://www.w3.org/2000/svg", "g");
 
+            const charKey = `${char.type}-${char.name}`;
+            const targetX = coord.x + offset.x;
+            const targetY = coord.y + offset.y;
+
             const charCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            charCircle.setAttribute("cx", coord.x + offset.x);
-            charCircle.setAttribute("cy", coord.y + offset.y);
             charCircle.setAttribute("r", charR);
+            
+            const lastPos = lastCharacterPositions[charKey];
+            if (lastPos && (lastPos.x !== targetX || lastPos.y !== targetY)) {
+                charCircle.setAttribute("cx", lastPos.x);
+                charCircle.setAttribute("cy", lastPos.y);
+
+                setTimeout(() => {
+                    charCircle.setAttribute("cx", targetX);
+                    charCircle.setAttribute("cy", targetY);
+                }, 20);
+
+                // Draw glowing motion trail
+                drawMovementTrail(lastPos.x, lastPos.y, targetX, targetY);
+            } else {
+                charCircle.setAttribute("cx", targetX);
+                charCircle.setAttribute("cy", targetY);
+            }
+
+            lastCharacterPositions[charKey] = { x: targetX, y: targetY };
             
             if (isYeti) {
                 charCircle.setAttribute("class", "yeti-token");
@@ -1361,13 +1425,24 @@ function renderSVGMap() {
             // Render text label only for monsters without portrait images
             if (!isCustomMonster && !isYetiChild && !isHero && !isCitizen) {
                 const charVal = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                charVal.setAttribute("x", coord.x + offset.x);
-                charVal.setAttribute("y", coord.y + offset.y + 4);
                 charVal.setAttribute("text-anchor", "middle");
                 charVal.setAttribute("fill", "#000");
                 charVal.setAttribute("font-size", "10px");
                 charVal.setAttribute("font-weight", "bold");
                 charVal.textContent = char.label;
+
+                if (lastPos && (lastPos.x !== targetX || lastPos.y !== targetY)) {
+                    charVal.setAttribute("x", lastPos.x);
+                    charVal.setAttribute("y", lastPos.y + 4);
+
+                    setTimeout(() => {
+                        charVal.setAttribute("x", targetX);
+                        charVal.setAttribute("y", targetY + 4);
+                    }, 20);
+                } else {
+                    charVal.setAttribute("x", targetX);
+                    charVal.setAttribute("y", targetY + 4);
+                }
                 charG.appendChild(charVal);
             }
 
