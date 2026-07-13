@@ -79,11 +79,11 @@ NODE_COORDINATES = {
 }
 
 HERO_CLASSES = {
-    "Adventurer": {"name": "Adventurer", "ap": 4, "start": "Crossroads Center", "ability": "Move to any hero's space for 1 AP."},
-    "Detective": {"name": "Detective", "ap": 4, "start": "Spindlewood Institute", "ability": "Reveal a Lair or top card of deck for 0 AP (once/turn)."},
-    "Explorer": {"name": "Explorer", "ap": 4, "start": "Crossroads West", "ability": "Move 1 extra space per Move action."},
-    "Scholar": {"name": "Scholar", "ap": 4, "start": "Steam Plant", "ability": "Discard any item on the board to draw a Perk card (once/turn)."},
-    "Tinkerer": {"name": "Tinkerer", "ap": 4, "start": "Clockwork Village", "ability": "Combine two items in hand to add their strengths (once/turn)."}
+    "The Guardian": {"name": "The Guardian", "ap": 5, "start": "Arcane Forge", "ability": "You may use a Guide action on a Hero, with their permission. This does not take an action."},
+    "The Investigator": {"name": "The Investigator", "ap": 4, "start": "South Station", "ability": "Discard two items to pick one item from the discard pile and keep it."},
+    "The Buccaneer": {"name": "The Buccaneer", "ap": 3, "start": "The Scuttled Siren", "ability": "At the start of your turn, discard one item to gain +4 actions this turn (use only once per turn)."},
+    "The Fortune Teller": {"name": "The Fortune Teller", "ap": 4, "start": "The Fool's Journey", "ability": "You may look at the top Monster card on your turn. This does not take an action."},
+    "The Parapsychologist": {"name": "The Parapsychologist", "ap": 4, "start": "Weir's Observatory", "ability": "You may distribute any items you have to other players."}
 }
 
 ITEMS_POOL = [
@@ -220,6 +220,7 @@ class GameRoom:
         self.terror_level = 0
         self.deck: List[Dict] = []
         self.discard: List[Dict] = []
+        self.discarded_items: List[Dict] = []
         self.item_bag: List[Dict] = []
         self.perk_deck: List[Dict] = []
         self.active_monsters: List[str] = []
@@ -256,6 +257,7 @@ class GameRoom:
         # Set up item bag
         self.item_bag = list(ITEMS_POOL)
         random.shuffle(self.item_bag)
+        self.discarded_items = []
         
         # Set up decks
         self.deck = list(MONSTER_CARDS)
@@ -383,6 +385,7 @@ class GameRoom:
             "frenzy_marker": self.frenzy_marker,
             "heroes_state": self.heroes_state,
             "items_on_board": self.items_on_board,
+            "discarded_items": self.discarded_items,
             "citizens": {k: v for k, v in self.citizens.items() if v["active"] or v["location"] != "Board"},
             "monster_locations": self.monster_locations,
             "monster_states": self.monster_states,
@@ -655,6 +658,7 @@ class GameRoom:
                     return False
                     
                 h_state["items"].remove(item)
+                self.discarded_items.append(item)
                 rune["broken"] = True
                 h_state["ap"] -= 1
                 self.add_log(f"{player_name} shattered Rune {rune_id} using {item['name']}.")
@@ -696,6 +700,7 @@ class GameRoom:
                     return False
                     
                 h_state["items"].remove(item)
+                self.discarded_items.append(item)
                 cth_state["player_tracks"][player_name] = next_idx
                 h_state["ap"] -= 1
                 self.add_log(f"{player_name} advanced to Step {next_idx} ({cth_state['corpse_city_track'][next_idx]}) in Corpse City.")
@@ -772,6 +777,7 @@ class GameRoom:
                     strong_red = next((i for i in h_state["items"] if i["color"] == "Red" and i["strength"] >= 5), None)
                     if strong_red:
                         h_state["items"].remove(strong_red)
+                        self.discarded_items.append(strong_red)
                         self.active_monsters.remove("Cthulhu")
                         h_state["ap"] -= 1
                         self.add_log("CTHULHU BANISHED TO THE VOID! The doorway is sealed forever!")
@@ -792,73 +798,114 @@ class GameRoom:
         h_state = self.heroes_state[player_name]
         hero_class = h_state["hero"]
         
+        # The Parapsychologist can distribute items multiple times without locking ability_used
+        if hero_class == "The Parapsychologist":
+            target_hero_name = args.get("target_hero")
+            item_id = args.get("item_id")
+            
+            if not target_hero_name or not item_id:
+                return False
+                
+            target_hero = self.heroes_state.get(target_hero_name)
+            item = next((i for i in h_state["items"] if i["id"] == item_id), None)
+            
+            if not target_hero or not item:
+                return False
+                
+            if len(target_hero["items"]) >= 4:
+                self.add_log(f"{target_hero_name} already has a full inventory (max 4 items).")
+                return False
+                
+            h_state["items"].remove(item)
+            target_hero["items"].append(item)
+            self.add_log(f"The Parapsychologist distributed {item['name']} ({item['color']} {item['strength']}) to {target_hero_name}.")
+            return True
+            
+        # For other heroes, check if already used
         if h_state["ability_used"]:
-            self.add_log("Ability already used this turn.")
+            self.add_log("Special ability already used this turn.")
             return False
             
-        if hero_class == "Adventurer":
-            target_hero = args.get("target_hero")
-            if target_hero and target_hero in self.heroes_state:
-                if h_state["ap"] < 1: return False
-                target_loc = self.heroes_state[target_hero]["location"]
-                h_state["location"] = target_loc
-                h_state["ap"] -= 1
-                h_state["ability_used"] = True
-                self.add_log(f"{player_name} used Adventurer teleport to join {target_hero} at {target_loc}.")
-                return True
+        if hero_class == "The Guardian":
+            target_hero_name = args.get("target_hero")
+            target_loc = args.get("target_location")
+            
+            if not target_hero_name or not target_loc:
+                return False
                 
-        elif hero_class == "Detective":
-            reveal_type = args.get("type")
-            if reveal_type == "lair":
-                yeti_state = self.monster_states.get("Yeti")
-                if yeti_state:
-                    unflipped_lairs = [l for l in yeti_state["lairs"] if not l["flipped"]]
-                    if unflipped_lairs:
-                        lair = unflipped_lairs[0]
-                        self.add_log(f"[Detective Secret Intel] The lair at {lair['location']} is {'the TRUE lair!' if lair['is_true'] else 'a DECOY.'}")
-                        h_state["ability_used"] = True
-                        return True
-            elif reveal_type == "deck":
-                if self.deck:
-                    top_card = self.deck[-1]
-                    self.add_log(f"[Detective Secret Intel] The top card of the Monster Deck is: {top_card['name']}")
-                    h_state["ability_used"] = True
-                    return True
-                    
-        elif hero_class == "Scholar":
-            item_id = args.get("item_id")
-            loc = args.get("location")
-            if loc and item_id and loc in self.items_on_board:
-                item = next((i for i in self.items_on_board[loc] if i["id"] == item_id), None)
-                if item:
-                    self.items_on_board[loc].remove(item)
-                    if self.perk_deck:
-                        perk = self.perk_deck.pop(0)
-                        h_state["perks"].append(perk)
-                        self.add_log(f"{player_name} discarded {item['name']} from {loc} and drew Perk: {perk['name']}.")
-                    h_state["ability_used"] = True
-                    return True
-                    
-        elif hero_class == "Tinkerer":
-            i1_id = args.get("item1_id")
-            i2_id = args.get("item2_id")
-            i1 = next((i for i in h_state["items"] if i["id"] == i1_id), None)
-            i2 = next((i for i in h_state["items"] if i["id"] == i2_id), None)
-            if i1 and i2:
-                combined_strength = min(5, i1["strength"] + i2["strength"])
-                h_state["items"].remove(i1)
-                h_state["items"].remove(i2)
-                combo_item = {
-                    "id": f"combo_{str(uuid.uuid4())[:4]}",
-                    "name": f"Modified {i1['name']}",
-                    "color": i1["color"],
-                    "strength": combined_strength,
-                    "location": h_state["location"]
-                }
-                h_state["items"].append(combo_item)
+            target_hero = self.heroes_state.get(target_hero_name)
+            if not target_hero:
+                return False
+                
+            if target_hero["location"] != h_state["location"]:
+                self.add_log("The Guardian must be in the same location as the guided hero.")
+                return False
+                
+            adjacent = ADJACENCY_LIST.get(h_state["location"], [])
+            if target_loc not in adjacent:
+                self.add_log(f"Target location {target_loc} is not adjacent.")
+                return False
+                
+            target_hero["location"] = target_loc
+            h_state["ability_used"] = True
+            self.add_log(f"The Guardian guided {target_hero_name} to {target_loc} (0 AP).")
+            return True
+            
+        elif hero_class == "The Investigator":
+            discard1_id = args.get("discard1_id")
+            discard2_id = args.get("discard2_id")
+            claim_id = args.get("claim_id")
+            
+            if not discard1_id or not discard2_id or not claim_id:
+                return False
+                
+            i1 = next((i for i in h_state["items"] if i["id"] == discard1_id), None)
+            i2 = next((i for i in h_state["items"] if i["id"] == discard2_id), None)
+            claim_item = next((i for i in self.discarded_items if i["id"] == claim_id), None)
+            
+            if not i1 or not i2 or not claim_item or i1 == i2:
+                self.add_log("Invalid items selected for Investigator action.")
+                return False
+                
+            h_state["items"].remove(i1)
+            h_state["items"].remove(i2)
+            self.discarded_items.append(i1)
+            self.discarded_items.append(i2)
+            
+            self.discarded_items.remove(claim_item)
+            h_state["items"].append(claim_item)
+            
+            h_state["ability_used"] = True
+            self.add_log(f"The Investigator discarded {i1['name']} and {i2['name']} to retrieve {claim_item['name']} from the discard pile.")
+            return True
+            
+        elif hero_class == "The Buccaneer":
+            discard_id = args.get("discard_id")
+            if not discard_id:
+                return False
+                
+            item = next((i for i in h_state["items"] if i["id"] == discard_id), None)
+            if not item:
+                return False
+                
+            h_state["items"].remove(item)
+            self.discarded_items.append(item)
+            
+            h_state["ap"] += 4
+            h_state["max_ap"] += 4
+            h_state["ability_used"] = True
+            self.add_log(f"The Buccaneer discarded {item['name']} to gain +4 AP this turn.")
+            return True
+            
+        elif hero_class == "The Fortune Teller":
+            if self.deck:
+                top_card = self.deck[-1]
+                self.add_log(f"[The Fortune Teller] Peaked at the top Monster Card: {top_card['name']} (Spawns {top_card['spawn']} items).")
                 h_state["ability_used"] = True
-                self.add_log(f"{player_name} combined {i1['name']} and {i2['name']} into a Strength {combined_strength} {i1['color']} item!")
                 return True
+            else:
+                self.add_log("No cards left in the Monster deck.")
+                return False
                 
         return False
 
@@ -972,6 +1019,11 @@ class GameRoom:
         self.active_perks_limit.clear()
         
         if self.game_phase == "MonsterPhase":
+            # Reset Buccaneer's max_ap back to 3 at turn start
+            for p_name, h_st in self.heroes_state.items():
+                if h_st["hero"] == "The Buccaneer":
+                    h_st["max_ap"] = 3
+                    
             self.turn_player_idx = (self.turn_player_idx + 1) % len(self.players)
             next_player = self.players[self.turn_player_idx]["name"]
             max_ap = self.heroes_state[next_player]["max_ap"]
@@ -1136,6 +1188,7 @@ class GameRoom:
                 if h_state["items"]:
                     h_state["items"].sort(key=lambda i: i["strength"])
                     discarded = h_state["items"].pop(0)
+                    self.discarded_items.append(discarded)
                     self.add_log(f"{hero_name} discarded {discarded['name']} to absorb 1 Hit.")
                 else:
                     self.terror_level = min(10, self.terror_level + 1)
@@ -1212,7 +1265,7 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
         is_host = len(room.players) == 0
         player = {
             "name": player_name,
-            "hero": "Adventurer",
+            "hero": "The Guardian",
             "is_host": is_host,
             "ws": websocket
         }

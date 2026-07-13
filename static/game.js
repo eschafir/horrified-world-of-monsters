@@ -9,11 +9,11 @@ let gameState = null;
 let selectedAction = null; // Track currently clicked action mode
 let selectedItemsForAction = []; // Track item selections for trades/scaffold
 let destinationNodeSelection = null; // Track movement target
-let chosenHero = "Adventurer";
+let chosenHero = "The Guardian";
 let dragType = null;
 let dragLocName = null;
 
-const HEROES_LIST = ["Adventurer", "Detective", "Explorer", "Scholar", "Tinkerer"];
+const HEROES_LIST = ["The Guardian", "The Investigator", "The Buccaneer", "The Fortune Teller", "The Parapsychologist"];
 
 // ---------------------------------------------------------
 // ELEMENT SELECTORS
@@ -181,11 +181,11 @@ function renderHeroSelectOptions() {
         card.className = `hero-card ${chosenHero === hero ? "selected" : ""}`;
         
         let desc = "";
-        if (hero === "Adventurer") desc = "Can teleport to join any hero's location.";
-        else if (hero === "Detective") desc = "Reveal secrets (lairs/deck top) for free.";
-        else if (hero === "Explorer") desc = "Moves 1 extra step per Move action.";
-        else if (hero === "Scholar") desc = "Discards items to draw Perk cards.";
-        else if (hero === "Tinkerer") desc = "Combines items to add strengths.";
+        if (hero === "The Guardian") desc = "Start: Arcane Forge (5 Actions). Guide a Hero without taking an action.";
+        else if (hero === "The Investigator") desc = "Start: South Station (4 Actions). Swap two items for one from discard.";
+        else if (hero === "The Buccaneer") desc = "Start: The Scuttled Siren (3 Actions). Discard 1 item to gain +4 actions.";
+        else if (hero === "The Fortune Teller") desc = "Start: The Fool's Journey (4 Actions). View top Monster Card for free.";
+        else if (hero === "The Parapsychologist") desc = "Start: Weir's Observatory (4 Actions). Distribute items to players anywhere.";
 
         card.innerHTML = `
             <h5>${hero}</h5>
@@ -299,11 +299,11 @@ function renderPlayerPanel() {
     document.getElementById("player-panel-title").innerText = `My Hero: ${myState.hero}`;
     
     let abilityDesc = "";
-    if (myState.hero === "Adventurer") abilityDesc = "Once per turn: Teleport to any hero's location (1 AP).";
-    else if (myState.hero === "Detective") abilityDesc = "Once per turn: Reveal a lair or top deck card (0 AP).";
-    else if (myState.hero === "Explorer") abilityDesc = "Passive: Move 1 extra step per Move action.";
-    else if (myState.hero === "Scholar") abilityDesc = "Once per turn: Discard any item on the board to draw a Perk card (0 AP).";
-    else if (myState.hero === "Tinkerer") abilityDesc = "Once per turn: Combine two items in hand to add their strength (0 AP).";
+    if (myState.hero === "The Guardian") abilityDesc = "Guide: Move a hero at your location to adjacent (0 AP).";
+    else if (myState.hero === "The Investigator") abilityDesc = "Special: Discard 2 items to take 1 from Discard Pile (0 AP).";
+    else if (myState.hero === "The Buccaneer") abilityDesc = "Special: Discard 1 item at turn start to gain +4 AP (0 AP).";
+    else if (myState.hero === "The Fortune Teller") abilityDesc = "Special: Peak at the top Monster card (0 AP).";
+    else if (myState.hero === "The Parapsychologist") abilityDesc = "Special: Send items in hand to players anywhere (0 AP).";
 
     document.getElementById("player-ability").innerText = abilityDesc;
 
@@ -1191,87 +1191,140 @@ document.getElementById("action-defeat").addEventListener("click", () => {
 // Special power action
 document.getElementById("action-special").addEventListener("click", () => {
     const myState = gameState.heroes_state[playerName];
-    
-    if (myState.hero === "Adventurer") {
-        // Choose player to teleport to
-        let html = `<h3>Adventurer Teleport</h3><p>Choose a hero to join at their location</p><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">`;
+    if (!myState) return;
+
+    if (myState.hero === "The Guardian") {
+        const otherHeroes = [];
         for (const name in gameState.heroes_state) {
-            if (name !== playerName) {
-                html += `<button class="btn btn-secondary" onclick="triggerSpecialAdventurer('${name}')" style="width:100%; margin-bottom:8px;">Join ${name} at ${gameState.heroes_state[name].location}</button>`;
+            if (name !== playerName && gameState.heroes_state[name].location === myState.location) {
+                otherHeroes.push(name);
             }
         }
-        elModalBody.innerHTML = html;
-        elModalContainer.classList.remove("hidden");
+        const adjacent = gameState.adjacency_list[myState.location] || [];
         
-    } else if (myState.hero === "Detective") {
-        // Choose to reveal deck or lair
-        let html = `<h3>Detective Secret Intel</h3><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">
-            <button class="btn btn-primary" onclick="triggerSpecialDetective('lair')" style="width:100%; margin-bottom:10px;">Reveal Next Lair Token</button>
-            <button class="btn btn-secondary" onclick="triggerSpecialDetective('deck')" style="width:100%;">Peak Top Monster Deck Card</button>
-        `;
-        elModalBody.innerHTML = html;
-        elModalContainer.classList.remove("hidden");
-        
-    } else if (myState.hero === "Scholar") {
-        // Choose item on board to discard
-        let html = `<h3>Scholar Archive Discard</h3><p>Select any item on the board to discard in exchange for a Perk Card</p><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">`;
-        let count = 0;
-        for (const loc in gameState.items_on_board) {
-            gameState.items_on_board[loc].forEach(item => {
-                count++;
-                html += `
-                    <div style="margin: 8px 0; display:flex; justify-content:space-between; align-items:center;">
-                        <span>${item.name} at ${loc}</span>
-                        <button class="btn btn-secondary btn-small" onclick="triggerSpecialScholar('${item.id}', '${loc}')">Discard</button>
-                    </div>
-                `;
-            });
-        }
-        if (count === 0) {
-            html += `<p>No items currently on the board to discard.</p>`;
-        }
-        elModalBody.innerHTML = html;
-        elModalContainer.classList.remove("hidden");
-        
-    } else if (myState.hero === "Tinkerer") {
-        // Combine 2 items in inventory
-        if (myState.items.length < 2) {
-            alert("Tinkerer needs at least 2 items in inventory to combine.");
+        if (otherHeroes.length === 0) {
+            alert("There are no other heroes at your location to Guide.");
             return;
         }
-        let html = `<h3>Tinkerer Modification</h3><p>Select 2 items to combine into 1 stronger item (Sum of strengths, max 5)</p><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">`;
-        myState.items.forEach(item => {
-            html += `<label style="display:block; margin:6px 0;"><input type="checkbox" class="tinker-combine" value="${item.id}"> ${item.name} (${item.color} ${item.strength})</label>`;
+        let html = `<h3>The Guardian: Guide Hero</h3><p>Guide a hero at your location to an adjacent location (0 AP).</p><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">`;
+        html += `<label style="display:block; margin-bottom:8px;">Choose Hero: <select id="guardian-target-hero" style="width:100%; background:#1b152d; color:#fff; border:1px solid #4a3b70; padding:6px; border-radius:4px; margin-top:4px;">`;
+        otherHeroes.forEach(name => {
+            html += `<option value="${name}">${name} (${gameState.heroes_state[name].hero})</option>`;
         });
-        html += `<button class="btn btn-primary" onclick="confirmTinker()" style="width:100%; margin-top:15px;">Combine Items</button>`;
+        html += `</select></label>`;
+        html += `<label style="display:block; margin-bottom:15px;">Target Location: <select id="guardian-target-loc" style="width:100%; background:#1b152d; color:#fff; border:1px solid #4a3b70; padding:6px; border-radius:4px; margin-top:4px;">`;
+        adjacent.forEach(loc => {
+            html += `<option value="${loc}">${loc}</option>`;
+        });
+        html += `</select></label>`;
+        html += `<button class="btn btn-primary" onclick="confirmGuardianGuide()" style="width:100%;">Guide Hero</button>`;
         elModalBody.innerHTML = html;
         elModalContainer.classList.remove("hidden");
-        
-    } else {
-        alert("Your hero has a passive special power and does not need to activate it.");
+
+    } else if (myState.hero === "The Investigator") {
+        if (myState.items.length < 2) {
+            alert("You must have at least 2 items in inventory to discard.");
+            return;
+        }
+        const discList = gameState.discarded_items || [];
+        if (discList.length === 0) {
+            alert("The discard pile is currently empty! Use Investigator power once some items are discarded.");
+            return;
+        }
+        let html = `<h3>The Investigator: Item Swap</h3><p>Discard 2 items from hand to retrieve 1 item from the discard pile (0 AP).</p><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">`;
+        html += `<h5>1. Select 2 items to discard:</h5>`;
+        myState.items.forEach(item => {
+            html += `<label style="display:block; margin:6px 0;"><input type="checkbox" class="investigator-discard" value="${item.id}"> ${item.name} (${item.color} ${item.strength})</label>`;
+        });
+        html += `<h5 style="margin-top:15px;">2. Select 1 item to retrieve:</h5>`;
+        html += `<select id="investigator-claim" style="width:100%; margin-bottom:15px; background:#1b152d; color:#fff; border:1px solid #4a3b70; padding:6px; border-radius:4px;">`;
+        discList.forEach(item => {
+            html += `<option value="${item.id}">${item.name} (${item.color} ${item.strength})</option>`;
+        });
+        html += `</select>`;
+        html += `<button class="btn btn-primary" onclick="confirmInvestigatorSwap()" style="width:100%;">Perform Swap</button>`;
+        elModalBody.innerHTML = html;
+        elModalContainer.classList.remove("hidden");
+
+    } else if (myState.hero === "The Buccaneer") {
+        if (myState.items.length === 0) {
+            alert("You have no items to discard.");
+            return;
+        }
+        let html = `<h3>The Buccaneer: Discard for Action</h3><p>Discard 1 item from your inventory to gain +4 AP this turn (0 AP).</p><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">`;
+        html += `<select id="buccaneer-discard" style="width:100%; margin-bottom:15px; background:#1b152d; color:#fff; border:1px solid #4a3b70; padding:6px; border-radius:4px;">`;
+        myState.items.forEach(item => {
+            html += `<option value="${item.id}">${item.name} (${item.color} ${item.strength})</option>`;
+        });
+        html += `</select>`;
+        html += `<button class="btn btn-primary" onclick="confirmBuccaneerDiscard()" style="width:100%;">Discard Item</button>`;
+        elModalBody.innerHTML = html;
+        elModalContainer.classList.remove("hidden");
+
+    } else if (myState.hero === "The Fortune Teller") {
+        // Peak card is simple: send directly
+        if (confirm("Would you like to use your Fortune Teller ability to peak at the top Monster card? (0 AP)")) {
+            sendMsg({ action: "special", args: {} });
+        }
+
+    } else if (myState.hero === "The Parapsychologist") {
+        if (myState.items.length === 0) {
+            alert("You have no items to distribute.");
+            return;
+        }
+        const otherPlayers = [];
+        for (const name in gameState.heroes_state) {
+            if (name !== playerName) {
+                otherPlayers.push(name);
+            }
+        }
+        if (otherPlayers.length === 0) {
+            alert("There are no other players in the room to distribute items to.");
+            return;
+        }
+        let html = `<h3>The Parapsychologist: Distribute Item</h3><p>Send an item from your hand to another player anywhere on the map (0 AP).</p><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">`;
+        html += `<label style="display:block; margin-bottom:8px;">Choose Item: <select id="para-item" style="width:100%; background:#1b152d; color:#fff; border:1px solid #4a3b70; padding:6px; border-radius:4px; margin-top:4px;">`;
+        myState.items.forEach(item => {
+            html += `<option value="${item.id}">${item.name} (${item.color} ${item.strength})</option>`;
+        });
+        html += `</select></label>`;
+        html += `<label style="display:block; margin-bottom:15px;">Choose Recipient: <select id="para-target" style="width:100%; background:#1b152d; color:#fff; border:1px solid #4a3b70; padding:6px; border-radius:4px; margin-top:4px;">`;
+        otherPlayers.forEach(name => {
+            html += `<option value="${name}">${name} (${gameState.heroes_state[name].hero})</option>`;
+        });
+        html += `</select></label>`;
+        html += `<button class="btn btn-primary" onclick="confirmParaDistribute()" style="width:100%;">Send Item</button>`;
+        elModalBody.innerHTML = html;
+        elModalContainer.classList.remove("hidden");
     }
 });
 
 // Special activation callback hooks
-window.triggerSpecialAdventurer = (targetHero) => {
-    sendMsg({ action: "special", args: { target_hero: targetHero } });
+window.confirmGuardianGuide = () => {
+    const targetHero = document.getElementById("guardian-target-hero").value;
+    const targetLoc = document.getElementById("guardian-target-loc").value;
+    sendMsg({ action: "special", args: { target_hero: targetHero, target_location: targetLoc } });
     elModalContainer.classList.add("hidden");
 };
-window.triggerSpecialDetective = (revealType) => {
-    sendMsg({ action: "special", args: { type: revealType } });
-    elModalContainer.classList.add("hidden");
-};
-window.triggerSpecialScholar = (itemId, location) => {
-    sendMsg({ action: "special", args: { item_id: itemId, location: location } });
-    elModalContainer.classList.add("hidden");
-};
-window.confirmTinker = () => {
-    const checked = Array.from(document.querySelectorAll(".tinker-combine:checked")).map(el => el.value);
+window.confirmInvestigatorSwap = () => {
+    const checked = Array.from(document.querySelectorAll(".investigator-discard:checked")).map(el => el.value);
     if (checked.length !== 2) {
-        alert("You must select exactly 2 items to combine!");
+        alert("You must select exactly 2 items to discard!");
         return;
     }
-    sendMsg({ action: "special", args: { item1_id: checked[0], item2_id: checked[1] } });
+    const claimId = document.getElementById("investigator-claim").value;
+    sendMsg({ action: "special", args: { discard1_id: checked[0], discard2_id: checked[1], claim_id: claimId } });
+    elModalContainer.classList.add("hidden");
+};
+window.confirmBuccaneerDiscard = () => {
+    const discardId = document.getElementById("buccaneer-discard").value;
+    sendMsg({ action: "special", args: { discard_id: discardId } });
+    elModalContainer.classList.add("hidden");
+};
+window.confirmParaDistribute = () => {
+    const itemId = document.getElementById("para-item").value;
+    const target = document.getElementById("para-target").value;
+    sendMsg({ action: "special", args: { item_id: itemId, target_hero: target } });
     elModalContainer.classList.add("hidden");
 };
 
