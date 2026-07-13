@@ -6,7 +6,10 @@ let socket = null;
 let playerName = "";
 let roomCode = "";
 let gameState = null;
-let selectedAction = null; // Track currently clicked action mode
+let selectedAction = null;
+let lastDrawnCardId = null;
+let isCardFlying = false;
+let pendingCardData = null;
 let selectedItemsForAction = []; // Track item selections for trades/scaffold
 let destinationNodeSelection = null; // Track movement target
 let chosenHero = "The Guardian";
@@ -315,9 +318,31 @@ function updateGameUI() {
         });
         document.getElementById("action-end-turn").disabled = !myTurn;
 
+        // Highlight active phase
+        const secActions = document.getElementById("sec-actions");
+        const secMonsterPhase = document.getElementById("sec-monster-phase");
+        if (secActions && secMonsterPhase) {
+            if (gameState.game_phase === "HeroPhase") {
+                secActions.classList.add("active-phase");
+                secMonsterPhase.classList.remove("active-phase");
+            } else if (gameState.game_phase === "MonsterPhase") {
+                secActions.classList.remove("active-phase");
+                secMonsterPhase.classList.add("active-phase");
+            } else {
+                secActions.classList.remove("active-phase");
+                secMonsterPhase.classList.remove("active-phase");
+            }
+        }
+
         // Render Sidebar lists (Inventory)
         renderPlayerPanel();
-        
+
+        // Render AP counter bar
+        renderApCounterBar();
+
+        // Render monster phase card
+        renderMonsterPhasePanel();
+
         // Render Active Monsters & Challenges
         renderMonstersStatusPanel();
 
@@ -371,6 +396,184 @@ function renderPlayerPanel() {
         });
     }
 }
+
+function renderApCounterBar() {
+    const el = document.getElementById("ap-counter-bar");
+    if (!el) return;
+    const myState = gameState.heroes_state[playerName];
+    if (!myState) { el.innerHTML = ""; return; }
+
+    const maxAp = myState.max_ap || 4;
+    const apLeft = typeof myState.ap === "number" ? myState.ap : maxAp;
+    const used = maxAp - apLeft;
+
+    el.innerHTML = "";
+    for (let i = 0; i < maxAp; i++) {
+        const dot = document.createElement("div");
+        dot.className = `ap-dot ${i < used ? "ap-dot-used" : "ap-dot-free"}`;
+        el.appendChild(dot);
+    }
+}
+
+function buildCardHTML(card, alreadyFlipped) {
+    const activationLines = Object.entries(card.activations)
+        .map(([name, info]) => {
+            const moves = Array.isArray(info) ? info[0] : info;
+            const dice  = Array.isArray(info) ? info[1] : info;
+            return `<span class="mp-activation">${name}: ${moves} move${moves !== 1 ? "s" : ""}, ${dice} die</span>`;
+        }).join("");
+    return `
+        <div class="mp-flip-container">
+            <div class="mp-card-inner${alreadyFlipped ? " flipped" : ""}" id="mp-card-inner">
+                <div class="mp-card-back">
+                    <img src="/Images/Monster_Card.png" alt="Monster Card">
+                </div>
+                <div class="mp-card-face">
+                    <div class="mp-card-title">${card.name}</div>
+                    <div class="mp-card-event">
+                        <span class="mp-event-title">${card.event_title}</span>
+                        <span class="mp-event-text">${card.event_text}</span>
+                    </div>
+                    <div class="mp-card-footer">
+                        <span class="mp-spawn">&#9733; Spawns ${card.spawn}</span>
+                        <div class="mp-activations">${activationLines}</div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+}
+
+function renderMonsterPhasePanel() {
+    const section = document.getElementById("sec-monster-phase");
+    if (!section) return;
+
+    // Update deck glow based on whether a draw is needed
+    const deckRight = document.querySelector(".deck-right");
+    if (deckRight) {
+        if (gameState.game_phase === "MonsterPhase" && !isCardFlying) {
+            deckRight.classList.add("monster-phase-active");
+        } else {
+            deckRight.classList.remove("monster-phase-active");
+        }
+    }
+
+    const card = gameState.current_card;
+
+    if (!card) {
+        if (!isCardFlying) {
+            const drawHint = gameState.game_phase === "MonsterPhase"
+                ? '<p class="phase-hint mp-draw-hint">&#9660; Click the Monster Deck to draw a card.</p>'
+                : '<p class="phase-hint">After ending your turn, click the Monster Deck to draw a card.</p>';
+            section.innerHTML = `<h4>Monster Phase</h4>${drawHint}`;
+            lastDrawnCardId = null;
+        }
+        return;
+    }
+
+    // If the card is in flight, store it but don't update the panel yet
+    if (isCardFlying) {
+        pendingCardData = card;
+        return;
+    }
+
+    const isNewCard = (card.id !== lastDrawnCardId);
+    lastDrawnCardId = card.id;
+
+    section.innerHTML = `<h4>Monster Phase</h4>` + buildCardHTML(card, !isNewCard);
+
+    if (isNewCard) {
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            const inner = document.getElementById("mp-card-inner");
+            if (inner) inner.classList.add("flipped");
+        }));
+    }
+}
+
+// ---- Card fly animation ----
+function animateCardFly(sourceEl, targetEl, onComplete) {
+    const src = sourceEl.getBoundingClientRect();
+    const tgt = targetEl.getBoundingClientRect();
+
+    const fly = document.createElement("div");
+    fly.className = "flying-card";
+    fly.style.cssText = `
+        position:fixed; left:${src.left}px; top:${src.top}px;
+        width:${src.width}px; height:${src.height}px;
+        z-index:9999; pointer-events:none;
+        border-radius:9px; overflow:hidden;
+        box-shadow:0 20px 50px rgba(0,0,0,0.9), 0 0 30px rgba(153,51,255,0.5);
+        transition:left 0.65s cubic-bezier(0.4,0,0.2,1),
+                   top 0.65s cubic-bezier(0.4,0,0.2,1),
+                   width 0.65s cubic-bezier(0.4,0,0.2,1),
+                   height 0.65s cubic-bezier(0.4,0,0.2,1),
+                   box-shadow 0.65s ease;
+    `;
+    fly.innerHTML = `<img src="/Images/Monster_Card.png" style="width:100%;height:100%;object-fit:cover;">`;
+    document.body.appendChild(fly);
+
+    const destW = 190;
+    const destH = 295;
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        fly.style.left   = `${tgt.left + (tgt.width - destW) / 2}px`;
+        fly.style.top    = `${tgt.top + 36}px`;
+        fly.style.width  = `${destW}px`;
+        fly.style.height = `${destH}px`;
+        fly.style.boxShadow = "0 8px 24px rgba(0,0,0,0.7), 0 0 18px rgba(153,51,255,0.4)";
+    }));
+
+    fly.addEventListener("transitionend", () => {
+        fly.remove();
+        onComplete();
+    }, { once: true });
+}
+
+// ---- Monster Deck click: draw during Monster Phase ----
+document.querySelector(".deck-right").addEventListener("click", () => {
+    if (!gameState || gameState.game_phase !== "MonsterPhase") return;
+    if (gameState.deck_count === 0) return;
+    if (isCardFlying) return;
+
+    isCardFlying = true;
+    pendingCardData = null;
+
+    // Pre-render the card back in the panel so it's ready to flip on arrival
+    const section = document.getElementById("sec-monster-phase");
+    if (section) {
+        section.innerHTML = `<h4>Monster Phase</h4><div class="mp-flip-container">
+            <div class="mp-card-inner" id="mp-card-inner">
+                <div class="mp-card-back"><img src="/Images/Monster_Card.png" alt="Monster Card"></div>
+                <div class="mp-card-face"></div>
+            </div>
+        </div>`;
+    }
+
+    const deckEl = document.querySelector(".deck-right");
+    const panelEl = document.getElementById("sec-monster-phase");
+
+    sendMsg({ action: "draw_monster_card" });
+
+    animateCardFly(deckEl, panelEl, () => {
+        isCardFlying = false;
+        document.querySelector(".deck-right")?.classList.remove("monster-phase-active");
+
+        const card = pendingCardData || gameState.current_card;
+        pendingCardData = null;
+
+        if (card) {
+            lastDrawnCardId = null; // force isNewCard on next render
+            const s = document.getElementById("sec-monster-phase");
+            if (s) {
+                s.innerHTML = `<h4>Monster Phase</h4>` + buildCardHTML(card, false);
+                lastDrawnCardId = card.id;
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    const inner = document.getElementById("mp-card-inner");
+                    if (inner) inner.classList.add("flipped");
+                }));
+            }
+        }
+    });
+});
 
 function renderMonstersStatusPanel() {
     const elMonContainer = document.getElementById("monsters-status-container");
@@ -1003,7 +1206,7 @@ function renderSVGMap() {
         for (const citName in gameState.citizens) {
             const cit = gameState.citizens[citName];
             if (cit.active && cit.location === locName) {
-                characters.push({ type: "citizen", name: citName, label: "C" });
+                characters.push({ type: "citizen", name: citName, label: "C", safe: cit.safe });
             }
         }
 
@@ -1074,6 +1277,11 @@ function renderSVGMap() {
                 charCircle.setAttribute("stroke", "#20e889");
                 charCircle.setAttribute("stroke-width", "2.5");
                 charCircle.setAttribute("filter", "drop-shadow(0 0 7px rgba(32,232,137,0.7))");
+                charCircle.style.cursor = "pointer";
+                charCircle.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    showCitizenInfo(char.name, char.safe);
+                });
             } else {
                 // Remaining monsters without portrait images (Jiangshi, Cthulhu)
                 charCircle.setAttribute("class", `token-character char-${char.type}`);
@@ -1178,6 +1386,20 @@ function showNodeInfo(locName) {
     }
 
     elModalBody.innerHTML = html;
+    elModalContainer.classList.remove("hidden");
+}
+
+function showCitizenInfo(citName, safeHaven) {
+    elModalBody.innerHTML = `
+        <div style="text-align: center; padding: 10px;">
+            <h3 style="color: #ffd533; font-size: 1.5rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px;">${citName}</h3>
+            <img src="/Images/Citizens/${citName}.svg" style="width: 120px; height: 120px; margin-bottom: 15px; filter: drop-shadow(0 0 10px rgba(32,232,137,0.7)); border-radius: 50%; border: 3px solid #20e889; object-fit: cover; background: rgba(255,255,255,0.05);">
+            <p style="font-size: 1.15rem; color: #e0d0ff;">
+                Safe Haven: <br><strong style="color: #20e889; font-size: 1.3rem;">${safeHaven}</strong>
+            </p>
+            <button class="btn btn-secondary" style="margin-top: 20px;" onclick="document.getElementById('modal-container').classList.add('hidden')">Close</button>
+        </div>
+    `;
     elModalContainer.classList.remove("hidden");
 }
 

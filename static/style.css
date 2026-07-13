@@ -600,14 +600,11 @@ body {
    MAIN GAME SCREEN
    --------------------------------------------------------- */
 .map-hud-top {
-    position: absolute;
-    top: 15px;
-    left: 50%;
-    transform: translateX(-50%);
     display: flex;
     align-items: center;
     gap: 20px;
     padding: 8px 25px;
+    margin-left: auto; /* push it to the right, or leave it just flexed */
     border-radius: 30px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(16, 10, 26, 0.7);
@@ -1119,6 +1116,17 @@ body {
     letter-spacing: 1px;
 }
 
+.sidebar-section.active-phase {
+    border: 2px solid #ffd533;
+    box-shadow: 0 0 15px rgba(255, 213, 51, 0.4);
+    transition: all 0.3s ease;
+}
+
+.sidebar-section.active-phase h4 {
+    color: #ffd533;
+    text-shadow: 0 0 8px rgba(255, 213, 51, 0.6);
+}
+
 /* Actions */
 .actions-grid {
     display: grid;
@@ -1545,4 +1553,187 @@ body {
     transform: scale(1.8);
     stroke-width: 3.5px !important;
     filter: drop-shadow(0 0 11px rgba(32, 232, 137, 0.95)) !important;
+}
+
+/* ---------------------------------------------------------
+   MONSTER PHASE DECK GLOW (draw prompt)
+   --------------------------------------------------------- */
+.deck-right.monster-phase-active .card-stack {
+    animation: mp-deck-pulse 1.4s ease-in-out infinite;
+    cursor: pointer;
+}
+
+@keyframes mp-deck-pulse {
+    0%, 100% { box-shadow: 0 8px 20px rgba(0,0,0,0.7), 0 0 10px rgba(153,51,255,0.3); }
+    50%       { box-shadow: 0 8px 30px rgba(0,0,0,0.5), 0 0 28px rgba(153,51,255,0.85), 0 0 8px rgba(255,255,255,0.12); }
+}
+
+.mp-draw-hint {
+    color: #c090ff !important;
+    font-style: normal !important;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    margin-top: 6px;
+    animation: hint-blink 1.4s ease-in-out infinite;
+}
+
+@keyframes hint-blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.55; }
+}
+
+/* ---------------------------------------------------------
+   AP ACTION COUNTER BAR
+   --------------------------------------------------------- */
+.ap-counter-bar {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 4px 0 10px;
+    min-height: 30px;
+}
+
+.ap-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.ap-dot-free {
+    background: rgba(153, 51, 255, 0.18);
+    border: 2px solid rgba(153, 51, 255, 0.6);
+    box-shadow: 0 0 8px rgba(153, 51, 255, 0.3);
+}
+
+.ap-dot-used {
+    background: rgba(255, 60, 60, 0.1);
+    border: 2px solid rgba(255, 60, 60, 0.35);
+    position: relative;
+}
+
+.ap-dot-used::after {
+    content: "✕";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: rgba(255, 80, 80, 0.55);
+    line-height: 1;
+}
+
+/* ---------------------------------------------------------
+   MONSTER PHASE CARD FLIP
+   --------------------------------------------------------- */
+.mp-flip-container {
+    perspective: 700px;
+    width: 190px;
+    height: 295px;
+    margin: 8px auto 0;
+}
+
+.mp-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mp-card-inner.flipped {
+    transform: rotateY(180deg);
+}
+
+.mp-card-back,
+.mp-card-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: 9px;
+    overflow: hidden;
+}
+
+.mp-card-back {
+    background: #06000e;
+    border: 1px solid rgba(153, 51, 255, 0.3);
+    transform: rotateY(0deg);
+}
+
+.mp-card-back img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.88;
+}
+
+.mp-card-face {
+    transform: rotateY(180deg);
+    background: linear-gradient(160deg, #120820 0%, #070310 100%);
+    border: 1px solid rgba(153, 51, 255, 0.22);
+    padding: 10px 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mp-card-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #e0d0ff;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: 5px;
+}
+
+.mp-card-event {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+}
+
+.mp-event-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #ffd533;
+}
+
+.mp-event-text {
+    font-size: 0.7rem;
+    color: rgba(185, 165, 225, 0.82);
+    line-height: 1.35;
+    font-style: italic;
+}
+
+.mp-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 5px;
+    gap: 6px;
+}
+
+.mp-spawn {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #33ccff;
+    white-space: nowrap;
+}
+
+.mp-activations {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: flex-end;
+}
+
+.mp-activation {
+    font-size: 0.65rem;
+    color: rgba(255, 140, 50, 0.88);
+    text-align: right;
 }

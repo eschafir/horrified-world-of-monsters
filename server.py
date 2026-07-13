@@ -1096,32 +1096,36 @@ class GameRoom:
     def end_turn(self, player_name: str):
         if not self.check_turn(player_name):
             return
-            
-        self.game_phase = "MonsterPhase"
-        self.add_log(f"{player_name} ended their turn. Entering Monster Phase...")
-        
-        self.heroes_state[player_name]["ability_used"] = False
-        
-        asyncio.create_task(self.run_monster_phase())
 
-    async def run_monster_phase(self):
+        self.game_phase = "MonsterPhase"
+        self.add_log(f"{player_name} ended their turn. Click the Monster Deck to draw a card.")
+        self.heroes_state[player_name]["ability_used"] = False
+        # Monster phase is now triggered by the player drawing the card manually
+
+    async def run_monster_phase(self, broadcast_fn=None):
         if not self.deck:
             self.check_defeat("The Monster Card Deck has been exhausted!")
+            if broadcast_fn:
+                await broadcast_fn()
             return
-            
+
         card = self.deck.pop()
         self.current_card = card
         self.discard.append(card)
         self.add_log(f"Drew Monster Card: {card['name']} (Spawns {card['spawn']} items)")
-        
+
+        # Broadcast immediately so the card appears on clients
+        if broadcast_fn:
+            await broadcast_fn()
+
         for _ in range(card["spawn"]):
             self.spawn_item()
-            
-        await asyncio.sleep(2)
-        
+
+        await asyncio.sleep(1.5)
+
         await self.resolve_event(card)
-        await asyncio.sleep(2)
-        
+        await asyncio.sleep(1.5)
+
         for name, move_info in card["activations"].items():
             if name == "Frenzy":
                 active_monster = self.frenzy_marker
@@ -1129,21 +1133,25 @@ class GameRoom:
                     await self.activate_monster(active_monster, move_info[0], move_info[1])
             elif name in self.active_monsters:
                 await self.activate_monster(name, move_info[0], move_info[1])
-                
+
         self.active_perks_limit.clear()
-        
+
         if self.game_phase == "MonsterPhase":
             # Reset Buccaneer's max_ap back to 3 at turn start
             for p_name, h_st in self.heroes_state.items():
                 if h_st["hero"] == "The Buccaneer":
                     h_st["max_ap"] = 3
-                    
+
             self.turn_player_idx = (self.turn_player_idx + 1) % len(self.players)
             next_player = self.players[self.turn_player_idx]["name"]
             max_ap = self.heroes_state[next_player]["max_ap"]
             self.heroes_state[next_player]["ap"] = max_ap
             self.game_phase = "HeroPhase"
             self.add_log(f"It is now {next_player}'s turn! ({max_ap} AP)")
+
+        # Final broadcast after phase completes and turn advances
+        if broadcast_fn:
+            await broadcast_fn()
 
     async def resolve_event(self, card: Dict):
         ev = card["event_type"]
@@ -1450,7 +1458,13 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
                 
             elif action == "end_turn":
                 room.end_turn(player_name)
-                
+
+            elif action == "draw_monster_card":
+                if room.game_phase == "MonsterPhase":
+                    async def _bcast():
+                        await room_manager.broadcast_state(room_code)
+                    asyncio.create_task(room.run_monster_phase(_bcast))
+
             elif action == "chat":
                 text = msg.get("text")
                 if text:
