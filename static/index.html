@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Horrified: World of Monsters - Online</title>
-    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="style.css?v=9">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -150,11 +150,21 @@
                             </svg>
                             Monsters
                         </button>
-                        <button class="game-tab-btn" id="gtab-btn-hero" data-panel="gtab-panel-hero">
+                        <button class="game-tab-btn" id="gtab-btn-my-hero" data-panel="gtab-panel-my-hero">
                             <svg class="gtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
                             </svg>
                             My Hero
+                        </button>
+                        <button class="game-tab-btn" id="gtab-btn-hero" data-panel="gtab-panel-hero">
+                            <svg class="gtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                            Heroes
                         </button>
 
                         <!-- Floating Map HUD -->
@@ -189,40 +199,36 @@
                         </div>
                     </div>
 
-                    <!-- ACTIVE MONSTERS PANEL (collapsible) -->
-                    <div class="game-top-panel hidden" id="gtab-panel-monsters">
-                        <div id="monsters-status-container">
-                            <!-- Loaded dynamically -->
-                        </div>
-                    </div>
-
-                    <!-- MY HERO PANEL (collapsible) -->
-                    <div class="game-top-panel hidden" id="gtab-panel-hero">
-                        <div class="hero-tab-layout">
-                            <img id="hero-tab-portrait" src="" alt="" class="hero-tab-portrait-img">
-                            <div class="hero-tab-details">
-                                <h4 id="player-panel-title">My Hero</h4>
-                                <p class="ability-desc"><span id="player-ability">--</span></p>
-                                <div class="inventory-section">
-                                    <h5>Inventory</h5>
-                                    <div id="player-inventory" class="inventory-grid"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- MAP CONTAINER -->
                     <div class="board-container glass">
-                        <!-- Left Deck (Perks) -->
-                        <div class="deck-panel deck-left">
+                        <!-- ACTIVE MONSTERS PANEL (collapsible) -->
+                        <div class="game-top-panel hidden" id="gtab-panel-monsters">
+                            <div id="monsters-status-container">
+                                <!-- Loaded dynamically -->
+                            </div>
+                        </div>
+
+                        <div class="game-top-panel hidden" id="gtab-panel-my-hero">
+                            <div id="my-hero-status-container">
+                                <!-- Loaded dynamically -->
+                            </div>
+                        </div>
+
+                        <div class="game-top-panel hidden" id="gtab-panel-hero">
+                            <div id="heroes-status-container">
+                                <!-- Loaded dynamically -->
+                            </div>
+                        </div>
+                        <!-- Perk Deck (Right side, top) -->
+                        <div class="deck-panel deck-right-top">
                             <div class="deck-title">Perk Deck</div>
                             <div class="card-stack perks-stack">
                                 <div class="card-back perk-card-back"></div>
                             </div>
                         </div>
 
-                        <!-- Right Deck (Monsters) -->
-                        <div class="deck-panel deck-right">
+                        <!-- Monster Deck (Right side, bottom) -->
+                        <div class="deck-panel deck-right-bottom deck-right">
                             <div class="deck-title">Monster Deck</div>
                             <div class="card-stack monsters-stack">
                                 <div class="card-back monster-card-back"></div>
@@ -295,6 +301,6 @@
         </div>
     </div>
     
-    <script src="game.js?v=42"></script>
+    <script src="game.js?v=61"></script>
 </body>
 </html>

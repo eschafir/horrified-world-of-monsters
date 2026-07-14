@@ -25,6 +25,10 @@ let panY = 0;
 const baseWidth = 1304;
 const baseHeight = 1206;
 
+// Side Panel Carousel Indices
+let currentHeroTabIndex = 0;
+let currentMonsterTabIndex = 0;
+
 const HEROES_LIST = ["The Guardian", "The Investigator", "The Buccaneer", "The Fortune Teller", "The Parapsychologist"];
 
 // ---------------------------------------------------------
@@ -183,6 +187,7 @@ function setupConnection(isHost) {
     socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if (data.type === "state") {
+            detectAndAnimatePerkCardDraws(data.state);
             gameState = data.state;
             if (gameState.game_phase !== "MonsterPhase") {
                 hasDrawnThisPhase = false;
@@ -205,47 +210,111 @@ function setupConnection(isHost) {
     };
 }
 
+function findItemInGameState(itemId) {
+    if (!gameState) return null;
+    if (gameState.items_on_board) {
+        for (const loc in gameState.items_on_board) {
+            const item = gameState.items_on_board[loc].find(i => i.id === itemId);
+            if (item) return item;
+        }
+    }
+    if (gameState.heroes_state) {
+        for (const name in gameState.heroes_state) {
+            const item = gameState.heroes_state[name].items.find(i => i.id === itemId);
+            if (item) return item;
+        }
+    }
+    return null;
+}
+
 function animateRemoteItemPickup(remotePlayerName, locationId, itemIds) {
     if (!gameState) return;
     
-    const remoteHero = gameState.players.find(p => p.name === remotePlayerName)?.hero;
-    if (!remoteHero) return;
+    const startCoord = gameState.node_coordinates[locationId];
+    if (!startCoord) return;
+    const screenStart = getScreenCoordsOfSVGPoint(startCoord.x, startCoord.y);
     
-    const heroEl = document.getElementById(`hero-${remoteHero.replace(/\\s+/g, '-')}`);
-    if (!heroEl) return;
+    const playerTokenEl = document.getElementById("map-hero-" + remotePlayerName.replace(/ /g, "_"));
+    if (!playerTokenEl) return;
+    const screenEnd = playerTokenEl.getBoundingClientRect();
+    
+    const targetSvgX = parseFloat(playerTokenEl.getAttribute("cx")) || startCoord.x;
+    const targetSvgY = parseFloat(playerTokenEl.getAttribute("cy")) || startCoord.y;
     
     itemIds.forEach((itemId, idx) => {
+        const item = findItemInGameState(itemId);
+        if (!item) return;
+        const itemColor = item.color;
+        const itemStrength = item.strength;
+        const itemName = item.name;
+        
         setTimeout(() => {
-            const flyToken = document.createElement("div");
-            flyToken.style.cssText = `
-                position: fixed; z-index: 9999; pointer-events: none;
-                width: 25px; height: 25px; border-radius: 50%;
-                background: radial-gradient(circle at top left, #ffd533, #d4af37);
-                box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+            const fly = document.createElement("div");
+            fly.className = "flying-item-token";
+            
+            const colorMap = {
+                blue: "#33ccff",
+                red: "#ff3366",
+                yellow: "#ffd533"
+            };
+            const circleColor = colorMap[itemColor.toLowerCase()] || "#a491c3";
+
+            fly.style.cssText = `
+                position: fixed;
+                left: ${screenStart.left - 12}px;
+                top: ${screenStart.top - 12}px;
+                width: 24px;
+                height: 24px;
+                background: ${circleColor};
                 border: 2px solid #fff;
-                transition: all 0.6s cubic-bezier(0.2, 0, 0.2, 1);
-                display: flex; justify-content: center; align-items: center;
-                color: black; font-weight: bold; font-size: 10px;
+                border-radius: 50%;
+                color: #000;
+                font-family: sans-serif;
+                font-size: 11px;
+                font-weight: bold;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                pointer-events: none;
+                box-shadow: 0 0 12px ${circleColor}, 0 4px 10px rgba(0,0,0,0.5);
+                transition: left 0.7s cubic-bezier(0.25, 1, 0.5, 1),
+                            top 0.7s cubic-bezier(0.25, 1, 0.5, 1),
+                            transform 0.7s cubic-bezier(0.25, 1, 0.5, 1),
+                            opacity 0.7s ease;
             `;
-            flyToken.innerText = "?";
-            document.body.appendChild(flyToken);
+            fly.textContent = itemStrength;
             
-            const heroRect = heroEl.getBoundingClientRect();
+            const labelSpan = document.createElement("span");
+            labelSpan.textContent = itemName;
+            labelSpan.style.cssText = `
+                position: absolute;
+                top: 28px;
+                white-space: nowrap;
+                background: rgba(27, 21, 45, 0.9);
+                color: #e5d4ff;
+                font-size: 10px;
+                padding: 2px 6px;
+                border-radius: 3px;
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            `;
+            fly.appendChild(labelSpan);
             
-            flyToken.style.left = `${heroRect.left - 40}px`;
-            flyToken.style.top = `${heroRect.top - 40}px`;
+            document.body.appendChild(fly);
             
             requestAnimationFrame(() => requestAnimationFrame(() => {
-                flyToken.style.left = `${heroRect.left + 10}px`;
-                flyToken.style.top = `${heroRect.top + 10}px`;
-                flyToken.style.transform = "scale(0.3)";
-                flyToken.style.opacity = "0";
+                fly.style.left = `${screenEnd.left + screenEnd.width / 2 - 12}px`;
+                fly.style.top = `${screenEnd.top + screenEnd.height / 2 - 12}px`;
+                fly.style.transform = "scale(0.8)";
+                fly.style.opacity = "0.5";
             }));
             
-            flyToken.addEventListener("transitionend", () => {
-                flyToken.remove();
+            fly.addEventListener("transitionend", () => {
+                fly.remove();
+                triggerNodePulse(targetSvgX, targetSvgY, 16, circleColor, 2.5, 3.0);
             }, { once: true });
-        }, idx * 200); // Stagger animations if picking up multiple
+        }, idx * 150);
     });
 }
 
@@ -420,68 +489,254 @@ function updateGameUI() {
 // ---------------------------------------------------------
 
 function renderPlayerPanel() {
-    const myState = gameState.heroes_state[playerName];
-    if (!myState) return;
-
-    document.getElementById("player-panel-title").innerText = myState.hero;
-
-    const portrait = document.getElementById("hero-tab-portrait");
-    if (portrait) {
-        portrait.src = `/Images/Heroes/${myState.hero} Image.png`;
-        portrait.alt = myState.hero;
-    }
+    const elMyHeroContainer = document.getElementById("my-hero-status-container");
+    const elHeroesContainer = document.getElementById("heroes-status-container");
     
-    let abilityDesc = "";
-    if (myState.hero === "The Guardian") abilityDesc = "Guide: Move a hero at your location to adjacent (0 AP).";
-    else if (myState.hero === "The Investigator") abilityDesc = "Special: Discard 2 items to take 1 from Discard Pile (0 AP).";
-    else if (myState.hero === "The Buccaneer") abilityDesc = "Special: Discard 1 item at turn start to gain +4 AP (0 AP).";
-    else if (myState.hero === "The Fortune Teller") abilityDesc = "Special: Peak at the top Monster card (0 AP).";
-    else if (myState.hero === "The Parapsychologist") abilityDesc = "Special: Send items in hand to players anywhere (0 AP).";
+    // ------------------------------------
+    // 1. RENDER CURRENT PLAYER'S HERO (My Hero)
+    // ------------------------------------
+    if (elMyHeroContainer) {
+        elMyHeroContainer.innerHTML = "";
+        const myState = gameState.heroes_state[playerName];
+        if (myState) {
+            const heroClass = myState.hero;
+            const loc = myState.location;
+            const portrait = `/Images/Heroes/${heroClass} Image.png`;
+            
+            let abilityDesc = "";
+            if (heroClass === "The Guardian") abilityDesc = "Guide: Move a hero at your location to adjacent (0 AP).";
+            else if (heroClass === "The Investigator") abilityDesc = "Special: Discard 2 items to take 1 from Discard Pile (0 AP).";
+            else if (heroClass === "The Buccaneer") abilityDesc = "Special: Discard 1 item at turn start to gain +4 AP (0 AP).";
+            else if (heroClass === "The Fortune Teller") abilityDesc = "Special: Peak at the top Monster card (0 AP).";
+            else if (heroClass === "The Parapsychologist") abilityDesc = "Special: Send items in hand to players anywhere (0 AP).";
 
-    document.getElementById("player-ability").innerText = abilityDesc;
+            const card = document.createElement("div");
+            card.className = "hero-status-card me-card";
+            card.style.width = "100%";
 
-    const elInv = document.getElementById("player-inventory");
-    elInv.innerHTML = "";
-    
-    if (myState.items.length === 0 && myState.perks.length === 0) {
-        elInv.innerHTML = `<p style="font-size: 0.8rem; color: #a491c3; text-align: center;">Empty Inventory</p>`;
-    } else {
-        myState.items.forEach(item => {
-            const row = document.createElement("div");
-            const isSelected = selectedItemsForAction.includes(item.id);
-            row.className = `item-row ${item.color.toLowerCase()} ${isSelected ? 'selected' : ''}`;
-            row.style.cursor = "pointer";
-            if (isSelected) row.style.boxShadow = "0 0 8px #ffd533";
-            row.innerHTML = `
-                <span>${item.name}</span>
-                <span class="item-val">${item.color} ${item.strength}</span>
-            `;
-            row.addEventListener("click", () => {
-                if (isSelected) {
-                    selectedItemsForAction = selectedItemsForAction.filter(id => id !== item.id);
-                } else {
-                    selectedItemsForAction.push(item.id);
-                }
-                updateGameUI();
-            });
-            elInv.appendChild(row);
-        });
-        
-        myState.perks.forEach(perk => {
-            const row = document.createElement("div");
-            row.className = `item-row perk-row`;
-            row.style.cssText = "background: rgba(153, 51, 255, 0.15); border-left: 3px solid #9933ff; flex-direction: column; align-items: flex-start; gap: 4px; padding: 8px;";
-            row.innerHTML = `
-                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-                    <strong style="color: #ffd533; font-size: 0.85rem; letter-spacing: 0.5px;">${perk.name}</strong>
-                    <button class="btn-hud" style="font-size: 0.7rem; padding: 3px 8px; cursor: pointer;" onclick="playPerkCard('${perk.id}', '${perk.name}')">Play</button>
+            let itemsHtml = "";
+            if (myState.items && myState.items.length > 0) {
+                myState.items.forEach(item => {
+                    const isSelected = selectedItemsForAction.includes(item.id);
+                    itemsHtml += `
+                        <div class="item-row ${item.color.toLowerCase()} ${isSelected ? 'selected' : ''}" 
+                             style="cursor: pointer; margin: 3px 0; display:flex; justify-content:space-between; ${isSelected ? 'box-shadow: 0 0 8px #ffd533;' : ''}"
+                             onclick="toggleHeroItemSelection('${item.id}')">
+                            <span>${item.name}</span>
+                            <span class="item-val">${item.color} ${item.strength}</span>
+                        </div>
+                    `;
+                });
+            } else {
+                itemsHtml = `<p style="font-size: 0.72rem; color: #a491c3; font-style: italic; margin: 2px 0;">No items</p>`;
+            }
+
+            let perksHtml = "";
+            if (myState.perks && myState.perks.length > 0) {
+                myState.perks.forEach(perk => {
+                    perksHtml += `
+                        <div class="item-row perk-row" style="background: rgba(153, 51, 255, 0.15); border-left: 3px solid #9933ff; flex-direction: column; align-items: flex-start; gap: 4px; padding: 6px; width: 100%; margin: 3px 0;">
+                            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                                <strong style="color: #ffd533; font-size: 0.8rem; letter-spacing: 0.5px;">${perk.name}</strong>
+                                <button class="btn-hud" style="font-size: 0.65rem; padding: 2px 6px; cursor: pointer;" onclick="playPerkCard('${perk.id}', '${perk.name}')">Play</button>
+                            </div>
+                            <div style="font-size: 0.7rem; color: #e0d0ff; line-height: 1.2;">${perk.text}</div>
+                        </div>
+                    `;
+                });
+            }
+
+            card.innerHTML = `
+                <div class="hero-card-header" style="display:flex; flex-direction:column; align-items:center; gap:8px; margin-bottom:8px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom:8px; text-align:center;">
+                    <div class="hero-card-portrait" style="width:120px; height:120px; border-radius:50%; border:3px solid #ffd533; box-shadow: 0 0 15px rgba(255,213,51,0.4); overflow:hidden; flex-shrink:0; margin:0;">
+                        <img src="${portrait}" alt="${heroClass}" style="width:100%; height:100%; object-fit:cover;">
+                    </div>
+                    <div style="width:100%; display:flex; flex-direction:column; align-items:center; gap:4px;">
+                        <h5 style="margin:0; font-size:1rem; color:#fff; display:flex; align-items:center; justify-content:center; gap:5px; white-space:nowrap;">
+                            <span>${heroClass}</span>
+                            <span style="font-size:0.75rem; color:#ffd533; font-weight:bold;">(Me)</span>
+                        </h5>
+                        <div style="font-size:0.75rem; color:#b0a0cf; display:flex; align-items:center; justify-content:center; gap:6px; width:100%;">
+                            <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px;">&#128205; ${loc}</span>
+                            <button class="btn btn-secondary btn-small" style="font-size:0.65rem; padding:2px 6px; flex-shrink:0;" onclick="locateHero('${playerName}')">Locate</button>
+                        </div>
+                    </div>
                 </div>
-                <div style="font-size: 0.75rem; color: #e0d0ff; line-height: 1.3;">${perk.text}</div>
+                <div class="hero-card-body" style="display:flex; flex-direction:column; gap:6px;">
+                    <p style="font-size: 0.72rem; color: #e0d0ff; margin:0; line-height:1.3; font-style:italic; text-align:center;">${abilityDesc}</p>
+                    <div style="margin-top:4px;">
+                        <div style="font-size: 0.72rem; font-weight:700; color:#a491c3; margin-bottom:4px;">Inventory / Perks:</div>
+                        <div style="display:flex; flex-direction:column; gap:2px; width:100%;">
+                            ${itemsHtml}
+                            ${perksHtml}
+                        </div>
+                    </div>
+                </div>
             `;
-            elInv.appendChild(row);
-        });
+            elMyHeroContainer.appendChild(card);
+        }
+    }
+
+    // ------------------------------------
+    // 2. RENDER OTHER HEROES (Heroes carousel)
+    // ------------------------------------
+    if (elHeroesContainer) {
+        elHeroesContainer.innerHTML = "";
+        
+        const activeHeroes = Object.keys(gameState.heroes_state || {}).filter(name => name !== playerName);
+        
+        if (activeHeroes.length === 0) {
+            elHeroesContainer.innerHTML = `<p style="font-size: 0.8rem; color: #a491c3; text-align: center; font-style: italic; margin-top: 10px;">No other heroes in the game</p>`;
+            return;
+        }
+
+        if (currentHeroTabIndex >= activeHeroes.length) {
+            currentHeroTabIndex = Math.max(0, activeHeroes.length - 1);
+        }
+
+        const pName = activeHeroes[currentHeroTabIndex];
+        const hState = gameState.heroes_state[pName];
+        const heroClass = hState.hero;
+        const loc = hState.location;
+        const portrait = `/Images/Heroes/${heroClass} Image.png`;
+        
+        let abilityDesc = "";
+        if (heroClass === "The Guardian") abilityDesc = "Guide: Move a hero at your location to adjacent (0 AP).";
+        else if (heroClass === "The Investigator") abilityDesc = "Special: Discard 2 items to take 1 from Discard Pile (0 AP).";
+        else if (heroClass === "The Buccaneer") abilityDesc = "Special: Discard 1 item at turn start to gain +4 AP (0 AP).";
+        else if (heroClass === "The Fortune Teller") abilityDesc = "Special: Peak at the top Monster card (0 AP).";
+        else if (heroClass === "The Parapsychologist") abilityDesc = "Special: Send items in hand to players anywhere (0 AP).";
+
+        const card = document.createElement("div");
+        card.className = "hero-status-card";
+        card.style.width = "100%";
+        
+        let itemsHtml = "";
+        if (hState.items && hState.items.length > 0) {
+            hState.items.forEach(item => {
+                itemsHtml += `
+                    <div class="item-row ${item.color.toLowerCase()}" 
+                         style="cursor: default; margin: 3px 0; display:flex; justify-content:space-between;">
+                        <span>${item.name}</span>
+                        <span class="item-val">${item.color} ${item.strength}</span>
+                    </div>
+                `;
+            });
+        } else {
+            itemsHtml = `<p style="font-size: 0.72rem; color: #a491c3; font-style: italic; margin: 2px 0;">No items</p>`;
+        }
+
+        let perksHtml = "";
+        if (hState.perks && hState.perks.length > 0) {
+            hState.perks.forEach(perk => {
+                perksHtml += `
+                    <div class="item-row perk-row" style="background: rgba(153, 51, 255, 0.15); border-left: 3px solid #9933ff; flex-direction: column; align-items: flex-start; gap: 4px; padding: 6px; width: 100%; margin: 3px 0;">
+                        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                            <strong style="color: #ffd533; font-size: 0.8rem; letter-spacing: 0.5px;">${perk.name}</strong>
+                        </div>
+                        <div style="font-size: 0.7rem; color: #e0d0ff; line-height: 1.2;">${perk.text}</div>
+                    </div>
+                `;
+            });
+        }
+
+        card.innerHTML = `
+            <div class="hero-card-header" style="display:flex; flex-direction:column; align-items:center; gap:8px; margin-bottom:8px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom:8px; text-align:center;">
+                <div class="hero-card-portrait" style="width:120px; height:120px; border-radius:50%; border:3px solid rgba(51, 204, 255, 0.55); box-shadow: 0 0 15px rgba(51, 204, 255, 0.3); overflow:hidden; flex-shrink:0; margin:0;">
+                    <img src="${portrait}" alt="${heroClass}" style="width:100%; height:100%; object-fit:cover;">
+                </div>
+                <div style="width:100%; display:flex; flex-direction:column; align-items:center; gap:3px;">
+                    <h5 style="margin:0; font-size:1rem; color:#fff; display:flex; align-items:center; justify-content:center; gap:5px; white-space:nowrap;">
+                        <span>${heroClass}</span>
+                    </h5>
+                    <div style="font-size:0.75rem; color:#a491c3;">
+                        Controlled by: <strong style="color:#ffd533;">${pName}</strong>
+                    </div>
+                    <div style="font-size:0.75rem; color:#b0a0cf; display:flex; align-items:center; justify-content:center; gap:6px; width:100%; margin-top:2px;">
+                        <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px;">&#128205; ${loc}</span>
+                        <button class="btn btn-secondary btn-small" style="font-size:0.65rem; padding:2px 6px; flex-shrink:0;" onclick="locateHero('${pName}')">Locate</button>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-card-body" style="display:flex; flex-direction:column; gap:6px;">
+                <p style="font-size: 0.72rem; color: #e0d0ff; margin:0; line-height:1.3; font-style:italic; text-align:center;">${abilityDesc}</p>
+                <div style="margin-top:4px;">
+                    <div style="font-size: 0.72rem; font-weight:700; color:#a491c3; margin-bottom:4px;">Inventory / Perks:</div>
+                    <div style="display:flex; flex-direction:column; gap:2px; width:100%;">
+                        ${itemsHtml}
+                        ${perksHtml}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        elHeroesContainer.appendChild(card);
+
+        const controls = document.createElement("div");
+        controls.className = "carousel-controls";
+        controls.style.cssText = "display:flex; justify-content:space-between; align-items:center; width:100%; margin-top:10px; padding:0 4px;";
+        controls.innerHTML = `
+            <button class="carousel-circle-btn" onclick="navigateHeroTab(-1)">&larr;</button>
+            <span style="font-size: 0.72rem; color: #a491c3; font-weight: 600; letter-spacing: 0.5px; user-select: none;">Hero ${currentHeroTabIndex + 1} of ${activeHeroes.length}</span>
+            <button class="carousel-circle-btn" onclick="navigateHeroTab(1)">&rarr;</button>
+        `;
+        elHeroesContainer.appendChild(controls);
     }
 }
+
+window.navigateHeroTab = (dir) => {
+    const activeHeroes = Object.keys(gameState.heroes_state || {}).filter(name => name !== playerName);
+    const total = activeHeroes.length;
+    if (total === 0) return;
+    
+    currentHeroTabIndex = (currentHeroTabIndex + dir + total) % total;
+    renderPlayerPanel();
+};
+
+window.toggleHeroItemSelection = (itemId) => {
+    if (selectedItemsForAction.includes(itemId)) {
+        selectedItemsForAction = selectedItemsForAction.filter(id => id !== itemId);
+    } else {
+        selectedItemsForAction.push(itemId);
+    }
+    updateGameUI();
+};
+
+window.locateHero = (pName) => {
+    const hState = gameState.heroes_state[pName];
+    if (!hState) return;
+    
+    const locName = hState.location;
+    const cth_track = gameState.monster_states && gameState.monster_states["Cthulhu"] && gameState.monster_states["Cthulhu"]["player_tracks"];
+    let finalLocName = locName;
+    if (cth_track && cth_track[pName] !== -1 && cth_track[pName] !== undefined) {
+        const trackIdx = cth_track[pName];
+        const trackNames = ["Entrance", "Gates of Madness", "Sea of Slumber", "Cthulhu's Heart"];
+        if (trackIdx >= 0 && trackIdx < trackNames.length) {
+            finalLocName = trackNames[trackIdx];
+        }
+    }
+
+    const coord = gameState.node_coordinates[finalLocName];
+    if (!coord) return;
+    
+    // Zoom navigation - only pan/zoom if already zoomed in
+    if (zoomLevel > 1.0) {
+        const w = baseWidth / zoomLevel;
+        const h = baseHeight / zoomLevel;
+        
+        // Center camera on coordinates
+        panX = coord.x - w / 2;
+        panY = coord.y - h / 2;
+        updateMapViewBox();
+    }
+    
+    // Trigger double ring pulse effect
+    triggerNodePulse(coord.x, coord.y, 35, "#ffd533", 4, 3.5);
+    setTimeout(() => {
+        triggerNodePulse(coord.x, coord.y, 55, "rgba(255, 213, 51, 0.6)", 3, 5.0);
+    }, 150);
+};
 
 function renderApCounterBar() {
     const el = document.getElementById("ap-counter-bar");
@@ -716,134 +971,154 @@ function renderMonstersStatusPanel() {
         return;
     }
 
-    const monsterPortraits = {
+    if (currentMonsterTabIndex >= allMonsters.length) {
+        currentMonsterTabIndex = Math.max(0, allMonsters.length - 1);
+    }
+
+    const m = allMonsters[currentMonsterTabIndex];
+    const isDefeated = defeated.includes(m);
+    const card = document.createElement("div");
+    card.className = `monster-status-card ${isDefeated ? "defeated" : ""}`;
+
+    const loc = (gameState.monster_locations && gameState.monster_locations[m]) || "Unknown";
+    const portrait = {
         "Yeti":     "/Images/Monsters/Yeti.png",
         "Sphinx":   "/Images/Monsters/Sphinx.png",
         "Jiangshi": "/Images/Monsters/Jiangshi.svg",
         "Cthulhu":  "/Images/Monsters/Cthulhu.svg"
-    };
-    const monsterAccents = {
+    }[m] || "";
+    const accent = {
         "Yeti":     { border: "rgba(51,204,255,0.6)",  glow: "rgba(51,204,255,0.3)"  },
         "Sphinx":   { border: "rgba(255,204,0,0.6)",   glow: "rgba(255,204,0,0.3)"   },
         "Jiangshi": { border: "rgba(255,51,102,0.6)",  glow: "rgba(255,51,102,0.3)"  },
         "Cthulhu":  { border: "rgba(153,51,255,0.6)",  glow: "rgba(153,51,255,0.3)"  }
+    }[m] || { border: "rgba(255,51,102,0.6)", glow: "rgba(255,51,102,0.3)" };
+
+    const frenzyValues = {
+        "Yeti": 1,
+        "Sphinx": 2,
+        "Jiangshi": 3,
+        "Cthulhu": 4
     };
+    const fVal = frenzyValues[m] || 0;
 
-    allMonsters.forEach(m => {
-        const isDefeated = defeated.includes(m);
-        const card = document.createElement("div");
-        card.className = `monster-status-card ${isDefeated ? "defeated" : ""}`;
-
-        const loc = (gameState.monster_locations && gameState.monster_locations[m]) || "Unknown";
-        const portrait = monsterPortraits[m] || "";
-        const accent = monsterAccents[m] || monsterAccents["Jiangshi"];
-
-        const frenzyValues = {
-            "Yeti": 1,
-            "Sphinx": 2,
-            "Jiangshi": 3,
-            "Cthulhu": 4
-        };
-        const fVal = frenzyValues[m] || 0;
-
-        let details = `
-            <div class="monster-card-header">
-                <div class="monster-card-portrait" style="border-color:${accent.border}; box-shadow: 0 0 9px ${accent.glow};">
-                    ${portrait ? `<img src="${portrait}" alt="${m}">` : ""}
-                </div>
-                <div class="monster-card-info">
-                    <h5>${m} <span class="monster-frenzy-badge" title="Frenzy Order: ${fVal}">⚡ ${fVal}</span></h5>
-                    <div class="monster-card-loc">&#128205; ${loc}</div>
-                </div>
+    let details = `
+        <div class="monster-card-header" style="display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom:8px; margin-bottom:8px;">
+            <div class="monster-card-portrait" style="width:120px; height:120px; border-radius:50%; border-color:${accent.border}; box-shadow: 0 0 15px ${accent.glow}; margin:0;">
+                ${portrait ? `<img src="${portrait}" alt="${m}">` : ""}
             </div>
-        `;
+            <div class="monster-card-info" style="width:100%;">
+                <h5 style="margin:0 0 4px 0; font-size:1rem;">${m} <span class="monster-frenzy-badge" title="Frenzy Order: ${fVal}">⚡ ${fVal}</span></h5>
+                <div class="monster-card-loc" style="font-size:0.75rem;">&#128205; ${loc}</div>
+            </div>
+        </div>
+    `;
+    
+    if (m === "Yeti") {
+        const y_state = gameState.monster_states["Yeti"];
+        const kids_left = y_state.children.filter(c => !c.rescued).length;
+        const found_lair = y_state.lairs.find(l => l.is_true && l.flipped);
         
-        if (m === "Yeti") {
-            const y_state = gameState.monster_states["Yeti"];
-            const kids_left = y_state.children.filter(c => !c.rescued).length;
-            const found_lair = y_state.lairs.find(l => l.is_true && l.flipped);
-            
+        details += `
+            <p style="font-size: 0.8rem; color: #b0a0cf;">Children Lost: <strong>${kids_left}</strong></p>
+            <p style="font-size: 0.8rem; color: #b0a0cf;">True Lair: <strong>${found_lair ? found_lair.location : "Hidden"}</strong></p>
+            <div class="monster-puzzle-grid">
+        `;
+        y_state.lairs.forEach((lair, i) => {
             details += `
-                <p style="font-size: 0.8rem; color: #b0a0cf;">Children Lost: <strong>${kids_left}</strong></p>
-                <p style="font-size: 0.8rem; color: #b0a0cf;">True Lair: <strong>${found_lair ? found_lair.location : "Hidden"}</strong></p>
+                <div class="puzzle-slot ${lair.flipped ? 'filled' : ''}" style="font-size: 0.7rem;">
+                    ${lair.flipped ? (lair.is_true ? 'TRUE' : 'DECOY') : `Lair ${i+1}`}
+                </div>
+            `;
+        });
+        details += `</div>`;
+        
+    } else if (m === "Jiangshi") {
+        const js_state = gameState.monster_states["Jiangshi"];
+        details += `
+            <p style="font-size: 0.8rem; color: #b0a0cf;">Complete the 3-part sword puzzle to seal Jiangshi.</p>
+            <div class="monster-puzzle-grid">
+        `;
+        js_state.slots.forEach(slot => {
+            const reqClass = `req-${slot.color.toLowerCase()}`;
+            details += `
+                <div class="puzzle-slot ${reqClass} ${slot.filled ? 'filled' : ''}" onclick="advanceJiangshi(${slot.id})">
+                    ${slot.filled ? `Sealed (${slot.item.strength})` : `${slot.color} ${slot.req_strength}+`}
+                </div>
+            `;
+        });
+        details += `</div>`;
+        
+    } else if (m === "Sphinx") {
+        const sp_state = gameState.monster_states["Sphinx"];
+        const current_sum = sp_state.slots.reduce((acc, slot) => acc + (slot.filled ? slot.item.strength : 0), 0);
+        details += `
+            <p style="font-size: 0.8rem; color: #b0a0cf;">Fill slots with Blue items to sum exactly 10 (Current: <strong>${current_sum}</strong>)</p>
+            <div class="monster-puzzle-grid">
+        `;
+        sp_state.slots.forEach(slot => {
+            details += `
+                <div class="puzzle-slot req-blue ${slot.filled ? 'filled' : ''}" onclick="advanceSphinx(${slot.id})">
+                    ${slot.filled ? `${slot.item.strength}` : `Empty`}
+                </div>
+            `;
+        });
+        details += `</div>`;
+        
+    } else if (m === "Cthulhu") {
+        const cth_state = gameState.monster_states["Cthulhu"];
+        if (cth_state.phase === 1) {
+            details += `
+                <p style="font-size: 0.8rem; color: #b0a0cf;">Phase 1: Break 4 runes at The Void.</p>
                 <div class="monster-puzzle-grid">
             `;
-            y_state.lairs.forEach((lair, i) => {
+            cth_state.runes.forEach(rune => {
+                const reqClass = rune.color !== "Any" ? `req-${rune.color.toLowerCase()}` : '';
                 details += `
-                    <div class="puzzle-slot ${lair.flipped ? 'filled' : ''}" style="font-size: 0.7rem;">
-                        ${lair.flipped ? (lair.is_true ? 'TRUE' : 'DECOY') : `Lair ${i+1}`}
+                    <div class="puzzle-slot ${reqClass} ${rune.broken ? 'filled' : ''}" onclick="advanceCthulhuRune(${rune.id})">
+                        ${rune.broken ? 'Broken' : `${rune.color} ${rune.req_strength}+`}
                     </div>
                 `;
             });
             details += `</div>`;
-            
-        } else if (m === "Jiangshi") {
-            const js_state = gameState.monster_states["Jiangshi"];
+        } else {
+            const trackPos = cth_state.player_tracks[playerName] ?? -1;
+            const nextStepName = cth_state.corpse_city_track[trackPos + 1] ?? "Heart reached!";
             details += `
-                <p style="font-size: 0.8rem; color: #b0a0cf;">Complete the 3-part sword puzzle to seal Jiangshi.</p>
-                <div class="monster-puzzle-grid">
+                <p style="font-size: 0.8rem; color: #ffd533;">Phase 2: Traverse Corpse City!</p>
+                <p style="font-size: 0.8rem; color: #b0a0cf;">My step: <strong>${trackPos === -1 ? "Main Board" : cth_state.corpse_city_track[trackPos]}</strong></p>
+                ${trackPos < 3 ? `<button class="btn btn-secondary btn-small" onclick="advanceCthulhuTrack()" style="width:100%; margin-top:5px; font-size:0.75rem;">Advance to ${nextStepName}</button>` : ''}
             `;
-            js_state.slots.forEach(slot => {
-                const reqClass = `req-${slot.color.toLowerCase()}`;
-                details += `
-                    <div class="puzzle-slot ${reqClass} ${slot.filled ? 'filled' : ''}" onclick="advanceJiangshi(${slot.id})">
-                        ${slot.filled ? `Sealed (${slot.item.strength})` : `${slot.color} ${slot.req_strength}+`}
-                    </div>
-                `;
-            });
-            details += `</div>`;
-            
-        } else if (m === "Sphinx") {
-            const sp_state = gameState.monster_states["Sphinx"];
-            const current_sum = sp_state.slots.reduce((acc, slot) => acc + (slot.filled ? slot.item.strength : 0), 0);
-            details += `
-                <p style="font-size: 0.8rem; color: #b0a0cf;">Fill slots with Blue items to sum exactly 10 (Current: <strong>${current_sum}</strong>)</p>
-                <div class="monster-puzzle-grid">
-            `;
-            sp_state.slots.forEach(slot => {
-                details += `
-                    <div class="puzzle-slot req-blue ${slot.filled ? 'filled' : ''}" onclick="advanceSphinx(${slot.id})">
-                        ${slot.filled ? `${slot.item.strength}` : `Empty`}
-                    </div>
-                `;
-            });
-            details += `</div>`;
-            
-        } else if (m === "Cthulhu") {
-            const cth_state = gameState.monster_states["Cthulhu"];
-            if (cth_state.phase === 1) {
-                details += `
-                    <p style="font-size: 0.8rem; color: #b0a0cf;">Phase 1: Break 4 runes at The Void.</p>
-                    <div class="monster-puzzle-grid">
-                `;
-                cth_state.runes.forEach(rune => {
-                    const reqClass = rune.color !== "Any" ? `req-${rune.color.toLowerCase()}` : '';
-                    details += `
-                        <div class="puzzle-slot ${reqClass} ${rune.broken ? 'filled' : ''}" onclick="advanceCthulhuRune(${rune.id})">
-                            ${rune.broken ? 'Broken' : `${rune.color} ${rune.req_strength}+`}
-                        </div>
-                    `;
-                });
-                details += `</div>`;
-            } else {
-                const trackPos = cth_state.player_tracks[playerName] ?? -1;
-                const nextStepName = cth_state.corpse_city_track[trackPos + 1] ?? "Heart reached!";
-                details += `
-                    <p style="font-size: 0.8rem; color: #ffd533;">Phase 2: Traverse Corpse City!</p>
-                    <p style="font-size: 0.8rem; color: #b0a0cf;">My step: <strong>${trackPos === -1 ? "Main Board" : cth_state.corpse_city_track[trackPos]}</strong></p>
-                    ${trackPos < 3 ? `<button class="btn btn-secondary btn-small" onclick="advanceCthulhuTrack()" style="width:100%; margin-top:5px; font-size:0.75rem;">Advance to ${nextStepName}</button>` : ''}
-                `;
-            }
         }
+    }
 
-        if (isDefeated) {
-            details += `<div class="monster-defeated-banner">Defeated!</div>`;
-        }
+    if (isDefeated) {
+        details += `<div class="monster-defeated-banner">Defeated!</div>`;
+    }
 
-        card.innerHTML = details;
-        elMonContainer.appendChild(card);
-    });
+    card.innerHTML = details;
+    elMonContainer.appendChild(card);
+
+    const controls = document.createElement("div");
+    controls.className = "carousel-controls";
+    controls.style.cssText = "display:flex; justify-content:space-between; align-items:center; width:100%; margin-top:10px; padding:0 4px;";
+    controls.innerHTML = `
+        <button class="carousel-circle-btn" onclick="navigateMonsterTab(-1)">&larr;</button>
+        <span style="font-size: 0.72rem; color: #a491c3; font-weight: 600; letter-spacing: 0.5px; user-select: none;">Monster ${currentMonsterTabIndex + 1} of ${allMonsters.length}</span>
+        <button class="carousel-circle-btn" onclick="navigateMonsterTab(1)">&rarr;</button>
+    `;
+    elMonContainer.appendChild(controls);
 }
+
+window.navigateMonsterTab = (dir) => {
+    const active = gameState.active_monsters || [];
+    const defeated = gameState.defeated_monsters || [];
+    const total = active.length + defeated.length;
+    if (total === 0) return;
+    
+    currentMonsterTabIndex = (currentMonsterTabIndex + dir + total) % total;
+    renderMonstersStatusPanel();
+};
 
 function renderLogs() {
     elLogBox.innerHTML = "";
@@ -1115,7 +1390,7 @@ function animateItemFly(fromLoc, itemColor, itemLabel, itemName) {
     if (!coord) return;
     
     const screenStart = getScreenCoordsOfSVGPoint(coord.x, coord.y);
-    const invPanel = document.getElementById("player-inventory") || document.getElementById("sec-player");
+    const invPanel = document.getElementById("gtab-btn-my-hero") || document.getElementById("gtab-btn-hero") || document.getElementById("player-inventory") || document.getElementById("sec-player");
     if (!invPanel) return;
     const screenEnd = invPanel.getBoundingClientRect();
     
@@ -1182,40 +1457,49 @@ function animateItemFly(fromLoc, itemColor, itemLabel, itemName) {
     
     fly.addEventListener("transitionend", () => {
         fly.remove();
+        
+        // Add a temporary landing ripple/glow in player inventory/tab button
+        invPanel.style.transition = "box-shadow 0.3s, background-color 0.3s";
+        invPanel.style.boxShadow = `0 0 25px ${circleColor}`;
+        
+        // Convert hex to semi-transparent rgba for background-color flash
+        const hexToRgba = (hex, alpha) => {
+            if (hex.startsWith("#")) {
+                const r = parseInt(hex.slice(1, 3), 16);
+                const g = parseInt(hex.slice(3, 5), 16);
+                const b = parseInt(hex.slice(5, 7), 16);
+                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            }
+            return hex;
+        };
+        invPanel.style.backgroundColor = hexToRgba(circleColor, 0.2);
+        
+        setTimeout(() => {
+            invPanel.style.boxShadow = "";
+            invPanel.style.backgroundColor = "";
+        }, 500);
     }, { once: true });
 }
 
-function triggerNodePulse(svgX, svgY, radius, pulseColor) {
+function triggerNodePulse(svgX, svgY, radius, pulseColor, strokeWidth = 3, scaleEnd = 3.5) {
     const pulseCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    pulseCircle.setAttribute("cx", svgX);
-    pulseCircle.setAttribute("cy", svgY);
-    pulseCircle.setAttribute("r", radius);
+    pulseCircle.setAttribute("cx", svgX.toString());
+    pulseCircle.setAttribute("cy", svgY.toString());
+    pulseCircle.setAttribute("r", radius.toString());
     pulseCircle.setAttribute("fill", "none");
     pulseCircle.setAttribute("stroke", pulseColor);
-    pulseCircle.setAttribute("stroke-width", "3");
-    pulseCircle.setAttribute("opacity", "0.9");
+    pulseCircle.setAttribute("stroke-width", strokeWidth.toString());
     
-    const animR = document.createElementNS("http://www.w3.org/2000/svg", "animate");
-    animR.setAttribute("attributeName", "r");
-    animR.setAttribute("from", radius);
-    animR.setAttribute("to", radius + 20);
-    animR.setAttribute("dur", "0.7s");
-    animR.setAttribute("fill", "freeze");
-    pulseCircle.appendChild(animR);
-
-    const animOp = document.createElementNS("http://www.w3.org/2000/svg", "animate");
-    animOp.setAttribute("attributeName", "opacity");
-    animOp.setAttribute("from", "0.9");
-    animOp.setAttribute("to", "0");
-    animOp.setAttribute("dur", "0.7s");
-    animOp.setAttribute("fill", "freeze");
-    pulseCircle.appendChild(animOp);
+    pulseCircle.style.transformBox = "fill-box";
+    pulseCircle.style.transformOrigin = "center";
+    pulseCircle.style.setProperty("--scale-end", scaleEnd.toString());
+    pulseCircle.style.animation = "svgPulseScale 0.8s cubic-bezier(0.1, 0.8, 0.3, 1) forwards";
     
     if (elGameMap) {
         elGameMap.appendChild(pulseCircle);
         setTimeout(() => {
             pulseCircle.remove();
-        }, 750);
+        }, 850);
     }
 }
 
@@ -1349,6 +1633,138 @@ function animateLairSpawn(locName) {
         fly.remove();
     }, { once: true });
 }
+
+function detectAndAnimatePerkCardDraws(newState) {
+    if (!newState || !newState.heroes_state) return;
+
+    if (!window.knownPerkIds) {
+        window.knownPerkIds = new Set();
+        
+        // If the page is just loading, and game is already running (e.g. page refresh),
+        // pre-populate knownPerkIds to prevent animating existing perks.
+        const isMidGameRefresh = newState.game_started && (!gameState || gameState.game_started);
+        if (isMidGameRefresh) {
+            const myState = newState.heroes_state[playerName];
+            if (myState && myState.perks) {
+                myState.perks.forEach(perk => window.knownPerkIds.add(perk.id));
+            }
+            return;
+        }
+    }
+
+    const myNewState = newState.heroes_state[playerName];
+    if (myNewState && myNewState.perks) {
+        myNewState.perks.forEach((perk, idx) => {
+            if (!window.knownPerkIds.has(perk.id)) {
+                window.knownPerkIds.add(perk.id);
+                // Trigger animation with a slight delay per card if multiple are drawn
+                setTimeout(() => {
+                    animatePerkCardDraw(perk.name, perk.text);
+                }, idx * 300);
+            }
+        });
+    }
+}
+
+function animatePerkCardDraw(perkName, perkText) {
+    const deckEl = document.querySelector(".perks-stack");
+    const invEl = document.getElementById("gtab-btn-my-hero") || document.getElementById("gtab-btn-hero") || document.getElementById("player-inventory");
+    if (!invEl) return;
+    
+    const deckRect = deckEl ? deckEl.getBoundingClientRect() : {
+        left: window.innerWidth / 2 - 65,
+        top: window.innerHeight / 2 - 90,
+        width: 130,
+        height: 180
+    };
+    const invRect = invEl.getBoundingClientRect();
+    
+    const fly = document.createElement("div");
+    fly.className = "flying-perk-card";
+    fly.style.cssText = `
+        position: fixed;
+        left: ${deckRect.left + (deckRect.width || 0) / 2 - 65}px;
+        top: ${deckRect.top + (deckRect.height || 0) / 2 - 90}px;
+        width: 130px;
+        height: 180px;
+        background: url('/Images/Perk_Card.png') center/contain no-repeat;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.8), 0 0 15px rgba(153, 51, 255, 0.4);
+        z-index: 100000;
+        pointer-events: none;
+        opacity: 0;
+        transform: scale(0.3) rotate(-20deg);
+        transition: left 1.4s cubic-bezier(0.25, 1, 0.3, 1),
+                    top 1.4s cubic-bezier(0.25, 1, 0.3, 1),
+                    transform 1.4s cubic-bezier(0.25, 1, 0.3, 1),
+                    opacity 0.8s ease;
+    `;
+    
+    fly.innerHTML = "";
+    
+    document.body.appendChild(fly);
+    
+    // Animate fly & reveal
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        fly.style.left = `${invRect.left + invRect.width / 2 - 65}px`;
+        fly.style.top = `${invRect.top + invRect.height / 2 - 90}px`;
+        fly.style.transform = "scale(0.45) rotate(5deg)";
+        fly.style.opacity = "1";
+    }));
+    
+    // Staged shrink as it gets very close
+    setTimeout(() => {
+        fly.style.transform = "scale(0.1) rotate(0deg)";
+        fly.style.opacity = "0";
+    }, 1100);
+    
+    fly.addEventListener("transitionend", () => {
+        fly.remove();
+        
+        // Add a temporary landing ripple/glow in player inventory/tab button
+        invEl.style.transition = "box-shadow 0.3s, background-color 0.3s";
+        invEl.style.boxShadow = "0 0 25px rgba(153, 51, 255, 0.8)";
+        invEl.style.backgroundColor = "rgba(153, 51, 255, 0.25)";
+        
+        // Play simple synthesized perk sound
+        playSynthPerkSound();
+
+        setTimeout(() => {
+            invEl.style.boxShadow = "";
+            invEl.style.backgroundColor = "";
+        }, 600);
+    }, { once: true });
+}
+
+function playSynthPerkSound() {
+    initAudio();
+    if (!audioCtx) return;
+    try {
+        const now = audioCtx.currentTime;
+        const freqs = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 arpeggio arcing upwards!
+        freqs.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'triangle'; // Sweet flute/woodwind-like texture
+            osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+            
+            gain.gain.setValueAtTime(0, now + idx * 0.08);
+            gain.gain.linearRampToValueAtTime(0.015, now + idx * 0.08 + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.08 + 0.5);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start(now + idx * 0.08);
+            osc.stop(now + idx * 0.08 + 0.5);
+        });
+    } catch(e) {
+        console.warn("Web Audio API error playing perk sound:", e);
+    }
+}
+
+
 
 
 function detectAndAnimateSpawns() {
@@ -1918,11 +2334,34 @@ function renderSVGMap() {
                 const patId = `pattern-hero-${char.heroClass.replaceAll(" ", "_")}`;
                 const isMe = (char.name === playerName);
                 const isActiveTurn = (gameState.players[gameState.turn_player_idx].name === char.name);
+                charShape.setAttribute("id", "map-hero-" + char.name.replace(/ /g, "_"));
                 charShape.setAttribute("class", "hero-token");
                 charShape.setAttribute("fill", `url(#${patId})`);
                 charShape.setAttribute("stroke", (isMe || isActiveTurn) ? "#ffd533" : "#33ccff");
                 charShape.setAttribute("stroke-width", (isMe || isActiveTurn) ? "3.5" : "2.5");
                 charShape.setAttribute("filter", `drop-shadow(0 0 ${(isMe || isActiveTurn) ? 12 : 6}px ${(isMe || isActiveTurn) ? "rgba(255,213,51,0.9)" : "rgba(51,204,255,0.7)"})`);
+                
+                charShape.style.cursor = "pointer";
+                charShape.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    if (isMe) {
+                        const tabBtn = document.getElementById("gtab-btn-my-hero");
+                        if (tabBtn && !tabBtn.classList.contains("active")) {
+                            tabBtn.click();
+                        }
+                    } else {
+                        const activeHeroes = Object.keys(gameState.heroes_state || {}).filter(name => name !== playerName);
+                        const idx = activeHeroes.indexOf(char.name);
+                        if (idx !== -1) {
+                            currentHeroTabIndex = idx;
+                            renderPlayerPanel();
+                        }
+                        const tabBtn = document.getElementById("gtab-btn-hero");
+                        if (tabBtn && !tabBtn.classList.contains("active")) {
+                            tabBtn.click();
+                        }
+                    }
+                });
             } else if (isCitizen) {
                 const patId = `pattern-citizen-${char.name.replaceAll(" ", "_")}`;
                 charShape.setAttribute("class", "citizen-token");
@@ -1938,6 +2377,25 @@ function renderSVGMap() {
             } else {
                 // Remaining monsters without portrait images (Jiangshi, Cthulhu)
                 charShape.setAttribute("class", `token-character char-${char.type}`);
+            }
+
+            if (char.type === "monster") {
+                charShape.style.cursor = "pointer";
+                charShape.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    const active = gameState.active_monsters || [];
+                    const defeated = gameState.defeated_monsters || [];
+                    const allMonsters = [...active, ...defeated];
+                    const idx = allMonsters.indexOf(char.name);
+                    if (idx !== -1) {
+                        currentMonsterTabIndex = idx;
+                        renderMonstersStatusPanel();
+                    }
+                    const tabBtn = document.getElementById("gtab-btn-monsters");
+                    if (tabBtn && !tabBtn.classList.contains("active")) {
+                        tabBtn.click();
+                    }
+                });
             }
             charG.appendChild(charShape);
 
@@ -2236,7 +2694,7 @@ document.getElementById("action-pickup").addEventListener("click", () => {
         <hr style="border-color:rgba(255,255,255,0.05); margin: 15px 0 10px 0;">
         <div style="display: flex; justify-content: flex-end; gap: 10px;">
             <button class="btn btn-secondary btn-small" onclick="elModalContainer.classList.add('hidden')">Cancel</button>
-            <button class="btn btn-primary btn-small" id="btn-confirm-pickup" onclick="triggerMultiplePickup('${myState.location}')" disabled>Done</button>
+            <button class="btn btn-primary btn-small" id="btn-confirm-pickup" disabled>Done</button>
         </div>
     `;
 
@@ -2246,6 +2704,10 @@ document.getElementById("action-pickup").addEventListener("click", () => {
     // Add event listener to checkboxes to disable/enable based on limit & toggle Done button
     const checkboxes = document.querySelectorAll(".pickup-item-checkbox");
     const confirmBtn = document.getElementById("btn-confirm-pickup");
+
+    confirmBtn.addEventListener("click", () => {
+        triggerMultiplePickup(myState.location);
+    });
 
     checkboxes.forEach(cb => {
         cb.addEventListener("change", () => {
