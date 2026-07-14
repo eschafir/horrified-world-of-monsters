@@ -230,7 +230,7 @@ function renderHeroSelectOptions() {
 
         card.innerHTML = `
             <div class="hero-card-portrait">
-                <img src="/Images/Heroes/${hero}.svg" alt="${hero}">
+                <img src="/Images/Heroes/${hero} Image.png" alt="${hero}">
             </div>
             <div class="hero-card-name">${hero}</div>
             <div class="hero-card-ap">${data.ap} AP</div>
@@ -372,7 +372,7 @@ function renderPlayerPanel() {
 
     const portrait = document.getElementById("hero-tab-portrait");
     if (portrait) {
-        portrait.src = `/Images/Heroes/${myState.hero}.svg`;
+        portrait.src = `/Images/Heroes/${myState.hero} Image.png`;
         portrait.alt = myState.hero;
     }
     
@@ -1361,7 +1361,7 @@ function renderSVGMap() {
         patHero.setAttribute("width", "1");
         patHero.setAttribute("patternContentUnits", "objectBoundingBox");
         const imgHero = document.createElementNS("http://www.w3.org/2000/svg", "image");
-        imgHero.setAttribute("href", `/Images/Heroes/${heroClass}.svg`);
+        imgHero.setAttribute("href", `/Images/Heroes/${heroClass} Image.png`);
         imgHero.setAttribute("x", "0");
         imgHero.setAttribute("y", "0");
         imgHero.setAttribute("height", "1");
