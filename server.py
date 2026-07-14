@@ -1208,53 +1208,64 @@ class GameRoom:
         # Monster phase is now triggered by the player drawing the card manually
 
     async def run_monster_phase(self, broadcast_fn=None):
-        if not self.deck:
-            self.check_defeat("The Monster Card Deck has been exhausted!")
+        self.monster_phase_running = True
+        try:
+            self.add_log("--- MONSTER PHASE ---")
+            
+            if not self.deck:
+                self.check_defeat("Monster deck is empty!")
+                if broadcast_fn:
+                    await broadcast_fn()
+                return
+                
+            card = self.deck.pop()
+            self.current_card = card
+            self.discard.append(card)
+            self.add_log(f"Drew Monster Card: {card['name']} (Spawns {card['spawn']} items)")
+
             if broadcast_fn:
                 await broadcast_fn()
-            return
 
-        card = self.deck.pop()
-        self.current_card = card
-        self.discard.append(card)
-        self.add_log(f"Drew Monster Card: {card['name']} (Spawns {card['spawn']} items)")
+            for _ in range(card["spawn"]):
+                self.spawn_item()
 
-        # Broadcast immediately so the card appears on clients
-        if broadcast_fn:
-            await broadcast_fn()
+            await asyncio.sleep(1.5)
 
-        for _ in range(card["spawn"]):
-            self.spawn_item()
+            await self.resolve_event(card)
+            await asyncio.sleep(1.5)
 
-        await asyncio.sleep(1.5)
+            for name, move_info in card["activations"].items():
+                if name == "Frenzy":
+                    active_monster = self.frenzy_marker
+                    if active_monster in self.active_monsters:
+                        await self.activate_monster(active_monster, move_info[0], move_info[1], broadcast_fn)
+                elif name in self.active_monsters:
+                    await self.activate_monster(name, move_info[0], move_info[1], broadcast_fn)
 
-        await self.resolve_event(card)
-        await asyncio.sleep(1.5)
+            self.active_perks_limit.clear()
 
-        for name, move_info in card["activations"].items():
-            if name == "Frenzy":
-                active_monster = self.frenzy_marker
-                if active_monster in self.active_monsters:
-                    await self.activate_monster(active_monster, move_info[0], move_info[1], broadcast_fn)
-            elif name in self.active_monsters:
-                await self.activate_monster(name, move_info[0], move_info[1], broadcast_fn)
+            if self.game_phase == "MonsterPhase":
+                # Reset Buccaneer's max_ap back to 3 at turn start
+                for p_name, h_st in self.heroes_state.items():
+                    if h_st["hero"] == "The Buccaneer":
+                        h_st["max_ap"] = 3
 
-        self.active_perks_limit.clear()
+                self.turn_player_idx = (self.turn_player_idx + 1) % len(self.players)
+                next_player = self.players[self.turn_player_idx]["name"]
+                max_ap = self.heroes_state[next_player]["max_ap"]
+                self.heroes_state[next_player]["ap"] = max_ap
+                self.game_phase = "HeroPhase"
+                self.add_log(f"It is now {next_player}'s turn! ({max_ap} AP)")
+                
+        except Exception as e:
+            import traceback
+            self.add_log(f"CRITICAL ERROR IN MONSTER PHASE: {str(e)} | {traceback.format_exc()}")
+            print(f"CRITICAL ERROR IN MONSTER PHASE: {str(e)}\n{traceback.format_exc()}")
+            # Attempt to recover the phase so the game isn't stuck forever
+            if self.game_phase == "MonsterPhase":
+                self.turn_player_idx = (self.turn_player_idx + 1) % len(self.players)
+                self.game_phase = "HeroPhase"
 
-        if self.game_phase == "MonsterPhase":
-            # Reset Buccaneer's max_ap back to 3 at turn start
-            for p_name, h_st in self.heroes_state.items():
-                if h_st["hero"] == "The Buccaneer":
-                    h_st["max_ap"] = 3
-
-            self.turn_player_idx = (self.turn_player_idx + 1) % len(self.players)
-            next_player = self.players[self.turn_player_idx]["name"]
-            max_ap = self.heroes_state[next_player]["max_ap"]
-            self.heroes_state[next_player]["ap"] = max_ap
-            self.game_phase = "HeroPhase"
-            self.add_log(f"It is now {next_player}'s turn! ({max_ap} AP)")
-
-        # Final broadcast after phase completes and turn advances
         if broadcast_fn:
             await broadcast_fn()
 
@@ -1616,10 +1627,18 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
                 room.execute_defeat(player_name, monster)
                 
             elif action == "finish_dice_roll":
+                room.add_log(f"DEBUG: Server received finish_dice_roll from {player_name}")
                 if room.pending_dice_roll and room.pending_dice_roll["hero"] == player_name:
                     room.pending_dice_roll["chosen_items"] = msg.get("item_ids")
                     if room.roll_event:
+                        room.add_log(f"DEBUG: Unblocking roll_event for {player_name}!")
                         room.roll_event.set()
+                    else:
+                        room.add_log("DEBUG: roll_event was None!")
+                else:
+                    room.add_log(f"DEBUG: Invalid finish_dice_roll: pending_hero={(room.pending_dice_roll['hero'] if room.pending_dice_roll else 'None')}")
+                # Broadcast immediately to see these debug logs!
+                asyncio.create_task(room_manager.broadcast_state(room_code))
                 
             elif action == "special":
                 args = msg.get("args", {})

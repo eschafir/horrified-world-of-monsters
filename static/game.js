@@ -623,7 +623,7 @@ function updateGameUI() {
                                                 btnFinishDice.disabled = true;
                                                 btnFinishDice.textContent = "Processing...";
                                                 elDiceOverlay.classList.add("hidden");
-                                                ws.send(JSON.stringify({ action: "finish_dice_roll" }));
+                                                socket.send(JSON.stringify({ action: "finish_dice_roll" }));
                                             };
                                         } else {
                                             btnFinishDice.textContent = "Take Damage";
@@ -706,7 +706,8 @@ function updateGameUI() {
                 if (existingBlockBtn) existingBlockBtn.disabled = true;
                 const overlay = document.getElementById("dice-modal-overlay");
                 if (overlay) overlay.classList.add("hidden");
-                ws.send(JSON.stringify({ action: "finish_dice_roll" }));
+                console.log("SENDING FINISH DICE ROLL TO SERVER NOW");
+                socket.send(JSON.stringify({ action: "finish_dice_roll" }));
             };
             
             const existing = document.getElementById("btn-block-damage");
@@ -737,7 +738,7 @@ function updateGameUI() {
                         btnFinishDice.disabled = true;
                         const overlay = document.getElementById("dice-modal-overlay");
                         if (overlay) overlay.classList.add("hidden");
-                        ws.send(JSON.stringify({ action: "finish_dice_roll", item_ids: Array.from(selectedIds) }));
+                        socket.send(JSON.stringify({ action: "finish_dice_roll", item_ids: Array.from(selectedIds) }));
                     };
                 } else {
                     btnBlock.classList.add("hidden");
