@@ -368,6 +368,8 @@ class GameRoom:
         for monster in self.active_monsters:
             if monster == "Sphinx":
                 self.monster_locations[monster] = "Specter Trail Caravan"
+            elif monster == "Jiangshi":
+                self.monster_locations[monster] = "House of Dusk"
             else:
                 self.monster_locations[monster] = "The Roaming Wolf"
             if monster == "Yeti":
@@ -1542,18 +1544,6 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
                 
             elif action == "end_turn":
                 room.end_turn(player_name)
-
-            # TEMP TEST ACTION: forces the Lose condition. Remove before shipping.
-            elif action == "debug_lose":
-                if room.game_started:
-                    room.check_defeat("Debug test loss triggered.")
-
-            # TEMP TEST ACTION: increases the Terror Level. Remove before shipping.
-            elif action == "debug_increase_terror":
-                if room.game_started and room.terror_level < 7:
-                    room.terror_level += 1
-                    room.add_log(f"Debug: Terror Level increased to {room.terror_level}.")
-                    room.check_terror()
 
             elif action == "return_to_menu":
                 # Only allow tearing down the room once the game has actually ended,

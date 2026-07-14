@@ -62,8 +62,6 @@ const elBtnChatSend = document.getElementById("btn-chat-send");
 const elModalContainer = document.getElementById("modal-container");
 const elModalBody = document.getElementById("modal-body");
 const elCloseModal = document.querySelector(".close-modal");
-const elBtnDebugLose = document.getElementById("btn-debug-lose"); // TEMP TEST BUTTON: remove before shipping
-const elBtnDebugTerror = document.getElementById("btn-debug-terror"); // TEMP TEST BUTTON: remove before shipping
 const elBtnMainMenu = document.getElementById("btn-main-menu");
 const elGameOverOverlay = document.getElementById("game-over-overlay");
 
@@ -151,20 +149,6 @@ elCloseModal.addEventListener("click", () => {
 
 // Volume Slider Event Listener
 document.getElementById("bg-music-volume").addEventListener("input", updateMusicVolume);
-
-// TEMP TEST BUTTON: forces the Lose condition. Remove before shipping.
-if (elBtnDebugLose) {
-    elBtnDebugLose.addEventListener("click", () => {
-        sendMsg({ action: "debug_lose" });
-    });
-}
-
-// TEMP TEST BUTTON: increases the Terror Level. Remove before shipping.
-if (elBtnDebugTerror) {
-    elBtnDebugTerror.addEventListener("click", () => {
-        sendMsg({ action: "debug_increase_terror" });
-    });
-}
 
 // Game Over banner "Main Menu" button: asks the server to destroy the room,
 // then every client (including this one) returns to the lobby via "room_closed".
@@ -464,14 +448,6 @@ function renderHeroSelectOptions() {
 
 function updateGameUI() {
     if (!gameState) return;
-
-    // TEMP TEST BUTTONS: only show once a game is in progress. Remove before shipping.
-    if (elBtnDebugLose) {
-        elBtnDebugLose.classList.toggle("hidden", !gameState.game_started);
-    }
-    if (elBtnDebugTerror) {
-        elBtnDebugTerror.classList.toggle("hidden", !gameState.game_started);
-    }
 
     if (!gameState.game_started) {
         // We are in Lobby Waiting view
@@ -860,6 +836,38 @@ window.locateHero = (pName) => {
     }, 150);
 };
 
+window.locateMonster = (monsterName) => {
+    const locName = gameState.monster_locations && gameState.monster_locations[monsterName];
+    if (!locName) return;
+
+    const coord = gameState.node_coordinates[locName];
+    if (!coord) return; // e.g. Cthulhu deep in Corpse City has no board coordinates
+
+    // Pulse from the monster's actual rendered marker (its offset position within the
+    // node, which shifts when sharing a location with heroes/citizens/other monsters)
+    // rather than the node's center.
+    const tokenEl = document.getElementById("map-monster-" + monsterName.replace(/ /g, "_"));
+    const pulseX = tokenEl ? parseFloat(tokenEl.getAttribute("cx")) : coord.x;
+    const pulseY = tokenEl ? parseFloat(tokenEl.getAttribute("cy")) : coord.y;
+
+    // Zoom navigation - only pan/zoom if already zoomed in
+    if (zoomLevel > 1.0) {
+        const w = baseWidth / zoomLevel;
+        const h = baseHeight / zoomLevel;
+
+        // Center camera on coordinates
+        panX = coord.x - w / 2;
+        panY = coord.y - h / 2;
+        updateMapViewBox();
+    }
+
+    // Trigger double ring pulse effect
+    triggerNodePulse(pulseX, pulseY, 35, "#ffd533", 4, 3.5);
+    setTimeout(() => {
+        triggerNodePulse(pulseX, pulseY, 55, "rgba(255, 213, 51, 0.6)", 3, 5.0);
+    }, 150);
+};
+
 function renderApCounterBar() {
     const el = document.getElementById("ap-counter-bar");
     if (!el) return;
@@ -1110,8 +1118,8 @@ function renderMonstersStatusPanel() {
     const portrait = {
         "Yeti":     "/Images/Monsters/Yeti.png",
         "Sphinx":   "/Images/Monsters/Sphinx.png",
-        "Jiangshi": "/Images/Monsters/Jiangshi.svg",
-        "Cthulhu":  "/Images/Monsters/Cthulhu.svg"
+        "Jiangshi": "/Images/Monsters/Jiangshi.png",
+        "Cthulhu":  "/Images/Monsters/Cthulhu.png"
     }[m] || "";
     const accent = {
         "Yeti":     { border: "rgba(51,204,255,0.6)",  glow: "rgba(51,204,255,0.3)"  },
@@ -1135,7 +1143,10 @@ function renderMonstersStatusPanel() {
             </div>
             <div class="monster-card-info" style="width:100%;">
                 <h5 style="margin:0 0 4px 0; font-size:1rem;">${m} <span class="monster-frenzy-badge" title="Frenzy Order: ${fVal}">⚡ ${fVal}</span></h5>
-                <div class="monster-card-loc" style="font-size:0.75rem;">&#128205; ${loc}</div>
+                <div class="monster-card-loc" style="font-size:0.75rem; display:flex; align-items:center; justify-content:center; gap:6px;">
+                    <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px;">&#128205; ${loc}</span>
+                    <button class="btn btn-secondary btn-small" style="font-size:0.65rem; padding:2px 6px; flex-shrink:0;" onclick="locateMonster('${m}')">Locate</button>
+                </div>
             </div>
         </div>
     `;
@@ -2142,6 +2153,46 @@ function renderSVGMap() {
     patternSphinx.appendChild(imgSphinx);
     defs.appendChild(patternSphinx);
 
+    // Create pattern for Jiangshi face marker
+    const patternJiangshi = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
+    patternJiangshi.setAttribute("id", "pattern-jiangshi");
+    patternJiangshi.setAttribute("x", "0");
+    patternJiangshi.setAttribute("y", "0");
+    patternJiangshi.setAttribute("height", "1");
+    patternJiangshi.setAttribute("width", "1");
+    patternJiangshi.setAttribute("patternContentUnits", "objectBoundingBox");
+
+    const imgJiangshi = document.createElementNS("http://www.w3.org/2000/svg", "image");
+    imgJiangshi.setAttribute("href", "/Images/Monsters/Jiangshi.png");
+    imgJiangshi.setAttribute("x", "0");
+    imgJiangshi.setAttribute("y", "0");
+    imgJiangshi.setAttribute("height", "1");
+    imgJiangshi.setAttribute("width", "1");
+    imgJiangshi.setAttribute("preserveAspectRatio", "xMidYMid slice");
+
+    patternJiangshi.appendChild(imgJiangshi);
+    defs.appendChild(patternJiangshi);
+
+    // Create pattern for Cthulhu face marker
+    const patternCthulhu = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
+    patternCthulhu.setAttribute("id", "pattern-cthulhu");
+    patternCthulhu.setAttribute("x", "0");
+    patternCthulhu.setAttribute("y", "0");
+    patternCthulhu.setAttribute("height", "1");
+    patternCthulhu.setAttribute("width", "1");
+    patternCthulhu.setAttribute("patternContentUnits", "objectBoundingBox");
+
+    const imgCthulhu = document.createElementNS("http://www.w3.org/2000/svg", "image");
+    imgCthulhu.setAttribute("href", "/Images/Monsters/Cthulhu.png");
+    imgCthulhu.setAttribute("x", "0");
+    imgCthulhu.setAttribute("y", "0");
+    imgCthulhu.setAttribute("height", "1");
+    imgCthulhu.setAttribute("width", "1");
+    imgCthulhu.setAttribute("preserveAspectRatio", "xMidYMid slice");
+
+    patternCthulhu.appendChild(imgCthulhu);
+    defs.appendChild(patternCthulhu);
+
     // Create patterns for Yeti children face markers
     for (let i = 1; i <= 3; i++) {
         const patChild = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
@@ -2473,10 +2524,12 @@ function renderSVGMap() {
         characters.forEach((char, index) => {
             const isYeti = (char.name === "Yeti");
             const isSphinx = (char.name === "Sphinx");
+            const isJiangshi = (char.name === "Jiangshi");
+            const isCthulhu = (char.name === "Cthulhu");
             const isYetiChild = char.name.startsWith("Yeti Child");
             const isLair = (char.type === "lair");
             const childId = isYetiChild ? char.name.replace("Yeti Child ", "") : null;
-            const isCustomMonster = isYeti || isSphinx;
+            const isCustomMonster = isYeti || isSphinx || isJiangshi || isCthulhu;
             const isHero = (char.type === "hero");
             const isCitizen = (char.type === "citizen") && !isYetiChild;
             let charR;
@@ -2543,6 +2596,18 @@ function renderSVGMap() {
                 charShape.setAttribute("class", "sphinx-token");
                 charShape.setAttribute("fill", "url(#pattern-sphinx)");
                 charShape.setAttribute("stroke", "#ffcc00"); // Golden border
+                charShape.setAttribute("stroke-width", "2.5");
+                charShape.setAttribute("filter", "drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
+            } else if (isJiangshi) {
+                charShape.setAttribute("class", "jiangshi-token");
+                charShape.setAttribute("fill", "url(#pattern-jiangshi)");
+                charShape.setAttribute("stroke", "#33ff99"); // Jade border, matching the Jade Sword theme
+                charShape.setAttribute("stroke-width", "2.5");
+                charShape.setAttribute("filter", "drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
+            } else if (isCthulhu) {
+                charShape.setAttribute("class", "cthulhu-token");
+                charShape.setAttribute("fill", "url(#pattern-cthulhu)");
+                charShape.setAttribute("stroke", "#00e5cc"); // Abyssal teal border
                 charShape.setAttribute("stroke-width", "2.5");
                 charShape.setAttribute("filter", "drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
             } else if (isYetiChild) {
@@ -2627,11 +2692,12 @@ function renderSVGMap() {
                     showCitizenInfo(char.name, char.safe);
                 });
             } else {
-                // Remaining monsters without portrait images (Jiangshi, Cthulhu)
+                // Generic fallback marker (no monster currently uses this — all 4 have portraits)
                 charShape.setAttribute("class", `token-character char-${char.type}`);
             }
 
             if (char.type === "monster") {
+                charShape.setAttribute("id", "map-monster-" + char.name.replace(/ /g, "_"));
                 charShape.style.cursor = "pointer";
                 charShape.addEventListener("click", (e) => {
                     e.stopPropagation();
