@@ -229,24 +229,35 @@ function findItemInGameState(itemId) {
 
 function animateRemoteItemPickup(remotePlayerName, locationId, itemIds) {
     if (!gameState) return;
-    
-    const startCoord = gameState.node_coordinates[locationId];
-    if (!startCoord) return;
-    const screenStart = getScreenCoordsOfSVGPoint(startCoord.x, startCoord.y);
-    
+
+    const fallbackCoord = gameState.node_coordinates[locationId];
+
     const playerTokenEl = document.getElementById("map-hero-" + remotePlayerName.replace(/ /g, "_"));
     if (!playerTokenEl) return;
     const screenEnd = playerTokenEl.getBoundingClientRect();
-    
-    const targetSvgX = parseFloat(playerTokenEl.getAttribute("cx")) || startCoord.x;
-    const targetSvgY = parseFloat(playerTokenEl.getAttribute("cy")) || startCoord.y;
-    
+
+    const targetSvgX = parseFloat(playerTokenEl.getAttribute("cx")) || (fallbackCoord && fallbackCoord.x) || 0;
+    const targetSvgY = parseFloat(playerTokenEl.getAttribute("cy")) || (fallbackCoord && fallbackCoord.y) || 0;
+
     itemIds.forEach((itemId, idx) => {
         const item = findItemInGameState(itemId);
         const itemColor = item ? item.color : "yellow";
         const itemStrength = item ? item.strength : "?";
         const itemName = item ? item.name : "Item";
-        
+
+        // Read the item marker's live position now, before the follow-up state
+        // broadcast removes it from the board and re-renders the map.
+        const itemEl = document.getElementById("map-item-" + itemId);
+        let screenStart;
+        if (itemEl) {
+            const rect = itemEl.getBoundingClientRect();
+            screenStart = { left: rect.left + rect.width / 2, top: rect.top + rect.height / 2 };
+        } else if (fallbackCoord) {
+            screenStart = getScreenCoordsOfSVGPoint(fallbackCoord.x, fallbackCoord.y);
+        } else {
+            return;
+        }
+
         setTimeout(() => {
             const fly = document.createElement("div");
             fly.className = "flying-item-token";
@@ -2153,6 +2164,7 @@ function renderSVGMap() {
             const itemG = document.createElementNS("http://www.w3.org/2000/svg", "g");
 
             const itemCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            itemCircle.setAttribute("id", "map-item-" + item.id);
             itemCircle.setAttribute("cx", coord.x + offset.x);
             itemCircle.setAttribute("cy", coord.y + offset.y);
             itemCircle.setAttribute("r", 10);

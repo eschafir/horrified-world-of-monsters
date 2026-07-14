@@ -741,18 +741,18 @@ body {
 
 .deck-right-top {
     right: 20px;
-    top: calc(50% - 130px);
+    top: calc(50% - 170px);
     transform: translateY(-50%);
 }
 
 .deck-right-bottom {
     right: 20px;
-    top: calc(50% + 130px);
+    top: calc(50% + 170px);
     transform: translateY(-50%);
 }
 
 .deck-title {
-    font-size: 0.75rem;
+    font-size: 1rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 1.5px;
@@ -761,8 +761,8 @@ body {
 }
 
 .card-stack {
-    width: 90px;
-    height: 140px;
+    width: 170px;
+    height: 264px;
     position: relative;
     border-radius: 8px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
@@ -771,8 +771,8 @@ body {
 }
 
 .perks-stack {
-    width: 140px;
-    height: 90px;
+    width: 264px;
+    height: 170px;
 }
 
 .card-stack:hover {
