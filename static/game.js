@@ -2600,13 +2600,17 @@ function renderSVGMap() {
                 fireBg.setAttribute("stroke-width", "2");
                 terrorTrackG.appendChild(fireBg);
 
-                const fire = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                fire.setAttribute("x", slotX);
-                fire.setAttribute("y", trackY + 16);
-                fire.setAttribute("font-size", "50px"); 
-                fire.setAttribute("text-anchor", "middle");
+                const fire = document.createElementNS("http://www.w3.org/2000/svg", "image");
+                // Resize to 56x56 to perfectly fill the 28px radius circle
+                fire.setAttribute("x", slotX - 28);
+                fire.setAttribute("y", trackY - 28);
+                fire.setAttribute("width", "56");
+                fire.setAttribute("height", "56");
+                fire.setAttribute("href", "/Images/fire_live.gif");
+                // Crop into a perfect circle
+                fire.setAttribute("style", "clip-path: circle(50% at 50% 50%);");
+                // Keep the glowing drop shadow for effect
                 fire.setAttribute("filter", "drop-shadow(0 0 10px #ff9900)");
-                fire.textContent = "🔥"; 
                 terrorTrackG.appendChild(fire);
             }
         }

@@ -1980,3 +1980,18 @@ body {
         opacity: 0;
     }
 }
+
+/* Fire Flicker Animation */
+.fire-anim {
+    transform-origin: center;
+    transform-box: fill-box;
+    animation: fireFlicker 0.6s infinite alternate;
+}
+
+@keyframes fireFlicker {
+    0% { transform: scale(1) rotate(0deg); opacity: 1; filter: drop-shadow(0 0 10px #ff9900); }
+    25% { transform: scale(1.05) rotate(3deg); opacity: 0.9; filter: drop-shadow(0 0 15px #ff6600); }
+    50% { transform: scale(0.95) rotate(-2deg); opacity: 0.8; filter: drop-shadow(0 0 5px #ffaa00); }
+    75% { transform: scale(1.02) rotate(1deg); opacity: 0.95; filter: drop-shadow(0 0 12px #ff4400); }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; filter: drop-shadow(0 0 10px #ff9900); }
+}
