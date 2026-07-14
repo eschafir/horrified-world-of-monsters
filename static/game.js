@@ -707,7 +707,11 @@ function renderMonstersStatusPanel() {
     const elMonContainer = document.getElementById("monsters-status-container");
     elMonContainer.innerHTML = "";
 
-    if (gameState.active_monsters.length === 0) {
+    const active = gameState.active_monsters || [];
+    const defeated = gameState.defeated_monsters || [];
+    const allMonsters = [...active, ...defeated];
+
+    if (allMonsters.length === 0) {
         elMonContainer.innerHTML = `<p style="font-size: 0.8rem; color: #ffd533; text-align: center;">All monsters defeated! Deal the final blow.</p>`;
         return;
     }
@@ -725,13 +729,22 @@ function renderMonstersStatusPanel() {
         "Cthulhu":  { border: "rgba(153,51,255,0.6)",  glow: "rgba(153,51,255,0.3)"  }
     };
 
-    gameState.active_monsters.forEach(m => {
+    allMonsters.forEach(m => {
+        const isDefeated = defeated.includes(m);
         const card = document.createElement("div");
-        card.className = "monster-status-card";
+        card.className = `monster-status-card ${isDefeated ? "defeated" : ""}`;
 
         const loc = (gameState.monster_locations && gameState.monster_locations[m]) || "Unknown";
         const portrait = monsterPortraits[m] || "";
         const accent = monsterAccents[m] || monsterAccents["Jiangshi"];
+
+        const frenzyValues = {
+            "Yeti": 1,
+            "Sphinx": 2,
+            "Jiangshi": 3,
+            "Cthulhu": 4
+        };
+        const fVal = frenzyValues[m] || 0;
 
         let details = `
             <div class="monster-card-header">
@@ -739,7 +752,7 @@ function renderMonstersStatusPanel() {
                     ${portrait ? `<img src="${portrait}" alt="${m}">` : ""}
                 </div>
                 <div class="monster-card-info">
-                    <h5>${m}</h5>
+                    <h5>${m} <span class="monster-frenzy-badge" title="Frenzy Order: ${fVal}">⚡ ${fVal}</span></h5>
                     <div class="monster-card-loc">&#128205; ${loc}</div>
                 </div>
             </div>
@@ -821,6 +834,10 @@ function renderMonstersStatusPanel() {
                     ${trackPos < 3 ? `<button class="btn btn-secondary btn-small" onclick="advanceCthulhuTrack()" style="width:100%; margin-top:5px; font-size:0.75rem;">Advance to ${nextStepName}</button>` : ''}
                 `;
             }
+        }
+
+        if (isDefeated) {
+            details += `<div class="monster-defeated-banner">Defeated!</div>`;
         }
 
         card.innerHTML = details;
@@ -1305,7 +1322,7 @@ function animateLairSpawn(locName) {
         top: ${screenStart.top + screenStart.height / 2 - 14}px;
         width: 40px;
         height: 28px;
-        background: url('/Images/lair_token_back.jpeg') center/cover;
+        background: url('/Images/Lair Tokens/lair_token_back.jpeg') center/cover;
         border: 2px solid #fff;
         border-radius: 4px;
         z-index: 10000;
@@ -1481,10 +1498,10 @@ function renderSVGMap() {
     }
 
     const lairImages = [
-        { id: "pattern-lair-back", url: "/Images/lair_token_back.jpeg" },
-        { id: "pattern-lair-yeti", url: "/Images/yeti_lair_token.jpeg" },
-        { id: "pattern-lair-jiangshi", url: "/Images/jianshi_lair_token.jpeg" },
-        { id: "pattern-lair-blank", url: "/Images/blank_lair_token.jpeg" }
+        { id: "pattern-lair-back", url: "/Images/Lair Tokens/lair_token_back.jpeg" },
+        { id: "pattern-lair-yeti", url: "/Images/Lair Tokens/yeti_lair_token.jpeg" },
+        { id: "pattern-lair-jiangshi", url: "/Images/Lair Tokens/jianshi_lair_token.jpeg" },
+        { id: "pattern-lair-blank", url: "/Images/Lair Tokens/blank_lair_token.jpeg" }
     ];
     lairImages.forEach(lairImg => {
         const patLair = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
@@ -1757,7 +1774,7 @@ function renderSVGMap() {
 
         // Monsters
         for (const monName in gameState.monster_locations) {
-            if (gameState.monster_locations[monName] === locName) {
+            if (gameState.active_monsters.includes(monName) && gameState.monster_locations[monName] === locName) {
                 characters.push({ type: "monster", name: monName, label: monName.charAt(0) });
             }
         }
@@ -1996,13 +2013,13 @@ function getCharOffset(index, total, nodeRadius = 35) {
 // ---------------------------------------------------------
 
 function showLairImageModal(lairType) {
-    let imgSrc = "/Images/blank_lair_token.jpeg";
+    let imgSrc = "/Images/Lair Tokens/blank_lair_token.jpeg";
     let title = "Decoy Lair";
     if (lairType === "yeti") {
-        imgSrc = "/Images/yeti_lair_token.jpeg";
+        imgSrc = "/Images/Lair Tokens/yeti_lair_token.jpeg";
         title = "Yeti Lair";
     } else if (lairType === "jiangshi") {
-        imgSrc = "/Images/jianshi_lair_token.jpeg";
+        imgSrc = "/Images/Lair Tokens/jianshi_lair_token.jpeg";
         title = "Jiangshi Lair";
     }
     const html = `
@@ -2187,43 +2204,87 @@ document.getElementById("action-pickup").addEventListener("click", () => {
         return;
     }
 
+    const spaceLeft = 4 - myState.items.length;
+    if (spaceLeft <= 0) {
+        alert("Your inventory is full (Max 4 items)!");
+        return;
+    }
+
     // Modal to choose items
-    let html = `<h3>Pick Up Items</h3><p style="font-size:0.85rem; color:#b0a0cf;">Select items to add to inventory (Max 4 total items)</p><hr style="border-color:rgba(255,255,255,0.05); margin: 10px 0;">`;
+    let html = `
+        <h3>Pick Up Items</h3>
+        <p style="font-size:0.85rem; color:#b0a0cf;">Select items to add to inventory (Space left: ${spaceLeft})</p>
+        <hr style="border-color:rgba(255,255,255,0.05); margin: 10px 0;">
+        <div id="pickup-items-list">
+    `;
+
     items.forEach(item => {
         html += `
-            <div style="margin: 8px 0; display:flex; justify-content:space-between; align-items:center;">
-                <span>${item.name} (${item.color} ${item.strength})</span>
-                <button class="btn btn-secondary btn-small" onclick="triggerPickSingle('${item.id}')">Pick Up</button>
+            <div style="margin: 10px 0; display:flex; align-items:center;">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer; width:100%;">
+                    <input type="checkbox" class="pickup-item-checkbox" value="${item.id}" 
+                           data-color="${item.color}" data-strength="${item.strength}" data-name="${item.name}"
+                           style="width: 18px; height: 18px; cursor: pointer;">
+                    <span style="font-size: 0.95rem; color:#f0e8ff;">${item.name} (${item.color} ${item.strength})</span>
+                </label>
             </div>
         `;
     });
 
+    html += `
+        </div>
+        <hr style="border-color:rgba(255,255,255,0.05); margin: 15px 0 10px 0;">
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button class="btn btn-secondary btn-small" onclick="elModalContainer.classList.add('hidden')">Cancel</button>
+            <button class="btn btn-primary btn-small" id="btn-confirm-pickup" onclick="triggerMultiplePickup('${myState.location}')" disabled>Done</button>
+        </div>
+    `;
+
     elModalBody.innerHTML = html;
     elModalContainer.classList.remove("hidden");
+
+    // Add event listener to checkboxes to disable/enable based on limit & toggle Done button
+    const checkboxes = document.querySelectorAll(".pickup-item-checkbox");
+    const confirmBtn = document.getElementById("btn-confirm-pickup");
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener("change", () => {
+            const checkedCount = document.querySelectorAll(".pickup-item-checkbox:checked").length;
+            
+            // Enable/disable confirm button
+            confirmBtn.disabled = (checkedCount === 0);
+
+            // Limit selection
+            if (checkedCount >= spaceLeft) {
+                checkboxes.forEach(box => {
+                    if (!box.checked) box.disabled = true;
+                });
+            } else {
+                checkboxes.forEach(box => box.disabled = false);
+            }
+        });
+    });
 });
 
-window.triggerPickSingle = (itemId) => {
-    let fromLoc = null;
-    let itemData = null;
-    if (gameState && gameState.items_on_board) {
-        for (const loc in gameState.items_on_board) {
-            const found = gameState.items_on_board[loc].find(it => it.id === itemId);
-            if (found) {
-                fromLoc = loc;
-                itemData = found;
-                break;
-            }
-        }
-    }
-
-    if (fromLoc && itemData) {
-        animateItemFly(fromLoc, itemData.color, itemData.strength, itemData.name);
-    }
-
-    sendMsg({
-        action: "pickup",
-        item_ids: [itemId]
+window.triggerMultiplePickup = (location) => {
+    const checkboxes = document.querySelectorAll(".pickup-item-checkbox:checked");
+    const itemIds = [];
+    
+    checkboxes.forEach((cb, idx) => {
+        itemIds.push(cb.value);
+        
+        // Trigger cascading flying item animation
+        setTimeout(() => {
+            animateItemFly(location, cb.dataset.color, cb.dataset.strength, cb.dataset.name);
+        }, idx * 120);
     });
+
+    if (itemIds.length > 0) {
+        sendMsg({
+            action: "pickup",
+            item_ids: itemIds
+        });
+    }
     elModalContainer.classList.add("hidden");
 };
 
@@ -2307,11 +2368,12 @@ document.getElementById("action-defeat").addEventListener("click", () => {
     // Check which monster is at my location
     let targetMonster = null;
     for (const monster in gameState.monster_locations) {
-        if (gameState.monster_locations[monster] === loc) {
+        if (gameState.active_monsters.includes(monster) && gameState.monster_locations[monster] === loc) {
             targetMonster = monster;
             break;
         }
     }
+    
     
     // Special check for Cthulhu Phase 2: player at Corpse City heart index 3 can defeat Cthulhu
     if (gameState.active_monsters.includes("Cthulhu")) {

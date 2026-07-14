@@ -157,6 +157,40 @@ MONSTER_CARDS = [
     {"id": "c15", "name": "Sudden Tempest", "spawn": 2, "event_title": "Scattering Winds", "event_text": "Move all items at Steam Plant to adjacent locations.", "event_type": "scatter_items", "activations": {"Yeti": (2, 1), "Sphinx": (1, 2)}}
 ]
 
+# MONSTER_CARDS = [
+#     # Existing 15 Cards
+#     {"id": "c1", "name": "Eerily Quiet", "items": 1, "event_title": "Calm Before the Storm", "event_text": "Nothing happens... yet.", "monster_attack": {"frenzy": False, "symbol": "Gear", "steps": 1, "dice": 1}},
+#     {"id": "c2", "name": "A Cry in the Dark", "items": 2, "event_title": "Lost Children", "event_text": "Yeti children cry out.", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 2, "dice": 2}},
+#     {"id": "c3", "name": "The Stars Align", "items": 2, "event_title": "Sphinx's Gaze", "event_text": "Sphinx psychic wave.", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 2, "dice": 2}},
+#     {"id": "c4", "name": "A Hopping Terror", "items": 1, "event_title": "Jiangshi Outbreak", "event_text": "Jiangshi gains 1 extra movement.", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 2, "dice": 2}},
+#     {"id": "c5", "name": "Void Eruption", "items": 3, "event_title": "The Void Widens", "event_text": "Increase Terror Level.", "monster_attack": {"frenzy": False, "symbol": "Jewel", "steps": 1, "dice": 2}},
+#     {"id": "c6", "name": "Call of the Siren", "items": 2, "event_title": "Delilah Appears", "event_text": "Spawn Delilah.", "monster_attack": {"frenzy": False, "symbol": "Dagger", "steps": 1, "dice": 1}},
+#     {"id": "c7", "name": "Midnight Bells", "items": 1, "event_title": "Mayor Finch in Danger", "event_text": "Spawn Mayor Finch.", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 1, "dice": 2}},
+#     {"id": "c8", "name": "Frenzy!", "items": 2, "event_title": "Madness Spreads", "event_text": "Active monster moves 2.", "monster_attack": {"frenzy": True, "symbol": "None", "steps": 2, "dice": 3}},
+#     {"id": "c9", "name": "Heavy Fog", "items": 1, "event_title": "Reduced Visibility", "event_text": "No special abilities.", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 1, "dice": 1}},
+#     {"id": "c10", "name": "Exhaustion", "items": 2, "event_title": "Fatigue", "event_text": "Discard item or lose AP.", "monster_attack": {"frenzy": False, "symbol": "Gear", "steps": 1, "dice": 2}},
+#     {"id": "c11", "name": "Portal Resonance", "items": 2, "event_title": "Aura of the Deep", "event_text": "Cthulhu bonus damage.", "monster_attack": {"frenzy": False, "symbol": "Jewel", "steps": 2, "dice": 2}},
+#     {"id": "c12", "name": "Echoes of the Past", "items": 1, "event_title": "Professor Higgins Appears", "event_text": "Spawn Higgins.", "monster_attack": {"frenzy": False, "symbol": "Gear", "steps": 2, "dice": 1}},
+#     {"id": "c13", "name": "Tonic of Youth", "items": 2, "event_title": "Health Tonic", "event_text": "Draw 1 Perk card.", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 1, "dice": 1}},
+#     {"id": "c14", "name": "Tidal Wave", "items": 1, "event_title": "Flooding Path", "event_text": "Path is blocked.", "monster_attack": {"frenzy": False, "symbol": "Gear", "steps": 2, "dice": 1}},
+#     {"id": "c15", "name": "Sudden Tempest", "items": 2, "event_title": "Scattering Winds", "event_text": "Move items at Steam Plant.", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 2, "dice": 1}},
+#     {"id": "c16", "name": "Frenzied Howl", "items": 1, "event_title": "Pack Tactics", "event_text": "Monsters group up.", "monster_attack": {"frenzy": True, "symbol": "None", "steps": 1, "dice": 2}},
+#     {"id": "c17", "name": "Ancient Curse", "items": 2, "event_title": "Dark Omens", "event_text": "All players lose 1 health.", "monster_attack": {"frenzy": False, "symbol": "Eye", "steps": 1, "dice": 2}},
+#     {"id": "c18", "name": "Broken Chains", "items": 1, "event_title": "Escapee", "event_text": "Move nearest monster 1 space.", "monster_attack": {"frenzy": False, "symbol": "Wrench", "steps": 1, "dice": 1}},
+#     {"id": "c19", "name": "Spreading Rot", "items": 2, "event_title": "Blighted Land", "event_text": "Discard 1 item at current location.", "monster_attack": {"frenzy": False, "symbol": "Tincture", "steps": 1, "dice": 2}},
+#     {"id": "c20", "name": "Rising Panic", "items": 1, "event_title": "Fear Factor", "event_text": "Increase terror by 1.", "monster_attack": {"frenzy": False, "symbol": "Hand", "dice": 3, "steps": 1}},
+#     {"id": "c21", "name": "Total Frenzy", "items": 2, "event_title": "Unstoppable", "event_text": "Monster attacks twice.", "monster_attack": {"frenzy": True, "symbol": "None", "steps": 1, "dice": 2}},
+#     {"id": "c22", "name": "Deep Sea Pressure", "items": 2, "event_title": "Crushing Depth", "event_text": "Heroes at beach take 1 dmg.", "monster_attack": {"frenzy": False, "symbol": "Jewel", "steps": 2, "dice": 3}},
+#     {"id": "c23", "name": "Mechanical Malfunction", "items": 1, "event_title": "Power Surge", "event_text": "Steam plant is unusable.", "monster_attack": {"frenzy": False, "symbol": "Wrench", "steps": 1, "dice": 1}},
+#     {"id": "c24", "name": "Ghostly Whisper", "items": 1, "event_title": "Eerie Presence", "event_text": "Target Hero is stunned.", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 1, "dice": 2}},
+#     {"id": "c25", "name": "Alchemist's Folly", "items": 2, "event_title": "Spilled Tincture", "event_text": "Items nearby are destroyed.", "monster_attack": {"frenzy": False, "symbol": "Tincture", "steps": 2, "dice": 1}},
+#     {"id": "c26", "name": "Crimson Mark", "items": 1, "event_title": "Bloodthirst", "event_text": "Monster moves towards wounded.", "monster_attack": {"frenzy": False, "symbol": "Hand", "steps": 2, "dice": 2}},
+#     {"id": "c27", "name": "Eye of the Storm", "items": 2, "event_title": "Focusing Gaze", "event_text": "Reveal top 2 Monster cards.", "monster_attack": {"frenzy": False, "symbol": "Eye", "steps": 1, "dice": 1}},
+#     {"id": "c28", "name": "Rapid Frenzy", "items": 1, "event_title": "Overdrive", "event_text": "Frenzy monster moves 3.", "monster_attack": {"frenzy": True, "symbol": "None", "steps": 3, "dice": 2}},
+#     {"id": "c29", "name": "Blocked Vents", "items": 1, "event_title": "Gas Leak", "event_text": "Hero moves to adjacent.", "monster_attack": {"frenzy": False, "symbol": "Wrench", "steps": 1, "dice": 2}},
+#     {"id": "c30", "name": "Tainted Offering", "items": 2, "event_title": "Ritual Site", "event_text": "Spawn Item at Ritual location.", "monster_attack": {"frenzy": False, "symbol": "Tincture", "steps": 1, "dice": 2}}
+# ]
+
 PERK_CARDS = [
     {"id": "p1", "name": "Swiftness", "text": "Move any hero up to 3 spaces for free."},
     {"id": "p2", "name": "Security", "text": "Ignore all hits from one attack."},
@@ -224,6 +258,7 @@ class GameRoom:
         self.item_bag: List[Dict] = []
         self.perk_deck: List[Dict] = []
         self.active_monsters: List[str] = []
+        self.defeated_monsters: List[str] = []
         
         # Board entities
         self.heroes_state: Dict[str, Dict] = {} # player_name -> state
@@ -246,8 +281,15 @@ class GameRoom:
             self.log.pop(0)
 
     def initialize_game(self, chosen_monsters: List[str]):
-        self.active_monsters = chosen_monsters
+        frenzy_order = {
+            "Yeti": 1,
+            "Sphinx": 2,
+            "Jiangshi": 3,
+            "Cthulhu": 4
+        }
+        self.active_monsters = sorted(chosen_monsters, key=lambda m: frenzy_order.get(m, 99))
         self.terror_level = 0
+        self.defeated_monsters = []
         self.game_phase = "HeroPhase"
         self.turn_player_idx = 0
         self.combat_rolls = []
@@ -387,6 +429,7 @@ class GameRoom:
             "terror_level": self.terror_level,
             "deck_count": len(self.deck),
             "active_monsters": self.active_monsters,
+            "defeated_monsters": self.defeated_monsters,
             "frenzy_marker": self.frenzy_marker,
             "heroes_state": self.heroes_state,
             "items_on_board": self.items_on_board,
@@ -829,17 +872,17 @@ class GameRoom:
                 return False
                 
             all_kids_here = all(k["location"] == true_lair_loc for k in y_state["children"])
-            yeti_here = (self.monster_locations["Yeti"] == true_lair_loc)
-            hero_here = (loc == true_lair_loc)
+            hero_with_yeti = (loc == self.monster_locations["Yeti"])
             
-            if all_kids_here and yeti_here and hero_here:
+            if all_kids_here and hero_with_yeti:
                 self.active_monsters.remove("Yeti")
+                self.defeated_monsters.append("Yeti")
                 h_state["ap"] -= 1
                 self.add_log("THE YETI HAS BEEN DEFEATED! The children are safe and happy!")
                 self.check_victory()
                 return True
             else:
-                self.add_log("Defeat condition not met. Yeti, children, and hero must all be at the True Lair.")
+                self.add_log("Defeat condition not met. All children must be at the True Lair, and the hero must be with the Yeti.")
                 return False
                 
         elif monster == "Jiangshi":
@@ -849,6 +892,7 @@ class GameRoom:
             
             if all_filled and hero_here:
                 self.active_monsters.remove("Jiangshi")
+                self.defeated_monsters.append("Jiangshi")
                 h_state["ap"] -= 1
                 self.add_log("THE JIANGSHI IS BANISHED! The hopping vampire is sealed.")
                 self.check_victory()
@@ -865,6 +909,7 @@ class GameRoom:
             
             if all_filled and current_sum == sp_state["target_sum"] and hero_here:
                 self.active_monsters.remove("Sphinx")
+                self.defeated_monsters.append("Sphinx")
                 h_state["ap"] -= 1
                 self.add_log("THE SPHINX SOLVED! The riddle has been cracked and the Sphinx vanishes.")
                 self.check_victory()
@@ -883,6 +928,7 @@ class GameRoom:
                         h_state["items"].remove(strong_red)
                         self.discarded_items.append(strong_red)
                         self.active_monsters.remove("Cthulhu")
+                        self.defeated_monsters.append("Cthulhu")
                         h_state["ap"] -= 1
                         self.add_log("CTHULHU BANISHED TO THE VOID! The doorway is sealed forever!")
                         self.check_victory()
