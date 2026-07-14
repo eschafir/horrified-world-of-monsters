@@ -1712,7 +1712,7 @@ function animateLairSpawn(locName) {
         top: ${screenStart.top + screenStart.height / 2 - 14}px;
         width: 40px;
         height: 28px;
-        background: url('/Images/Lair Tokens/lair_token_back.jpeg') center/cover;
+        background: url('/Images/Lair Tokens/lair_token_back.png') center/cover;
         border: 2px solid #fff;
         border-radius: 4px;
         z-index: 10000;
@@ -2052,10 +2052,10 @@ function renderSVGMap() {
     }
 
     const lairImages = [
-        { id: "pattern-lair-back", url: "/Images/Lair Tokens/lair_token_back.jpeg" },
-        { id: "pattern-lair-yeti", url: "/Images/Lair Tokens/yeti_lair_token.jpeg" },
-        { id: "pattern-lair-jiangshi", url: "/Images/Lair Tokens/jianshi_lair_token.jpeg" },
-        { id: "pattern-lair-blank", url: "/Images/Lair Tokens/blank_lair_token.jpeg" }
+        { id: "pattern-lair-back", url: "/Images/Lair Tokens/lair_token_back.png" },
+        { id: "pattern-lair-yeti", url: "/Images/Lair Tokens/yeti_lair_token.png" },
+        { id: "pattern-lair-jiangshi", url: "/Images/Lair Tokens/jianshi_lair_token.png" },
+        { id: "pattern-lair-blank", url: "/Images/Lair Tokens/blank_lair_token.png" }
     ];
     lairImages.forEach(lairImg => {
         const patLair = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
@@ -2610,13 +2610,13 @@ function getCharOffset(index, total, nodeRadius = 35) {
 // ---------------------------------------------------------
 
 function showLairImageModal(lairType) {
-    let imgSrc = "/Images/Lair Tokens/blank_lair_token.jpeg";
+    let imgSrc = "/Images/Lair Tokens/blank_lair_token.png";
     let title = "Decoy Lair";
     if (lairType === "yeti") {
-        imgSrc = "/Images/Lair Tokens/yeti_lair_token.jpeg";
+        imgSrc = "/Images/Lair Tokens/yeti_lair_token.png";
         title = "Yeti Lair";
     } else if (lairType === "jiangshi") {
-        imgSrc = "/Images/Lair Tokens/jianshi_lair_token.jpeg";
+        imgSrc = "/Images/Lair Tokens/jianshi_lair_token.png";
         title = "Jiangshi Lair";
     }
     const html = `
