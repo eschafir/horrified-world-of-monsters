@@ -2135,3 +2135,43 @@ body {
     75% { transform: scale(1.02) rotate(1deg); opacity: 0.95; filter: drop-shadow(0 0 12px #ff4400); }
     100% { transform: scale(1) rotate(0deg); opacity: 1; filter: drop-shadow(0 0 10px #ff9900); }
 }
+
+/* Dice Styles */
+.die-button {
+    width: 70px;
+    height: 70px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #2a1a4a, #150a2a);
+    border: 2px solid #9933ff;
+    color: white;
+    font-size: 2.2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    user-select: none;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+}
+.die-button:hover:not(.rolled) {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 18px rgba(153,51,255,0.5);
+}
+.die-button.rolled {
+    cursor: default;
+    background: linear-gradient(135deg, #4a1a2a, #2a0a1a);
+    border-color: #ff3366;
+    box-shadow: 0 0 15px rgba(255,51,102,0.4);
+}
+.die-rolling {
+    animation: rollDieAnim 0.5s ease-out forwards;
+}
+@keyframes rollDieAnim {
+    0% { transform: scale(1) rotate(0deg) translateY(0); }
+    20% { transform: scale(1.1) rotate(45deg) translateY(-20px); }
+    40% { transform: scale(0.9) rotate(180deg) translateY(-10px); }
+    60% { transform: scale(1.15) rotate(280deg) translateY(10px); }
+    80% { transform: scale(0.95) rotate(340deg) translateY(5px); }
+    100% { transform: scale(1) rotate(360deg) translateY(0); }
+}

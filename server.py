@@ -230,37 +230,79 @@ def find_shortest_path(start: str, targets: Set[str]) -> Optional[str]:
     if not targets or start in targets:
         return start
     
-    queue = [[start]]
-    visited = {start}
-    shortest_paths = []
-    min_len = 999
+    paths = {start: [[start]]}
+    queue = [start]
     
     while queue:
-        path = queue.pop(0)
-        node = path[-1]
+        node = queue.pop(0)
+        curr_len = len(paths[node][0])
         
-        if len(path) > min_len:
-            break
-            
-        if node in targets:
-            shortest_paths.append(path)
-            min_len = len(path)
-            continue
-            
         for neighbor in ADJACENCY_LIST.get(node, []):
-            if neighbor not in visited:
-                visited.add(neighbor)
-                queue.append(path + [neighbor])
-                
-    if not shortest_paths:
+            if neighbor not in paths:
+                paths[neighbor] = [p + [neighbor] for p in paths[node]]
+                queue.append(neighbor)
+            elif len(paths[neighbor][0]) == curr_len + 1:
+                for p in paths[node]:
+                    paths[neighbor].append(p + [neighbor])
+                    
+    target_dists = {t: len(paths[t][0]) for t in targets if t in paths}
+    if not target_dists:
         return start
         
-    # Sort paths alphabetically to keep path choice deterministic
-    shortest_paths.sort(key=lambda p: (len(p), p[-1]))
-    best_path = shortest_paths[0]
+    min_dist = min(target_dists.values())
+    best_targets = [t for t, d in target_dists.items() if d == min_dist]
+    best_targets.sort()
+    target = best_targets[0]
     
-    if len(best_path) > 1:
-        return best_path[1]
+    target_paths = paths[target]
+    target_paths.sort(key=lambda p: tuple(p))
+    
+    if len(target_paths[0]) > 1:
+        return target_paths[0][1]
+    return start
+
+def get_best_monster_move(start: str, hero_targets: Set[str], citizen_targets: Set[str]) -> Optional[str]:
+    """Finds best move, preferring heroes if equidistant."""
+    if start in hero_targets or start in citizen_targets:
+        return start
+        
+    paths = {start: [[start]]}
+    queue = [start]
+    
+    while queue:
+        node = queue.pop(0)
+        curr_len = len(paths[node][0])
+        
+        for neighbor in ADJACENCY_LIST.get(node, []):
+            if neighbor not in paths:
+                paths[neighbor] = [p + [neighbor] for p in paths[node]]
+                queue.append(neighbor)
+            elif len(paths[neighbor][0]) == curr_len + 1:
+                for p in paths[node]:
+                    paths[neighbor].append(p + [neighbor])
+                    
+    hero_dists = {t: len(paths[t][0]) for t in hero_targets if t in paths}
+    cit_dists = {t: len(paths[t][0]) for t in citizen_targets if t in paths}
+    
+    min_h = min(hero_dists.values()) if hero_dists else 999
+    min_c = min(cit_dists.values()) if cit_dists else 999
+    
+    if min_h == 999 and min_c == 999:
+        return start
+        
+    if min_h <= min_c:
+        best_targets = [t for t, d in hero_dists.items() if d == min_h]
+    else:
+        best_targets = [t for t, d in cit_dists.items() if d == min_c]
+        
+    best_targets.sort()
+    target = best_targets[0]
+    
+    target_paths = paths[target]
+    target_paths.sort(key=lambda p: tuple(p))
+    
+    if len(target_paths[0]) > 1:
+        return target_paths[0][1]
     return start
 
 # ---------------------------------------------------------
@@ -280,6 +322,8 @@ class GameRoom:
         self.perk_deck: List[Dict] = []
         self.active_monsters: List[str] = []
         self.defeated_monsters: List[str] = []
+        self.pending_dice_roll = None
+        self.roll_event = None
         
         # Board entities
         self.heroes_state: Dict[str, Dict] = {} # player_name -> state
@@ -460,6 +504,7 @@ class GameRoom:
             "citizens": {k: v for k, v in self.citizens.items() if v["active"] or v["location"] != "Board"},
             "monster_locations": self.monster_locations,
             "monster_states": self.monster_states,
+            "pending_dice_roll": self.pending_dice_roll,
             "turn_player_idx": self.turn_player_idx,
             "current_card": self.current_card,
             "combat_rolls": self.combat_rolls,
@@ -1163,53 +1208,64 @@ class GameRoom:
         # Monster phase is now triggered by the player drawing the card manually
 
     async def run_monster_phase(self, broadcast_fn=None):
-        if not self.deck:
-            self.check_defeat("The Monster Card Deck has been exhausted!")
+        self.monster_phase_running = True
+        try:
+            self.add_log("--- MONSTER PHASE ---")
+            
+            if not self.deck:
+                self.check_defeat("Monster deck is empty!")
+                if broadcast_fn:
+                    await broadcast_fn()
+                return
+                
+            card = self.deck.pop()
+            self.current_card = card
+            self.discard.append(card)
+            self.add_log(f"Drew Monster Card: {card['name']} (Spawns {card['spawn']} items)")
+
             if broadcast_fn:
                 await broadcast_fn()
-            return
 
-        card = self.deck.pop()
-        self.current_card = card
-        self.discard.append(card)
-        self.add_log(f"Drew Monster Card: {card['name']} (Spawns {card['spawn']} items)")
+            for _ in range(card["spawn"]):
+                self.spawn_item()
 
-        # Broadcast immediately so the card appears on clients
-        if broadcast_fn:
-            await broadcast_fn()
+            await asyncio.sleep(1.5)
 
-        for _ in range(card["spawn"]):
-            self.spawn_item()
+            await self.resolve_event(card)
+            await asyncio.sleep(1.5)
 
-        await asyncio.sleep(1.5)
+            for name, move_info in card["activations"].items():
+                if name == "Frenzy":
+                    active_monster = self.frenzy_marker
+                    if active_monster in self.active_monsters:
+                        await self.activate_monster(active_monster, move_info[0], move_info[1], broadcast_fn)
+                elif name in self.active_monsters:
+                    await self.activate_monster(name, move_info[0], move_info[1], broadcast_fn)
 
-        await self.resolve_event(card)
-        await asyncio.sleep(1.5)
+            self.active_perks_limit.clear()
 
-        for name, move_info in card["activations"].items():
-            if name == "Frenzy":
-                active_monster = self.frenzy_marker
-                if active_monster in self.active_monsters:
-                    await self.activate_monster(active_monster, move_info[0], move_info[1])
-            elif name in self.active_monsters:
-                await self.activate_monster(name, move_info[0], move_info[1])
+            if self.game_phase == "MonsterPhase":
+                # Reset Buccaneer's max_ap back to 3 at turn start
+                for p_name, h_st in self.heroes_state.items():
+                    if h_st["hero"] == "The Buccaneer":
+                        h_st["max_ap"] = 3
 
-        self.active_perks_limit.clear()
+                self.turn_player_idx = (self.turn_player_idx + 1) % len(self.players)
+                next_player = self.players[self.turn_player_idx]["name"]
+                max_ap = self.heroes_state[next_player]["max_ap"]
+                self.heroes_state[next_player]["ap"] = max_ap
+                self.game_phase = "HeroPhase"
+                self.add_log(f"It is now {next_player}'s turn! ({max_ap} AP)")
+                
+        except Exception as e:
+            import traceback
+            self.add_log(f"CRITICAL ERROR IN MONSTER PHASE: {str(e)} | {traceback.format_exc()}")
+            print(f"CRITICAL ERROR IN MONSTER PHASE: {str(e)}\n{traceback.format_exc()}")
+            # Attempt to recover the phase so the game isn't stuck forever
+            if self.game_phase == "MonsterPhase":
+                self.turn_player_idx = (self.turn_player_idx + 1) % len(self.players)
+                self.game_phase = "HeroPhase"
 
-        if self.game_phase == "MonsterPhase":
-            # Reset Buccaneer's max_ap back to 3 at turn start
-            for p_name, h_st in self.heroes_state.items():
-                if h_st["hero"] == "The Buccaneer":
-                    h_st["max_ap"] = 3
-
-            self.turn_player_idx = (self.turn_player_idx + 1) % len(self.players)
-            next_player = self.players[self.turn_player_idx]["name"]
-            max_ap = self.heroes_state[next_player]["max_ap"]
-            self.heroes_state[next_player]["ap"] = max_ap
-            self.game_phase = "HeroPhase"
-            self.add_log(f"It is now {next_player}'s turn! ({max_ap} AP)")
-
-        # Final broadcast after phase completes and turn advances
         if broadcast_fn:
             await broadcast_fn()
 
@@ -1263,13 +1319,15 @@ class GameRoom:
         if self.terror_level >= 7:
             self.check_defeat("Terror Level has reached maximum (7)!")
 
-    async def activate_monster(self, name: str, moves: int, dice: int):
+    async def activate_monster(self, name: str, moves: int, dice: int, broadcast_fn=None):
         self.add_log(f"Monster {name} is activating: Moves {moves}, Dice {dice}.")
         
         for _ in range(moves):
             current_loc = self.monster_locations[name]
             
-            targets = set()
+            hero_targets = set()
+            citizen_targets = set()
+            
             for h_state in self.heroes_state.values():
                 if name == "Cthulhu" and self.monster_states["Cthulhu"]["phase"] == 2:
                     track_pos = self.monster_states["Cthulhu"]["player_tracks"]
@@ -1286,28 +1344,36 @@ class GameRoom:
                     if "Cthulhu" in self.active_monsters:
                         if self.monster_states["Cthulhu"]["player_tracks"].get(h_state.get("name", ""), -1) != -1:
                             continue
-                    targets.add(h_state["location"])
+                    hero_targets.add(h_state["location"])
                     
             for cit in self.citizens.values():
                 if cit["active"] and cit["location"] not in ["Board", "Rescued"]:
-                    targets.add(cit["location"])
+                    citizen_targets.add(cit["location"])
                     
             if name == "Yeti":
                 y_state = self.monster_states["Yeti"]
                 for child in y_state["children"]:
                     if not child["rescued"]:
-                        targets.add(child["location"])
+                        citizen_targets.add(child["location"])
 
-            if not targets:
+            if not hero_targets and not citizen_targets:
                 break
                 
             if name == "Cthulhu" and self.monster_states["Cthulhu"]["phase"] == 2:
                 break
                 
-            next_step = find_shortest_path(current_loc, targets)
+            # STOP IMMEDIATELY IF ON A TARGET
+            if current_loc in hero_targets or current_loc in citizen_targets:
+                break
+                
+            next_step = get_best_monster_move(current_loc, hero_targets, citizen_targets)
             if next_step and next_step != current_loc:
                 self.monster_locations[name] = next_step
                 self.add_log(f"{name} moved to {next_step}.")
+                
+                # Broadcast after each move step so players see the monster walking
+                if broadcast_fn:
+                    await broadcast_fn()
                 await asyncio.sleep(0.5)
                 
         curr_loc = self.monster_locations[name]
@@ -1317,7 +1383,7 @@ class GameRoom:
             c_idx = self.monster_states["Cthulhu"]["corpse_city_track"].index(c_loc)
             attack_targets = [k for k, v in self.monster_states["Cthulhu"]["player_tracks"].items() if v == c_idx]
             if attack_targets:
-                await self.perform_attack(name, attack_targets[0], dice)
+                await self.perform_attack(name, attack_targets[0], dice, broadcast_fn)
             return
 
         target_hero = None
@@ -1327,7 +1393,7 @@ class GameRoom:
                 break
                 
         if target_hero:
-            await self.perform_attack(name, target_hero, dice)
+            await self.perform_attack(name, target_hero, dice, broadcast_fn)
         else:
             target_citizen = None
             for cit_name, cit in self.citizens.items():
@@ -1337,7 +1403,7 @@ class GameRoom:
             if target_citizen:
                 await self.perform_attack_citizen(name, target_citizen, dice)
 
-    async def perform_attack(self, monster: str, hero_name: str, dice: int):
+    async def perform_attack(self, monster: str, hero_name: str, dice: int, broadcast_fn=None):
         self.add_log(f"{monster} is attacking {hero_name}!")
         self.combat_rolls = []
         
@@ -1355,7 +1421,30 @@ class GameRoom:
                 hits += 1
             elif roll == "Frenzy":
                 frenzies += 1
+
+        # Pause and wait for player to roll dice on the frontend
+        import uuid
+        if dice > 0:
+            self.pending_dice_roll = {
+                "id": str(uuid.uuid4()),
+                "hero": hero_name,
+                "monster": monster,
+                "dice": dice,
+                "results": self.combat_rolls
+            }
+            if self.roll_event is None:
+                self.roll_event = asyncio.Event()
+            self.roll_event.clear()
+            
+            if broadcast_fn:
+                await broadcast_fn()
                 
+            # Block this async task until the player sends finish_dice_roll
+            await self.roll_event.wait()
+            
+            chosen_items = self.pending_dice_roll.get("chosen_items")
+            self.pending_dice_roll = None
+            
         self.add_log(f"Roll results: {', '.join(self.combat_rolls)} (Hits: {hits}, Frenzy: {frenzies})")
         
         if frenzies > 0:
@@ -1366,22 +1455,26 @@ class GameRoom:
         if hits > 0:
             h_state = self.heroes_state[hero_name]
             
-            for _ in range(hits):
-                if h_state["items"]:
-                    h_state["items"].sort(key=lambda i: i["strength"])
-                    discarded = h_state["items"].pop(0)
-                    self.discarded_items.append(discarded)
-                    self.add_log(f"{hero_name} discarded {discarded['name']} to absorb 1 Hit.")
-                else:
-                    self.terror_level = min(7, self.terror_level + 1)
-                    self.add_log(f"{hero_name} has NO items left to block the hit and is DEFEATED!")
-                    self.check_terror()
+            if chosen_items is not None:
+                for i_id in chosen_items:
+                    for item in h_state["items"]:
+                        if item["id"] == i_id:
+                            h_state["items"].remove(item)
+                            self.discarded_items.append(item)
+                            self.add_log(f"{hero_name} discarded {item['name']} to block the attack.")
+                            break
+            else:
+                self.terror_level = min(7, self.terror_level + 1)
+                self.add_log(f"{hero_name} was DEFEATED by the attack!")
+                self.check_terror()
 
-                    h_state["location"] = "Reviving Throne"
-                    self.add_log(f"{hero_name} respawns at Reviving Throne.")
-                    if "Cthulhu" in self.active_monsters:
-                        self.monster_states["Cthulhu"]["player_tracks"][hero_name] = -1
-                    break
+                h_state["location"] = "Reviving Throne"
+                self.add_log(f"{hero_name} respawns at Reviving Throne.")
+                if "Cthulhu" in self.active_monsters:
+                    self.monster_states["Cthulhu"]["player_tracks"][hero_name] = -1
+
+        if broadcast_fn:
+            await broadcast_fn()
 
     async def perform_attack_citizen(self, monster: str, citizen_name: str, dice: int):
         self.add_log(f"{monster} is attacking citizen {citizen_name}!")
@@ -1532,6 +1625,20 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
             elif action == "defeat":
                 monster = msg.get("monster")
                 room.execute_defeat(player_name, monster)
+                
+            elif action == "finish_dice_roll":
+                room.add_log(f"DEBUG: Server received finish_dice_roll from {player_name}")
+                if room.pending_dice_roll and room.pending_dice_roll["hero"] == player_name:
+                    room.pending_dice_roll["chosen_items"] = msg.get("item_ids")
+                    if room.roll_event:
+                        room.add_log(f"DEBUG: Unblocking roll_event for {player_name}!")
+                        room.roll_event.set()
+                    else:
+                        room.add_log("DEBUG: roll_event was None!")
+                else:
+                    room.add_log(f"DEBUG: Invalid finish_dice_roll: pending_hero={(room.pending_dice_roll['hero'] if room.pending_dice_roll else 'None')}")
+                # Broadcast immediately to see these debug logs!
+                asyncio.create_task(room_manager.broadcast_state(room_code))
                 
             elif action == "special":
                 args = msg.get("args", {})
