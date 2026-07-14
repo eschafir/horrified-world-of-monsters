@@ -17,6 +17,8 @@ let destinationNodeSelection = null; // Track movement target
 let chosenHero = "The Guardian";
 let dragType = null;
 let dragLocName = null;
+let lastGamePhaseSeen = null;
+let intentionalDisconnect = false;
 
 // Map Zoom & Pan State
 let zoomLevel = 1.0;
@@ -58,6 +60,9 @@ const elBtnChatSend = document.getElementById("btn-chat-send");
 const elModalContainer = document.getElementById("modal-container");
 const elModalBody = document.getElementById("modal-body");
 const elCloseModal = document.querySelector(".close-modal");
+const elBtnDebugLose = document.getElementById("btn-debug-lose"); // TEMP TEST BUTTON: remove before shipping
+const elBtnMainMenu = document.getElementById("btn-main-menu");
+const elGameOverOverlay = document.getElementById("game-over-overlay");
 
 // Action point display
 const elApDisplay = document.getElementById("action-points-left");
@@ -144,6 +149,21 @@ elCloseModal.addEventListener("click", () => {
 // Volume Slider Event Listener
 document.getElementById("bg-music-volume").addEventListener("input", updateMusicVolume);
 
+// TEMP TEST BUTTON: forces the Lose condition. Remove before shipping.
+if (elBtnDebugLose) {
+    elBtnDebugLose.addEventListener("click", () => {
+        sendMsg({ action: "debug_lose" });
+    });
+}
+
+// Game Over banner "Main Menu" button: asks the server to destroy the room,
+// then every client (including this one) returns to the lobby via "room_closed".
+if (elBtnMainMenu) {
+    elBtnMainMenu.addEventListener("click", () => {
+        sendMsg({ action: "return_to_menu" });
+    });
+}
+
 // ---------------------------------------------------------
 // REAL-TIME WEBSOCKET MANAGEMENT
 // ---------------------------------------------------------
@@ -198,6 +218,9 @@ function setupConnection(isHost) {
             if (data.player !== playerName) {
                 animateRemoteItemPickup(data.player, data.location, data.items);
             }
+        } else if (data.type === "room_closed") {
+            intentionalDisconnect = true;
+            returnToMainMenu();
         }
     };
 
@@ -206,8 +229,33 @@ function setupConnection(isHost) {
     };
 
     socket.onclose = () => {
+        if (intentionalDisconnect) {
+            intentionalDisconnect = false;
+            return;
+        }
         alert("Disconnected from server. Reconnecting...");
     };
+}
+
+// Tears down the local session and returns to the lobby's setup screen.
+// Called after the server confirms the room has been destroyed (see "room_closed").
+function returnToMainMenu() {
+    if (socket) {
+        try { socket.close(); } catch (e) {}
+    }
+    socket = null;
+    gameState = null;
+    roomCode = "";
+    hasDrawnThisPhase = false;
+    lastDrawnCardId = null;
+    lastGamePhaseSeen = null;
+
+    elGameOverOverlay.classList.add("hidden");
+    elGameScreen.classList.add("hidden");
+    elLobbyScreen.classList.remove("hidden");
+    elWaitingView.classList.add("hidden");
+    elSetupView.classList.remove("hidden");
+    elRoomCodeInput.value = "";
 }
 
 function findItemInGameState(itemId) {
@@ -391,6 +439,11 @@ function renderHeroSelectOptions() {
 function updateGameUI() {
     if (!gameState) return;
 
+    // TEMP TEST BUTTON: only show once a game is in progress. Remove before shipping.
+    if (elBtnDebugLose) {
+        elBtnDebugLose.classList.toggle("hidden", !gameState.game_started);
+    }
+
     if (!gameState.game_started) {
         // We are in Lobby Waiting view
         elLobbyScreen.classList.remove("hidden");
@@ -475,6 +528,20 @@ function updateGameUI() {
                 secMonsterPhase.classList.remove("active-phase");
             }
         }
+
+        // Game Over banner (Defeat)
+        if (elGameOverOverlay) {
+            if (gameState.game_phase === "GameOverLose") {
+                if (lastGamePhaseSeen !== "GameOverLose") {
+                    playGameLostSound();
+                }
+                document.getElementById("game-over-message").textContent = "Heroes failed to save the world.";
+                elGameOverOverlay.classList.remove("hidden");
+            } else {
+                elGameOverOverlay.classList.add("hidden");
+            }
+        }
+        lastGamePhaseSeen = gameState.game_phase;
 
         // Render Sidebar lists (Inventory)
         renderPlayerPanel();
@@ -1799,6 +1866,17 @@ function playDrawCardSound() {
         sfx.play().catch(e => console.warn("Draw card sound playback failed:", e));
     } catch (e) {
         console.warn("Error playing draw card sound:", e);
+    }
+}
+
+// Sound effect played once when the heroes lose the game
+function playGameLostSound() {
+    try {
+        const sfx = new Audio("/Music/game_lost.wav");
+        sfx.volume = 0.6;
+        sfx.play().catch(e => console.warn("Game lost sound playback failed:", e));
+    } catch (e) {
+        console.warn("Error playing game lost sound:", e);
     }
 }
 

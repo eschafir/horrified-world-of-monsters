@@ -1517,6 +1517,26 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
             elif action == "end_turn":
                 room.end_turn(player_name)
 
+            # TEMP TEST ACTION: forces the Lose condition. Remove before shipping.
+            elif action == "debug_lose":
+                if room.game_started:
+                    room.check_defeat("Debug test loss triggered.")
+
+            elif action == "return_to_menu":
+                # Only allow tearing down the room once the game has actually ended,
+                # e.g. from the "Main Menu" button on the Game Over banner.
+                if room.game_phase in ("GameOverLose", "GameOverWin"):
+                    await room_manager.send_event(room_code, {"type": "room_closed"})
+                    sockets_to_close = list(room_manager.websockets.get(room_code, []))
+                    room_manager.rooms.pop(room_code, None)
+                    room_manager.websockets.pop(room_code, None)
+                    for ws in sockets_to_close:
+                        try:
+                            await ws.close()
+                        except Exception:
+                            pass
+                    return
+
             elif action == "draw_monster_card":
                 active_player = room.players[room.turn_player_idx]["name"]
                 if player_name == active_player and room.game_phase == "MonsterPhase" and not getattr(room, "monster_phase_running", False):
