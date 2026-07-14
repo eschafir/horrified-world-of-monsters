@@ -1229,15 +1229,15 @@ class GameRoom:
             
         elif ev == "void_eruption":
             if "Cthulhu" in self.active_monsters:
-                self.terror_level = min(10, self.terror_level + 1)
+                self.terror_level = min(7, self.terror_level + 1)
                 self.add_log("The Void opens wider! Terror Level increases by 1.")
                 self.check_terror()
             else:
                 self.spawn_item()
 
     def check_terror(self):
-        if self.terror_level >= 10:
-            self.check_defeat("Terror Level has reached maximum (10)!")
+        if self.terror_level >= 7:
+            self.check_defeat("Terror Level has reached maximum (7)!")
 
     async def activate_monster(self, name: str, moves: int, dice: int):
         self.add_log(f"Monster {name} is activating: Moves {moves}, Dice {dice}.")
@@ -1349,7 +1349,7 @@ class GameRoom:
                     self.discarded_items.append(discarded)
                     self.add_log(f"{hero_name} discarded {discarded['name']} to absorb 1 Hit.")
                 else:
-                    self.terror_level = min(10, self.terror_level + 1)
+                    self.terror_level = min(7, self.terror_level + 1)
                     self.add_log(f"{hero_name} has NO items left to block the hit and is DEFEATED!")
                     self.check_terror()
 
@@ -1371,7 +1371,7 @@ class GameRoom:
         if hits > 0:
             self.citizens[citizen_name]["active"] = False
             self.citizens[citizen_name]["location"] = "Defeated"
-            self.terror_level = min(10, self.terror_level + 1)
+            self.terror_level = min(7, self.terror_level + 1)
             self.add_log(f"Citizen {citizen_name} has been DEFEATED by {monster}! Terror Level increases.")
             self.check_terror()
         else:

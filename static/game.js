@@ -2572,6 +2572,60 @@ function renderSVGMap() {
 
         elGameMap.appendChild(g);
     }
+
+    // ---------------------------------------------------------
+    // Render Terror Track
+    // ---------------------------------------------------------
+    if (gameState.terror_level !== undefined) {
+        const terrorTrackG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        // Track goes from 0 to 7 (8 slots). Space them further apart and make them bigger.
+        const slotSpacing = 82;
+        const numSlots = 8;
+        // Shifted slightly to the left by subtracting 12
+        const trackStartX = 652 - (numSlots * slotSpacing) / 2 + (slotSpacing / 2) - 12;
+        const trackY = 60;
+
+        for (let i = 0; i <= 7; i++) {
+            const slotX = trackStartX + i * slotSpacing;
+            
+            // Slot background
+            const slotCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            slotCircle.setAttribute("cx", slotX);
+            slotCircle.setAttribute("cy", trackY);
+            slotCircle.setAttribute("r", 28);
+            slotCircle.setAttribute("fill", "rgba(0,0,0,0.6)");
+            slotCircle.setAttribute("stroke", "#ff3366");
+            slotCircle.setAttribute("stroke-width", i === 7 ? "4" : "3");
+            if (i === 7) slotCircle.setAttribute("stroke-dasharray", "6"); // Danger slot
+            terrorTrackG.appendChild(slotCircle);
+            
+            // Number (only show if not current level)
+            if (gameState.terror_level !== i) {
+                const numText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                numText.setAttribute("x", slotX);
+                numText.setAttribute("y", trackY + 7);
+                numText.setAttribute("fill", "rgba(255,255,255,0.4)");
+                numText.setAttribute("font-size", "20px");
+                numText.setAttribute("text-anchor", "middle");
+                numText.textContent = i;
+                terrorTrackG.appendChild(numText);
+            }
+
+            // Skull token if current level
+            if (gameState.terror_level === i) {
+                const skull = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                skull.setAttribute("x", slotX);
+                skull.setAttribute("y", trackY + 14);
+                skull.setAttribute("fill", "#000"); // Black skull
+                skull.setAttribute("font-size", "42px");
+                skull.setAttribute("text-anchor", "middle");
+                skull.setAttribute("filter", "drop-shadow(0 0 10px #ff3366)");
+                skull.textContent = "☠️";
+                terrorTrackG.appendChild(skull);
+            }
+        }
+        elGameMap.appendChild(terrorTrackG);
+    }
 }
 
 // Explorer double jumps
