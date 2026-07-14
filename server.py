@@ -309,12 +309,16 @@ class GameRoom:
                 self.monster_locations[monster] = "The Roaming Wolf"
             if monster == "Yeti":
                 # Lair tokens
+                lair_locs = ["Spindlewood Institute", "Garden of the Risen", "Thornvine Woods", "Door of the World"]
+                random.shuffle(lair_locs)
                 lairs = [
-                    {"location": "Crossroads West", "is_true": False, "flipped": False},
-                    {"location": "Specter Trail Caravan", "is_true": False, "flipped": False},
-                    {"location": "House of Dusk", "is_true": True, "flipped": False}
+                    {"location": lair_locs[0], "is_true": True, "type": "yeti", "flipped": False},
+                    {"location": lair_locs[1], "is_true": False, "type": "jiangshi", "flipped": False},
+                    {"location": lair_locs[2], "is_true": False, "type": "blank", "flipped": False},
+                    {"location": lair_locs[3], "is_true": False, "type": "blank", "flipped": False}
                 ]
                 random.shuffle(lairs)
+                print(f"DEBUG - Yeti Lair Location: {[l['location'] for l in lairs if l['type'] == 'yeti'][0]}")
                 child_locs = ["House of Dusk", "Thornvine Woods", "Stewards Spire"]
                 random.shuffle(child_locs)
                 self.monster_states["Yeti"] = {
@@ -535,12 +539,25 @@ class GameRoom:
         self.add_log(f"Legend {legend_name} not found or not active.")
         return False
 
-    def execute_reveal_lair(self, player_name: str) -> bool:
+    def execute_reveal_lair(self, player_name: str, item_ids: List[str]) -> bool:
         if not self.check_turn(player_name):
             return False
             
         state = self.heroes_state[player_name]
         if state["ap"] < 1:
+            return False
+            
+        items_to_discard = []
+        total_strength = 0
+        for i_id in item_ids:
+            found = next((item for item in state["items"] if item["id"] == i_id), None)
+            if not found:
+                return False
+            items_to_discard.append(found)
+            total_strength += found.get("strength", 1)
+            
+        if total_strength < 3:
+            self.add_log(f"{player_name} does not have enough strength (need 3, selected {total_strength}) to reveal the lair.")
             return False
             
         loc = state["location"]
@@ -549,16 +566,19 @@ class GameRoom:
             yeti_state = self.monster_states["Yeti"]
             for lair in yeti_state["lairs"]:
                 if lair["location"] == loc and not lair["flipped"]:
+                    for item in items_to_discard:
+                        state["items"].remove(item)
+                        self.discarded_items.append(item)
                     lair["flipped"] = True
                     state["ap"] -= 1
                     is_true = lair["is_true"]
-                    self.add_log(f"{player_name} revealed the lair token at {loc}. It is {'the TRUE lair!' if is_true else 'a DECOY.'}")
+                    self.add_log(f"{player_name} spent {total_strength} strength to reveal the lair token at {loc}. It is {'the TRUE lair!' if is_true else 'a DECOY.'}")
                     return True
                     
         self.add_log("No unrevealed lair token at your current location.")
         return False
 
-    def execute_pickup(self, player_name: str, item_ids: List[str]) -> bool:
+    def execute_pickup(self, player_name: str, item_ids: List[str]):
         if not self.check_turn(player_name):
             return False
             
@@ -590,7 +610,7 @@ class GameRoom:
             self.add_log(f"{player_name} picked up {item['name']} ({item['color']} {item['strength']}).")
             
         state["ap"] -= 1
-        return True
+        return items_to_take
 
     def execute_share(self, player_name: str, target_name: str, give_item_ids: List[str], take_item_ids: List[str]) -> bool:
         if not self.check_turn(player_name):
@@ -1340,6 +1360,19 @@ class RoomManager:
             for ws in dead_sockets:
                 self.websockets[room_code].remove(ws)
 
+    async def send_event(self, room_code: str, event_data: dict):
+        if room_code in self.rooms:
+            data = json.dumps(event_data)
+            dead_sockets = []
+            for ws in self.websockets[room_code]:
+                try:
+                    await ws.send_text(data)
+                except Exception:
+                    dead_sockets.append(ws)
+                    
+            for ws in dead_sockets:
+                self.websockets[room_code].remove(ws)
+
 room_manager = RoomManager()
 
 # ---------------------------------------------------------
@@ -1396,11 +1429,19 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
                 room.execute_guide(player_name, legend, target)
                 
             elif action == "reveal_lair":
-                room.execute_reveal_lair(player_name)
+                item_ids = msg.get("item_ids", [])
+                room.execute_reveal_lair(player_name, item_ids)
                 
             elif action == "pickup":
                 item_ids = msg.get("item_ids", [])
-                room.execute_pickup(player_name, item_ids)
+                picked_items = room.execute_pickup(player_name, item_ids)
+                if picked_items:
+                    await room_manager.send_event(room_code, {
+                        "type": "item_pickup",
+                        "player": player_name,
+                        "location": room.heroes_state[player_name]["location"],
+                        "items": [i["id"] for i in picked_items]
+                    })
                 
             elif action == "share":
                 target = msg.get("target")

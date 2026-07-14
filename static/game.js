@@ -189,6 +189,10 @@ function setupConnection(isHost) {
             }
             detectAndAnimateSpawns();
             updateGameUI();
+        } else if (data.type === "item_pickup") {
+            if (data.player !== playerName) {
+                animateRemoteItemPickup(data.player, data.location, data.items);
+            }
         }
     };
 
@@ -199,6 +203,50 @@ function setupConnection(isHost) {
     socket.onclose = () => {
         alert("Disconnected from server. Reconnecting...");
     };
+}
+
+function animateRemoteItemPickup(remotePlayerName, locationId, itemIds) {
+    if (!gameState) return;
+    
+    const remoteHero = gameState.players.find(p => p.name === remotePlayerName)?.hero;
+    if (!remoteHero) return;
+    
+    const heroEl = document.getElementById(`hero-${remoteHero.replace(/\\s+/g, '-')}`);
+    if (!heroEl) return;
+    
+    itemIds.forEach((itemId, idx) => {
+        setTimeout(() => {
+            const flyToken = document.createElement("div");
+            flyToken.style.cssText = `
+                position: fixed; z-index: 9999; pointer-events: none;
+                width: 25px; height: 25px; border-radius: 50%;
+                background: radial-gradient(circle at top left, #ffd533, #d4af37);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+                border: 2px solid #fff;
+                transition: all 0.6s cubic-bezier(0.2, 0, 0.2, 1);
+                display: flex; justify-content: center; align-items: center;
+                color: black; font-weight: bold; font-size: 10px;
+            `;
+            flyToken.innerText = "?";
+            document.body.appendChild(flyToken);
+            
+            const heroRect = heroEl.getBoundingClientRect();
+            
+            flyToken.style.left = `${heroRect.left - 40}px`;
+            flyToken.style.top = `${heroRect.top - 40}px`;
+            
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                flyToken.style.left = `${heroRect.left + 10}px`;
+                flyToken.style.top = `${heroRect.top + 10}px`;
+                flyToken.style.transform = "scale(0.3)";
+                flyToken.style.opacity = "0";
+            }));
+            
+            flyToken.addEventListener("transitionend", () => {
+                flyToken.remove();
+            }, { once: true });
+        }, idx * 200); // Stagger animations if picking up multiple
+    });
 }
 
 function sendMsg(payload) {
@@ -400,11 +448,22 @@ function renderPlayerPanel() {
     } else {
         myState.items.forEach(item => {
             const row = document.createElement("div");
-            row.className = `item-row ${item.color.toLowerCase()}`;
+            const isSelected = selectedItemsForAction.includes(item.id);
+            row.className = `item-row ${item.color.toLowerCase()} ${isSelected ? 'selected' : ''}`;
+            row.style.cursor = "pointer";
+            if (isSelected) row.style.boxShadow = "0 0 8px #ffd533";
             row.innerHTML = `
                 <span>${item.name}</span>
                 <span class="item-val">${item.color} ${item.strength}</span>
             `;
+            row.addEventListener("click", () => {
+                if (isSelected) {
+                    selectedItemsForAction = selectedItemsForAction.filter(id => id !== item.id);
+                } else {
+                    selectedItemsForAction.push(item.id);
+                }
+                updateGameUI();
+            });
             elInv.appendChild(row);
         });
         
@@ -1228,16 +1287,67 @@ function animateItemSpawn(item, locName) {
     }, { once: true });
 }
 
+function animateLairSpawn(locName) {
+    const coord = gameState.node_coordinates[locName];
+    if (!coord) return;
+    
+    const targetSvgX = coord.x;
+    const targetSvgY = coord.y;
+    const screenEnd = getScreenCoordsOfSVGPoint(targetSvgX, targetSvgY);
+    const cardPanel = document.getElementById("sec-monster-phase");
+    if (!cardPanel) return;
+    const screenStart = cardPanel.getBoundingClientRect();
+    
+    const fly = document.createElement("div");
+    fly.style.cssText = `
+        position: fixed;
+        left: ${screenStart.left + screenStart.width / 2 - 20}px;
+        top: ${screenStart.top + screenStart.height / 2 - 14}px;
+        width: 40px;
+        height: 28px;
+        background: url('/Images/lair_token_back.jpeg') center/cover;
+        border: 2px solid #fff;
+        border-radius: 4px;
+        z-index: 10000;
+        pointer-events: none;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        opacity: 0;
+        transform: scale(0.5);
+        transition: left 0.9s cubic-bezier(0.25, 1, 0.5, 1),
+                    top 0.9s cubic-bezier(0.25, 1, 0.5, 1),
+                    transform 0.9s cubic-bezier(0.25, 1, 0.5, 1),
+                    opacity 0.9s ease;
+    `;
+    document.body.appendChild(fly);
+    
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        fly.style.left = `${screenEnd.left - 20}px`;
+        fly.style.top = `${screenEnd.top - 14}px`;
+        fly.style.transform = "scale(1)";
+        fly.style.opacity = "1";
+    }));
+    
+    fly.addEventListener("transitionend", () => {
+        triggerNodePulse(targetSvgX, targetSvgY, 20, "#fff");
+        fly.remove();
+    }, { once: true });
+}
+
+
 function detectAndAnimateSpawns() {
     if (!gameState || !gameState.items_on_board) return;
     
     if (!window.knownItemIds) {
         window.knownItemIds = new Set();
+        window.knownLairs = new Set();
         for (const loc in gameState.items_on_board) {
             gameState.items_on_board[loc].forEach(item => window.knownItemIds.add(item.id));
         }
         for (const name in gameState.heroes_state) {
             gameState.heroes_state[name].items.forEach(item => window.knownItemIds.add(item.id));
+        }
+        if (gameState.active_monsters.includes("Yeti")) {
+            gameState.monster_states["Yeti"].lairs.forEach(l => window.knownLairs.add(l.location));
         }
         return;
     }
@@ -1264,6 +1374,18 @@ function detectAndAnimateSpawns() {
             animateItemSpawn(spawn.item, spawn.loc);
         }, idx * 350);
     });
+    
+    if (gameState.active_monsters.includes("Yeti")) {
+        const lairs = gameState.monster_states["Yeti"].lairs;
+        let lIdx = 0;
+        lairs.forEach(l => {
+            if (!window.knownLairs.has(l.location)) {
+                window.knownLairs.add(l.location);
+                setTimeout(() => { animateLairSpawn(l.location); }, (newSpawns.length + lIdx) * 350);
+                lIdx++;
+            }
+        });
+    }
 }
 
 function renderSVGMap() {
@@ -1357,6 +1479,31 @@ function renderSVGMap() {
         patChild.appendChild(imgChild);
         defs.appendChild(patChild);
     }
+
+    const lairImages = [
+        { id: "pattern-lair-back", url: "/Images/lair_token_back.jpeg" },
+        { id: "pattern-lair-yeti", url: "/Images/yeti_lair_token.jpeg" },
+        { id: "pattern-lair-jiangshi", url: "/Images/jianshi_lair_token.jpeg" },
+        { id: "pattern-lair-blank", url: "/Images/blank_lair_token.jpeg" }
+    ];
+    lairImages.forEach(lairImg => {
+        const patLair = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
+        patLair.setAttribute("id", lairImg.id);
+        patLair.setAttribute("x", "0");
+        patLair.setAttribute("y", "0");
+        patLair.setAttribute("height", "1");
+        patLair.setAttribute("width", "1");
+        patLair.setAttribute("patternContentUnits", "objectBoundingBox");
+        const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
+        img.setAttribute("href", lairImg.url);
+        img.setAttribute("x", "0");
+        img.setAttribute("y", "0");
+        img.setAttribute("height", "1");
+        img.setAttribute("width", "1");
+        img.setAttribute("preserveAspectRatio", "xMidYMid slice");
+        patLair.appendChild(img);
+        defs.appendChild(patLair);
+    });
 
     // Create image patterns for heroes
     const heroClasses = ["The Guardian", "The Investigator", "The Buccaneer", "The Fortune Teller", "The Parapsychologist"];
@@ -1631,12 +1778,18 @@ function renderSVGMap() {
                     characters.push({ type: "citizen", name: `Yeti Child ${child.id}`, label: `K${child.id}` });
                 }
             });
+            y_state.lairs.forEach((lair, i) => {
+                if (lair.location === locName) {
+                    characters.push({ type: "lair", lair_type: lair.type, name: `Yeti Lair ${i}`, is_true: lair.is_true, flipped: lair.flipped });
+                }
+            });
         }
 
         characters.forEach((char, index) => {
             const isYeti = (char.name === "Yeti");
             const isSphinx = (char.name === "Sphinx");
             const isYetiChild = char.name.startsWith("Yeti Child");
+            const isLair = (char.type === "lair");
             const childId = isYetiChild ? char.name.replace("Yeti Child ", "") : null;
             const isCustomMonster = isYeti || isSphinx;
             const isHero = (char.type === "hero");
@@ -1645,6 +1798,7 @@ function renderSVGMap() {
             if (isCustomMonster) charR = 35;
             else if (isYetiChild) charR = 18;
             else if (isHero) charR = 24;
+            else if (isLair) charR = 20;
             else if (isCitizen) charR = 18;
             else charR = 14;
 
@@ -1655,75 +1809,123 @@ function renderSVGMap() {
             const targetX = coord.x + offset.x;
             const targetY = coord.y + offset.y;
 
-            const charCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            charCircle.setAttribute("r", charR);
+            const shapeType = isLair ? "rect" : "circle";
+            const charShape = document.createElementNS("http://www.w3.org/2000/svg", shapeType);
+            
+            const lairW = 40;
+            const lairH = 28;
+            if (isLair) {
+                charShape.setAttribute("width", lairW);
+                charShape.setAttribute("height", lairH);
+                charShape.setAttribute("rx", 3);
+            } else {
+                charShape.setAttribute("r", charR);
+            }
+            
+            const setPos = (el, nx, ny) => {
+                if (isLair) {
+                    el.setAttribute("x", nx - lairW / 2);
+                    el.setAttribute("y", ny - lairH / 2);
+                } else {
+                    el.setAttribute("cx", nx);
+                    el.setAttribute("cy", ny);
+                }
+            };
             
             const lastPos = lastCharacterPositions[charKey];
             if (lastPos && (lastPos.x !== targetX || lastPos.y !== targetY)) {
-                charCircle.setAttribute("cx", lastPos.x);
-                charCircle.setAttribute("cy", lastPos.y);
+                setPos(charShape, lastPos.x, lastPos.y);
 
                 setTimeout(() => {
-                    charCircle.setAttribute("cx", targetX);
-                    charCircle.setAttribute("cy", targetY);
+                    setPos(charShape, targetX, targetY);
                 }, 20);
 
                 // Draw glowing motion trail
                 drawMovementTrail(lastPos.x, lastPos.y, targetX, targetY);
             } else {
-                charCircle.setAttribute("cx", targetX);
-                charCircle.setAttribute("cy", targetY);
+                setPos(charShape, targetX, targetY);
             }
 
             lastCharacterPositions[charKey] = { x: targetX, y: targetY };
             
             if (isYeti) {
-                charCircle.setAttribute("class", "yeti-token");
-                charCircle.setAttribute("fill", "url(#pattern-yeti)");
-                charCircle.setAttribute("stroke", "#ff3366"); // Bold neon crimson border
-                charCircle.setAttribute("stroke-width", "2.5");
-                charCircle.setAttribute("filter", "drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
+                charShape.setAttribute("class", "yeti-token");
+                charShape.setAttribute("fill", "url(#pattern-yeti)");
+                charShape.setAttribute("stroke", "#ff3366"); // Bold neon crimson border
+                charShape.setAttribute("stroke-width", "2.5");
+                charShape.setAttribute("filter", "drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
             } else if (isSphinx) {
-                charCircle.setAttribute("class", "sphinx-token");
-                charCircle.setAttribute("fill", "url(#pattern-sphinx)");
-                charCircle.setAttribute("stroke", "#ffcc00"); // Golden border
-                charCircle.setAttribute("stroke-width", "2.5");
-                charCircle.setAttribute("filter", "drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
+                charShape.setAttribute("class", "sphinx-token");
+                charShape.setAttribute("fill", "url(#pattern-sphinx)");
+                charShape.setAttribute("stroke", "#ffcc00"); // Golden border
+                charShape.setAttribute("stroke-width", "2.5");
+                charShape.setAttribute("filter", "drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
             } else if (isYetiChild) {
-                charCircle.setAttribute("class", "yeti-child-token");
-                charCircle.setAttribute("fill", `url(#pattern-yeti-child-${childId})`);
-                charCircle.setAttribute("stroke", "#33ccff"); // Ice blue border
-                charCircle.setAttribute("stroke-width", "2");
-                charCircle.setAttribute("filter", "drop-shadow(0 2px 4px rgba(0,0,0,0.4))");
+                charShape.setAttribute("class", "yeti-child-token");
+                charShape.setAttribute("fill", `url(#pattern-yeti-child-${childId})`);
+                charShape.setAttribute("stroke", "#33ccff"); // Ice blue border
+                charShape.setAttribute("stroke-width", "2");
+                charShape.setAttribute("filter", "drop-shadow(0 2px 4px rgba(0,0,0,0.4))");
+            } else if (isLair) {
+                charShape.setAttribute("class", "lair-token");
+                const getLairUrl = (type) => {
+                    if (type === "yeti") return "url(#pattern-lair-yeti)";
+                    if (type === "jiangshi") return "url(#pattern-lair-jiangshi)";
+                    return "url(#pattern-lair-blank)";
+                };
+                const patId = char.flipped ? getLairUrl(char.lair_type) : "url(#pattern-lair-back)";
+                charShape.setAttribute("fill", patId);
+                charShape.setAttribute("stroke", char.flipped ? (char.is_true ? "#ffd533" : "#555") : "#fff");
+                charShape.setAttribute("stroke-width", "2.5");
+                charShape.setAttribute("filter", "drop-shadow(0 2px 4px rgba(0,0,0,0.4))");
+                
+                charShape.style.transformBox = "fill-box";
+                charShape.style.transformOrigin = "center";
+                charShape.style.transition = "transform 0.2s ease";
+                charShape.style.cursor = "pointer";
+                
+                charShape.addEventListener("mouseenter", () => {
+                    charShape.style.transform = "scale(1.8)";
+                });
+                charShape.addEventListener("mouseleave", () => {
+                    charShape.style.transform = "scale(1)";
+                });
+                
+                if (char.flipped) {
+                    charShape.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        showLairImageModal(char.lair_type);
+                    });
+                }
             } else if (isHero) {
                 const patId = `pattern-hero-${char.heroClass.replaceAll(" ", "_")}`;
                 const isMe = (char.name === playerName);
                 const isActiveTurn = (gameState.players[gameState.turn_player_idx].name === char.name);
-                charCircle.setAttribute("class", "hero-token");
-                charCircle.setAttribute("fill", `url(#${patId})`);
-                charCircle.setAttribute("stroke", (isMe || isActiveTurn) ? "#ffd533" : "#33ccff");
-                charCircle.setAttribute("stroke-width", (isMe || isActiveTurn) ? "3.5" : "2.5");
-                charCircle.setAttribute("filter", `drop-shadow(0 0 ${(isMe || isActiveTurn) ? 12 : 6}px ${(isMe || isActiveTurn) ? "rgba(255,213,51,0.9)" : "rgba(51,204,255,0.7)"})`);
+                charShape.setAttribute("class", "hero-token");
+                charShape.setAttribute("fill", `url(#${patId})`);
+                charShape.setAttribute("stroke", (isMe || isActiveTurn) ? "#ffd533" : "#33ccff");
+                charShape.setAttribute("stroke-width", (isMe || isActiveTurn) ? "3.5" : "2.5");
+                charShape.setAttribute("filter", `drop-shadow(0 0 ${(isMe || isActiveTurn) ? 12 : 6}px ${(isMe || isActiveTurn) ? "rgba(255,213,51,0.9)" : "rgba(51,204,255,0.7)"})`);
             } else if (isCitizen) {
                 const patId = `pattern-citizen-${char.name.replaceAll(" ", "_")}`;
-                charCircle.setAttribute("class", "citizen-token");
-                charCircle.setAttribute("fill", `url(#${patId})`);
-                charCircle.setAttribute("stroke", "#20e889");
-                charCircle.setAttribute("stroke-width", "2.5");
-                charCircle.setAttribute("filter", "drop-shadow(0 0 7px rgba(32,232,137,0.7))");
-                charCircle.style.cursor = "pointer";
-                charCircle.addEventListener("click", (e) => {
+                charShape.setAttribute("class", "citizen-token");
+                charShape.setAttribute("fill", `url(#${patId})`);
+                charShape.setAttribute("stroke", "#20e889");
+                charShape.setAttribute("stroke-width", "2.5");
+                charShape.setAttribute("filter", "drop-shadow(0 0 7px rgba(32,232,137,0.7))");
+                charShape.style.cursor = "pointer";
+                charShape.addEventListener("click", (e) => {
                     e.stopPropagation();
                     showCitizenInfo(char.name, char.safe);
                 });
             } else {
                 // Remaining monsters without portrait images (Jiangshi, Cthulhu)
-                charCircle.setAttribute("class", `token-character char-${char.type}`);
+                charShape.setAttribute("class", `token-character char-${char.type}`);
             }
-            charG.appendChild(charCircle);
+            charG.appendChild(charShape);
 
             // Render text label only for monsters without portrait images
-            if (!isCustomMonster && !isYetiChild && !isHero && !isCitizen) {
+            if (!isCustomMonster && !isYetiChild && !isHero && !isCitizen && !isLair) {
                 const charVal = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 charVal.setAttribute("text-anchor", "middle");
                 charVal.setAttribute("fill", "#000");
@@ -1787,6 +1989,31 @@ function getCharOffset(index, total, nodeRadius = 35) {
         x: radius * Math.cos(angle),
         y: radius * Math.sin(angle)
     };
+}
+
+// ---------------------------------------------------------
+// MODALS & TOOLTIPS
+// ---------------------------------------------------------
+
+function showLairImageModal(lairType) {
+    let imgSrc = "/Images/blank_lair_token.jpeg";
+    let title = "Decoy Lair";
+    if (lairType === "yeti") {
+        imgSrc = "/Images/yeti_lair_token.jpeg";
+        title = "Yeti Lair";
+    } else if (lairType === "jiangshi") {
+        imgSrc = "/Images/jianshi_lair_token.jpeg";
+        title = "Jiangshi Lair";
+    }
+    const html = `
+        <h2 style="margin-top:0;">${title}</h2>
+        <div style="text-align: center; margin: 20px 0;">
+            <img src="${imgSrc}" style="max-width: 100%; max-height: 400px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+        </div>
+        <p style="text-align: center; color: #a491c3; font-size: 0.9rem;">Close this window to continue.</p>
+    `;
+    elModalBody.innerHTML = html;
+    elModalContainer.classList.remove("hidden");
 }
 
 // ---------------------------------------------------------
@@ -2121,8 +2348,21 @@ document.getElementById("action-reveal").addEventListener("click", () => {
         return;
     }
     
-    if (confirm(`Would you like to spend 1 AP to reveal the lair token at ${myState.location}?`)) {
-        sendMsg({ action: "reveal_lair" });
+    let totalStr = 0;
+    selectedItemsForAction.forEach(id => {
+        const item = myState.items.find(i => i.id === id);
+        if (item) totalStr += (item.strength || 1);
+    });
+    
+    if (totalStr < 3) {
+        alert("Select items from your inventory with a total strength of 3 or more to reveal a lair.");
+        return;
+    }
+    
+    if (confirm(`Spend 1 AP and selected items (strength ${totalStr}) to reveal the lair token at ${myState.location}?`)) {
+        sendMsg({ action: "reveal_lair", item_ids: selectedItemsForAction });
+        selectedItemsForAction = [];
+        updateGameUI();
     }
 });
 
