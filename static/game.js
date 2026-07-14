@@ -243,10 +243,9 @@ function animateRemoteItemPickup(remotePlayerName, locationId, itemIds) {
     
     itemIds.forEach((itemId, idx) => {
         const item = findItemInGameState(itemId);
-        if (!item) return;
-        const itemColor = item.color;
-        const itemStrength = item.strength;
-        const itemName = item.name;
+        const itemColor = item ? item.color : "yellow";
+        const itemStrength = item ? item.strength : "?";
+        const itemName = item ? item.name : "Item";
         
         setTimeout(() => {
             const fly = document.createElement("div");
