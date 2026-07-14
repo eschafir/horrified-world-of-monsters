@@ -741,13 +741,13 @@ body {
 
 .deck-right-top {
     right: 20px;
-    top: calc(50% - 170px);
+    top: calc(50% - 190px);
     transform: translateY(-50%);
 }
 
 .deck-right-bottom {
     right: 20px;
-    top: calc(50% + 170px);
+    top: calc(50% + 190px);
     transform: translateY(-50%);
 }
 
@@ -768,11 +768,6 @@ body {
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
-
-.perks-stack {
-    width: 264px;
-    height: 170px;
 }
 
 .card-stack:hover {

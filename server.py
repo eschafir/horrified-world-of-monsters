@@ -1352,8 +1352,9 @@ class GameRoom:
                     self.terror_level = min(10, self.terror_level + 1)
                     self.add_log(f"{hero_name} has NO items left to block the hit and is DEFEATED!")
                     self.check_terror()
-                    
-                    h_state["location"] = HERO_CLASSES[h_state["hero"]]["start"]
+
+                    h_state["location"] = "Reviving Throne"
+                    self.add_log(f"{hero_name} respawns at Reviving Throne.")
                     if "Cthulhu" in self.active_monsters:
                         self.monster_states["Cthulhu"]["player_tracks"][hero_name] = -1
                     break

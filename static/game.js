@@ -259,9 +259,11 @@ function animateRemoteItemPickup(remotePlayerName, locationId, itemIds) {
         }
 
         setTimeout(() => {
+            playItemPickupSound();
+
             const fly = document.createElement("div");
             fly.className = "flying-item-token";
-            
+
             const colorMap = {
                 blue: "#33ccff",
                 red: "#ff3366",
@@ -836,6 +838,8 @@ function renderMonsterPhasePanel() {
             pendingCardData = card;
             lastDrawnCardId = card.id;
 
+            playDrawCardSound();
+
             // Pre-render the card back in the panel so it's ready to flip on arrival
             section.innerHTML = `<h4>Monster Phase</h4><div class="mp-flip-container">
                 <div class="mp-card-inner" id="mp-card-inner">
@@ -929,6 +933,8 @@ document.querySelector(".deck-right").addEventListener("click", () => {
     isCardFlying = true;
     hasDrawnThisPhase = true;
     pendingCardData = null;
+
+    playDrawCardSound();
 
     // Pre-render the card back in the panel so it's ready to flip on arrival
     const section = document.getElementById("sec-monster-phase");
@@ -1774,6 +1780,27 @@ function playSynthPerkSound() {
     }
 }
 
+// Sound effect played whenever any hero picks up an item
+function playItemPickupSound() {
+    try {
+        const sfx = new Audio("/Music/pickup_item.wav");
+        sfx.volume = 0.5;
+        sfx.play().catch(e => console.warn("Pickup sound playback failed:", e));
+    } catch (e) {
+        console.warn("Error playing pickup sound:", e);
+    }
+}
+
+// Sound effect played whenever a Monster Card is drawn from the deck
+function playDrawCardSound() {
+    try {
+        const sfx = new Audio("/Music/draw_card.mp3");
+        sfx.volume = 0.5;
+        sfx.play().catch(e => console.warn("Draw card sound playback failed:", e));
+    } catch (e) {
+        console.warn("Error playing draw card sound:", e);
+    }
+}
 
 
 
@@ -2749,6 +2776,7 @@ window.triggerMultiplePickup = (location) => {
         // Trigger cascading flying item animation
         setTimeout(() => {
             animateItemFly(location, cb.dataset.color, cb.dataset.strength, cb.dataset.name);
+            playItemPickupSound();
         }, idx * 120);
     });
 
