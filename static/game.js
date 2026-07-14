@@ -564,7 +564,8 @@ function updateGameUI() {
         if (elMonsterStack) {
             if (gameState.deck_count === 0) {
                 elMonsterStack.style.opacity = "0.3";
-                elMonsterStack.style.pointerEvents = "none";
+                // Keep pointerEvents active so the user can click it to trigger the loss!
+                elMonsterStack.style.pointerEvents = "auto";
             } else {
                 elMonsterStack.style.opacity = "1";
                 elMonsterStack.style.pointerEvents = "auto";

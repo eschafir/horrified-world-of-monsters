@@ -1199,12 +1199,21 @@ class GameRoom:
     # ---------------------------------------------------------
 
     def end_turn(self, player_name: str):
-        if not self.check_turn(player_name):
+        if self.game_phase != "HeroPhase":
             return
-
+        active_player = self.players[self.turn_player_idx]["name"]
+        if player_name != active_player:
+            return
+            
         self.game_phase = "MonsterPhase"
-        self.add_log(f"{player_name} ended their turn. Click the Monster Deck to draw a card.")
+        self.add_log(f"{player_name} ended their turn. Monster Phase begins!")
         self.heroes_state[player_name]["ability_used"] = False
+        
+        # If the deck is empty, they lose immediately at the start of the Monster Phase
+        if not self.deck:
+            self.check_defeat("Monster deck is empty!")
+            return
+        
         # Monster phase is now triggered by the player drawing the card manually
 
     async def run_monster_phase(self, broadcast_fn=None):
@@ -1402,6 +1411,14 @@ class GameRoom:
                     break
             if target_citizen:
                 await self.perform_attack_citizen(name, target_citizen, dice)
+            elif name == "Yeti":
+                # Check if Yeti is on a child token
+                y_state = self.monster_states["Yeti"]
+                for child in y_state["children"]:
+                    if not child["rescued"] and child["location"] == curr_loc:
+                        # Yeti attacks its own child
+                        await self.perform_attack_citizen(name, f"Yeti's Child", dice, is_yeti_child=True, child_obj=child)
+                        break
 
     async def perform_attack(self, monster: str, hero_name: str, dice: int, broadcast_fn=None):
         self.add_log(f"{monster} is attacking {hero_name}!")
@@ -1410,7 +1427,7 @@ class GameRoom:
         if self.active_perks_limit.get("block_all_hits", False):
             self.add_log(f"Security Perk blocked all damage from the attack on {hero_name}.")
             return
-
+            
         hits = 0
         frenzies = 0
         
@@ -1476,8 +1493,8 @@ class GameRoom:
         if broadcast_fn:
             await broadcast_fn()
 
-    async def perform_attack_citizen(self, monster: str, citizen_name: str, dice: int):
-        self.add_log(f"{monster} is attacking citizen {citizen_name}!")
+    async def perform_attack_citizen(self, monster: str, citizen_name: str, dice: int, is_yeti_child: bool = False, child_obj: dict = None):
+        self.add_log(f"{monster} is attacking {citizen_name}!")
         
         hits = 0
         for _ in range(dice):
@@ -1486,13 +1503,18 @@ class GameRoom:
                 hits += 1
                 
         if hits > 0:
-            self.citizens[citizen_name]["active"] = False
-            self.citizens[citizen_name]["location"] = "Defeated"
+            if is_yeti_child and child_obj:
+                child_obj["rescued"] = True
+                self.add_log(f"Yeti's Child was DEFEATED by the attack!")
+            else:
+                self.citizens[citizen_name]["active"] = False
+                self.citizens[citizen_name]["location"] = "Defeated"
+                self.add_log(f"Citizen {citizen_name} was DEFEATED by the attack!")
+            
             self.terror_level = min(7, self.terror_level + 1)
-            self.add_log(f"Citizen {citizen_name} has been DEFEATED by {monster}! Terror Level increases.")
             self.check_terror()
         else:
-            self.add_log(f"{monster} missed the attack on citizen {citizen_name}.")
+            self.add_log(f"The attack on {citizen_name} missed!")
 
 # ---------------------------------------------------------
 # MULTI-ROOM SOCKET MANAGER
