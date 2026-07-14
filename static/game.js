@@ -2588,40 +2588,26 @@ function renderSVGMap() {
         for (let i = 0; i <= 7; i++) {
             const slotX = trackStartX + i * slotSpacing;
             
-            // Slot background
-            const slotCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            slotCircle.setAttribute("cx", slotX);
-            slotCircle.setAttribute("cy", trackY);
-            slotCircle.setAttribute("r", 28);
-            slotCircle.setAttribute("fill", "rgba(0,0,0,0.6)");
-            slotCircle.setAttribute("stroke", "#ff3366");
-            slotCircle.setAttribute("stroke-width", i === 7 ? "4" : "3");
-            if (i === 7) slotCircle.setAttribute("stroke-dasharray", "6"); // Danger slot
-            terrorTrackG.appendChild(slotCircle);
-            
-            // Number (only show if not current level)
-            if (gameState.terror_level !== i) {
-                const numText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                numText.setAttribute("x", slotX);
-                numText.setAttribute("y", trackY + 7);
-                numText.setAttribute("fill", "rgba(255,255,255,0.4)");
-                numText.setAttribute("font-size", "20px");
-                numText.setAttribute("text-anchor", "middle");
-                numText.textContent = i;
-                terrorTrackG.appendChild(numText);
-            }
 
-            // Skull token if current level
+            // Fire token if current level
             if (gameState.terror_level === i) {
-                const skull = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                skull.setAttribute("x", slotX);
-                skull.setAttribute("y", trackY + 14);
-                skull.setAttribute("fill", "#000"); // Black skull
-                skull.setAttribute("font-size", "42px");
-                skull.setAttribute("text-anchor", "middle");
-                skull.setAttribute("filter", "drop-shadow(0 0 10px #ff3366)");
-                skull.textContent = "☠️";
-                terrorTrackG.appendChild(skull);
+                const fireBg = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                fireBg.setAttribute("cx", slotX);
+                fireBg.setAttribute("cy", trackY);
+                fireBg.setAttribute("r", 28);
+                fireBg.setAttribute("fill", "#000"); // Solid black circle
+                fireBg.setAttribute("stroke", "#ff3366"); // Optional outline for the circle, or just black? User just said "a black circle"
+                fireBg.setAttribute("stroke-width", "2");
+                terrorTrackG.appendChild(fireBg);
+
+                const fire = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                fire.setAttribute("x", slotX);
+                fire.setAttribute("y", trackY + 16);
+                fire.setAttribute("font-size", "50px"); 
+                fire.setAttribute("text-anchor", "middle");
+                fire.setAttribute("filter", "drop-shadow(0 0 10px #ff9900)");
+                fire.textContent = "🔥"; 
+                terrorTrackG.appendChild(fire);
             }
         }
         elGameMap.appendChild(terrorTrackG);
