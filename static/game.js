@@ -407,10 +407,21 @@ function renderHeroSelectOptions() {
         "The Parapsychologist": { ap: 4, start: "Weir's Observatory",  ability: "Send any item from your hand to any player anywhere on the board." }
     };
 
+    // Heroes already claimed by other connected players can't be picked
+    const takenBy = {};
+    if (gameState && gameState.players) {
+        gameState.players.forEach(p => {
+            if (p.name !== playerName) {
+                takenBy[p.hero] = p.name;
+            }
+        });
+    }
+
     HEROES_LIST.forEach(hero => {
         const data = heroData[hero];
+        const takenByName = takenBy[hero];
         const card = document.createElement("div");
-        card.className = `hero-card ${chosenHero === hero ? "selected" : ""}`;
+        card.className = `hero-card ${chosenHero === hero ? "selected" : ""} ${takenByName ? "taken" : ""}`;
 
         card.innerHTML = `
             <div class="hero-card-portrait">
@@ -420,14 +431,19 @@ function renderHeroSelectOptions() {
             <div class="hero-card-ap">${data.ap} AP</div>
             <div class="hero-card-loc">&#128205; ${data.start}</div>
             <div class="hero-card-ability">${data.ability}</div>
+            ${takenByName ? `<div class="hero-card-taken-label">Taken by ${takenByName}</div>` : ''}
         `;
 
-        card.addEventListener("click", () => {
-            chosenHero = hero;
-            document.querySelectorAll(".hero-card").forEach(c => c.classList.remove("selected"));
-            card.classList.add("selected");
-            sendMsg({ action: "select_hero", hero: hero });
-        });
+        if (takenByName) {
+            card.title = `${hero} is already taken by ${takenByName}`;
+        } else {
+            card.addEventListener("click", () => {
+                chosenHero = hero;
+                document.querySelectorAll(".hero-card").forEach(c => c.classList.remove("selected"));
+                card.classList.add("selected");
+                sendMsg({ action: "select_hero", hero: hero });
+            });
+        }
         elHeroOptions.appendChild(card);
     });
 }
@@ -448,6 +464,13 @@ function updateGameUI() {
         // We are in Lobby Waiting view
         elLobbyScreen.classList.remove("hidden");
         elGameScreen.classList.add("hidden");
+
+        // Keep our local selection in sync with the server (e.g. the auto-assigned
+        // default hero on join) and refresh the hero grid so newly-taken heroes
+        // become disabled for everyone else in real time.
+        const myPlayer = gameState.players.find(p => p.name === playerName);
+        if (myPlayer) chosenHero = myPlayer.hero;
+        renderHeroSelectOptions();
 
         // Sync player lists
         elConnectedPlayers.innerHTML = "";

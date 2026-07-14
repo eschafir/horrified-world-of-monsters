@@ -1435,9 +1435,11 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
     player = next((p for p in room.players if p["name"] == player_name), None)
     if not player:
         is_host = len(room.players) == 0
+        taken_heroes = {p["hero"] for p in room.players}
+        default_hero = next((h for h in HERO_CLASSES if h not in taken_heroes), "The Guardian")
         player = {
             "name": player_name,
-            "hero": "The Guardian",
+            "hero": default_hero,
             "is_host": is_host,
             "ws": websocket
         }
@@ -1458,8 +1460,10 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
             if action == "select_hero":
                 hero = msg.get("hero")
                 if hero in HERO_CLASSES and not room.game_started:
-                    player["hero"] = hero
-                    room.add_log(f"{player_name} selected {hero}.")
+                    taken_by_other = any(p["hero"] == hero and p["name"] != player_name for p in room.players)
+                    if not taken_by_other:
+                        player["hero"] = hero
+                        room.add_log(f"{player_name} selected {hero}.")
                     
             elif action == "start_game":
                 if player["is_host"] and not room.game_started:
