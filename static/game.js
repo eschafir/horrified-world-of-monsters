@@ -19,6 +19,8 @@ let dragType = null;
 let dragLocName = null;
 let lastGamePhaseSeen = null;
 let intentionalDisconnect = false;
+let lastTerrorLevel = null;
+let pendingTerrorTransitionFrom = null; // consumed once by renderSVGMap to slide the neon ring from its old slot
 
 // Map Zoom & Pan State
 let zoomLevel = 1.0;
@@ -61,6 +63,7 @@ const elModalContainer = document.getElementById("modal-container");
 const elModalBody = document.getElementById("modal-body");
 const elCloseModal = document.querySelector(".close-modal");
 const elBtnDebugLose = document.getElementById("btn-debug-lose"); // TEMP TEST BUTTON: remove before shipping
+const elBtnDebugTerror = document.getElementById("btn-debug-terror"); // TEMP TEST BUTTON: remove before shipping
 const elBtnMainMenu = document.getElementById("btn-main-menu");
 const elGameOverOverlay = document.getElementById("game-over-overlay");
 
@@ -153,6 +156,13 @@ document.getElementById("bg-music-volume").addEventListener("input", updateMusic
 if (elBtnDebugLose) {
     elBtnDebugLose.addEventListener("click", () => {
         sendMsg({ action: "debug_lose" });
+    });
+}
+
+// TEMP TEST BUTTON: increases the Terror Level. Remove before shipping.
+if (elBtnDebugTerror) {
+    elBtnDebugTerror.addEventListener("click", () => {
+        sendMsg({ action: "debug_increase_terror" });
     });
 }
 
@@ -455,9 +465,12 @@ function renderHeroSelectOptions() {
 function updateGameUI() {
     if (!gameState) return;
 
-    // TEMP TEST BUTTON: only show once a game is in progress. Remove before shipping.
+    // TEMP TEST BUTTONS: only show once a game is in progress. Remove before shipping.
     if (elBtnDebugLose) {
         elBtnDebugLose.classList.toggle("hidden", !gameState.game_started);
+    }
+    if (elBtnDebugTerror) {
+        elBtnDebugTerror.classList.toggle("hidden", !gameState.game_started);
     }
 
     if (!gameState.game_started) {
@@ -508,6 +521,13 @@ function updateGameUI() {
         document.getElementById("game-terror-val").innerText = gameState.terror_level;
         document.getElementById("terror-progress").style.width = `${gameState.terror_level * 10}%`;
         document.getElementById("game-deck-display").innerText = gameState.deck_count;
+
+        // Terror Level increase: play a sting and queue a slide transition for the map's neon ring
+        if (lastTerrorLevel !== null && gameState.terror_level > lastTerrorLevel) {
+            playTerrorIncreaseSound();
+            pendingTerrorTransitionFrom = lastTerrorLevel;
+        }
+        lastTerrorLevel = gameState.terror_level;
 
         // Card Deck counters and states
         const elHudDeckCount = document.getElementById("hud-deck-count");
@@ -1609,6 +1629,88 @@ function triggerNodePulse(svgX, svgY, radius, pulseColor, strokeWidth = 3, scale
     }
 }
 
+// Builds a neon LED-style glowing outline tracing ONLY the contour of the Terror
+// Level placeholder — either a plain circle (radius `r`) or a custom polygon shape
+// (array of [dx, dy] points relative to cx,cy) — leaving the entire interior empty
+// so the level number printed on the board art shows through. Layered stroke glow
+// (like CSS neon-text tricks) plus a bright segment that chases around the strip,
+// matching the game's existing neon/glow visual language (hero token glows, pulses).
+function createNeonRing(cx, cy, r = 28, polygonPoints = null) {
+    const svgNS = "http://www.w3.org/2000/svg";
+    const g = document.createElementNS(svgNS, "g");
+    g.setAttribute("class", "neon-ring-group");
+    g.style.pointerEvents = "none"; // purely decorative — never block dragging the hitbox/vertex handles underneath
+
+    const usePolygon = polygonPoints && polygonPoints.length >= 3;
+    const pointsAttr = usePolygon
+        ? polygonPoints.map(([dx, dy]) => `${(cx + dx).toFixed(1)},${(cy + dy).toFixed(1)}`).join(" ")
+        : null;
+
+    let perimeter;
+    if (usePolygon) {
+        const abs = polygonPoints.map(([dx, dy]) => [cx + dx, cy + dy]);
+        perimeter = 0;
+        for (let i = 0; i < abs.length; i++) {
+            const a = abs[i], b = abs[(i + 1) % abs.length];
+            perimeter += Math.hypot(b[0] - a[0], b[1] - a[1]);
+        }
+    } else {
+        perimeter = 2 * Math.PI * r;
+    }
+
+    const makeShape = () => {
+        if (usePolygon) {
+            const p = document.createElementNS(svgNS, "polygon");
+            p.setAttribute("points", pointsAttr);
+            return p;
+        }
+        const c = document.createElementNS(svgNS, "circle");
+        c.setAttribute("cx", cx);
+        c.setAttribute("cy", cy);
+        c.setAttribute("r", r);
+        return c;
+    };
+
+    // Layered glow, dark-crimson core hue, widest+softest at the bottom, tight+bright on top.
+    // Each layer traces the FULL contour (not just a segment) so the whole shape reads as lit.
+    const layers = [
+        { width: 20, color: "#8c0f34", blur: 9, cls: "neon-outer-pulse" },
+        { width: 12, color: "#b3123f", blur: 4.5, cls: "neon-mid-pulse" },
+        { width: 5, color: "#e0567f", blur: 0.6, cls: "neon-core-pulse" }
+    ];
+    layers.forEach((layer, idx) => {
+        const el = makeShape();
+        el.setAttribute("fill", "none");
+        el.setAttribute("stroke", layer.color);
+        el.setAttribute("stroke-width", layer.width);
+        el.setAttribute("stroke-linejoin", "round");
+        el.style.filter = `blur(${layer.blur}px)`;
+        el.classList.add(layer.cls);
+        el.style.animationDelay = `${-idx * 0.6}s`;
+        g.appendChild(el);
+    });
+
+    // Bright segment chasing around the strip, like an addressable LED marquee
+    const chase = makeShape();
+    chase.setAttribute("fill", "none");
+    chase.setAttribute("stroke", "#ffd9e3");
+    chase.setAttribute("stroke-width", "4");
+    chase.setAttribute("stroke-linecap", "round");
+    const dashLen = Math.max(10, perimeter * 0.16);
+    chase.setAttribute("stroke-dasharray", `${dashLen.toFixed(1)} ${Math.max(1, perimeter - dashLen).toFixed(1)}`);
+    chase.style.filter = "drop-shadow(0 0 3px #ffd9e3) drop-shadow(0 0 6px #b3123f)";
+    const anim = document.createElementNS(svgNS, "animate");
+    anim.setAttribute("attributeName", "stroke-dashoffset");
+    anim.setAttribute("from", "0");
+    anim.setAttribute("to", `${-perimeter.toFixed(1)}`);
+    anim.setAttribute("dur", "4.5s");
+    anim.setAttribute("repeatCount", "indefinite");
+    chase.appendChild(anim);
+    g.appendChild(chase);
+
+    return g;
+}
+
 function animateItemSpawn(item, locName) {
     const coord = gameState.node_coordinates[locName];
     if (!coord) return;
@@ -1900,6 +2002,17 @@ function playGameLostSound() {
         sfx.play().catch(e => console.warn("Game lost sound playback failed:", e));
     } catch (e) {
         console.warn("Error playing game lost sound:", e);
+    }
+}
+
+// Sound effect played whenever the Terror Level increases
+function playTerrorIncreaseSound() {
+    try {
+        const sfx = new Audio("/Music/Terror%20level%20increase.wav");
+        sfx.volume = 0.6;
+        sfx.play().catch(e => console.warn("Terror increase sound playback failed:", e));
+    } catch (e) {
+        console.warn("Error playing terror increase sound:", e);
     }
 }
 
@@ -2578,42 +2691,46 @@ function renderSVGMap() {
     // ---------------------------------------------------------
     if (gameState.terror_level !== undefined) {
         const terrorTrackG = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        // Track goes from 0 to 7 (8 slots). Space them further apart and make them bigger.
+        // Fallback formula (used only if the server hasn't sent calibrated coordinates yet)
         const slotSpacing = 82;
         const numSlots = 8;
-        // Shifted slightly to the left by subtracting 12
         const trackStartX = 652 - (numSlots * slotSpacing) / 2 + (slotSpacing / 2) - 12;
         const trackY = 60;
+        const terrorCoords = gameState.terror_track_coordinates;
 
         for (let i = 0; i <= 7; i++) {
-            const slotX = trackStartX + i * slotSpacing;
-            
+            const slot = terrorCoords && terrorCoords[i];
+            const slotX = slot ? slot.x : (trackStartX + i * slotSpacing);
+            const slotY = slot ? slot.y : trackY;
+            const slotR = (slot && slot.r) || 28;
 
-            // Fire token if current level
+            const slotPoints = (slot && slot.points && slot.points.length >= 3) ? slot.points : null;
+
+            // Neon LED-style glow tracing only the contour of the current Terror Level
+            // placeholder (custom polygon if one is defined, otherwise a plain circle),
+            // leaving the center hollow so the level number underneath stays visible.
             if (gameState.terror_level === i) {
-                const fireBg = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                fireBg.setAttribute("cx", slotX);
-                fireBg.setAttribute("cy", trackY);
-                fireBg.setAttribute("r", 28);
-                fireBg.setAttribute("fill", "#000"); // Solid black circle
-                fireBg.setAttribute("stroke", "#ff3366"); // Optional outline for the circle, or just black? User just said "a black circle"
-                fireBg.setAttribute("stroke-width", "2");
-                terrorTrackG.appendChild(fireBg);
+                const ring = createNeonRing(slotX, slotY, slotR, slotPoints);
 
-                const fire = document.createElementNS("http://www.w3.org/2000/svg", "image");
-                // Resize to 56x56 to perfectly fill the 28px radius circle
-                fire.setAttribute("x", slotX - 28);
-                fire.setAttribute("y", trackY - 28);
-                fire.setAttribute("width", "56");
-                fire.setAttribute("height", "56");
-                fire.setAttribute("href", "/Images/fire_live.gif");
-                // Crop into a perfect circle
-                fire.setAttribute("style", "clip-path: circle(50% at 50% 50%);");
-                // Keep the glowing drop shadow for effect
-                fire.setAttribute("filter", "drop-shadow(0 0 10px #ff9900)");
-                terrorTrackG.appendChild(fire);
+                // If the Terror Level just increased, slide the ring in from its previous
+                // slot (plus a glowing movement trail) instead of just popping into place.
+                if (pendingTerrorTransitionFrom !== null && pendingTerrorTransitionFrom !== i) {
+                    const fromSlot = terrorCoords && terrorCoords[pendingTerrorTransitionFrom];
+                    if (fromSlot) {
+                        const dx = fromSlot.x - slotX, dy = fromSlot.y - slotY;
+                        ring.style.transform = `translate(${dx}px, ${dy}px)`;
+                        requestAnimationFrame(() => requestAnimationFrame(() => {
+                            ring.style.transition = "transform 0.8s cubic-bezier(0.25, 1, 0.3, 1)";
+                            ring.style.transform = "translate(0px, 0px)";
+                        }));
+                        drawMovementTrail(fromSlot.x, fromSlot.y, slotX, slotY);
+                    }
+                }
+
+                terrorTrackG.appendChild(ring);
             }
         }
+        pendingTerrorTransitionFrom = null;
         elGameMap.appendChild(terrorTrackG);
     }
 }
@@ -3364,8 +3481,12 @@ window.confirmCthulhuTrack = (itemId) => {
     elModalContainer.classList.add("hidden");
 };
 
-// Press 'D' (case-insensitive) to toggle hitbox debug mode
+// Press 'D' to toggle hitbox debug mode (drag location nodes or terror-slot
+// placeholders into position). Ignored while typing in a text field.
 document.addEventListener("keydown", (e) => {
+    const activeTag = document.activeElement && document.activeElement.tagName;
+    if (activeTag === "INPUT" || activeTag === "TEXTAREA") return;
+
     if (e.key.toLowerCase() === "d") {
         elGameMap.classList.toggle("debug-hitboxes");
         console.log("Hitbox debug mode toggled.");
@@ -3379,7 +3500,7 @@ document.addEventListener("mousemove", (e) => {
 
     const rect = elGameMap.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return;
-    
+
     // Scale client coordinate to SVG viewBox space using inverse CTM (respects zoom/pan)
     const pt = elGameMap.createSVGPoint();
     pt.x = e.clientX;
@@ -3410,9 +3531,9 @@ document.addEventListener("mouseup", () => {
             action: "update_coordinates",
             coordinates: gameState.node_coordinates
         });
-        
+
         console.log(`Saved coordinates for ${dragLocName}:`, gameState.node_coordinates[dragLocName]);
-        
+
         // Wait a split second to clear window.isDragging to block trailing click events
         setTimeout(() => {
             window.isDragging = false;

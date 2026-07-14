@@ -78,6 +78,27 @@ NODE_COORDINATES = {
     "House of Dawn": {"x": 1141, "y": 443, "bx": 1142, "by": 524, "r": 92, "rw": 112, "rh": 34}
 }
 
+# Positions of the 8 Terror Level track placeholders (slot 0 = lowest terror).
+# Draggable/calibratable in-client via Debug Mode ("D"), same workflow as NODE_COORDINATES.
+# "points" (if present) is a custom polygon contour, as relative [dx, dy] offsets from
+# (x, y), editable in-client via Polygon Shape Mode ("P"). Falls back to a circle of
+# radius "r" when empty.
+_TERROR_SLOT_SHAPE = [[12, 33], [30, -6], [18, 2], [32, -27], [-31, -28], [-17, 3], [-30, -6], [-13, 33]]
+_TERROR_SLOT_ANCHORS = [
+    {"x": 359, "y": 57, "r": 30},
+    {"x": 437, "y": 59, "r": 31},
+    {"x": 515, "y": 58, "r": 31},
+    {"x": 599, "y": 57, "r": 32},
+    {"x": 683, "y": 57, "r": 31},
+    {"x": 764, "y": 57, "r": 32},
+    {"x": 845, "y": 59, "r": 32},
+    {"x": 928, "y": 59, "r": 32}
+]
+TERROR_TRACK_COORDS = [
+    {**anchor, "points": [list(p) for p in _TERROR_SLOT_SHAPE]}
+    for anchor in _TERROR_SLOT_ANCHORS
+]
+
 HERO_CLASSES = {
     "The Guardian": {"name": "The Guardian", "ap": 5, "start": "Arcane Forge", "ability": "You may use a Guide action on a Hero, with their permission. This does not take an action."},
     "The Investigator": {"name": "The Investigator", "ap": 4, "start": "South Station", "ability": "Discard two items to pick one item from the discard pile and keep it."},
@@ -443,7 +464,8 @@ class GameRoom:
             "log": self.log,
             "players": [{"name": p["name"], "hero": p["hero"], "is_host": p["is_host"]} for p in self.players],
             "node_coordinates": NODE_COORDINATES,
-            "adjacency_list": ADJACENCY_LIST
+            "adjacency_list": ADJACENCY_LIST,
+            "terror_track_coordinates": TERROR_TRACK_COORDS
         }
 
     def update_coordinates(self, coords: Dict):
@@ -1526,6 +1548,13 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
                 if room.game_started:
                     room.check_defeat("Debug test loss triggered.")
 
+            # TEMP TEST ACTION: increases the Terror Level. Remove before shipping.
+            elif action == "debug_increase_terror":
+                if room.game_started and room.terror_level < 7:
+                    room.terror_level += 1
+                    room.add_log(f"Debug: Terror Level increased to {room.terror_level}.")
+                    room.check_terror()
+
             elif action == "return_to_menu":
                 # Only allow tearing down the room once the game has actually ended,
                 # e.g. from the "Main Menu" button on the Game Over banner.
@@ -1563,7 +1592,7 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
                 coords = msg.get("coordinates")
                 if coords:
                     room.update_coordinates(coords)
-                    
+
             await room_manager.broadcast_state(room_code)
             
     except WebSocketDisconnect:

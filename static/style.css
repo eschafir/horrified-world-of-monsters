@@ -1554,6 +1554,23 @@ body {
     opacity: 1;
 }
 
+/* TEMP TEST BUTTON: increases the Terror Level. Remove before shipping. */
+.debug-terror-btn {
+    position: fixed;
+    right: 20px;
+    bottom: 68px;
+    z-index: 25000;
+    flex: none;
+    padding: 10px 16px;
+    font-size: 0.8rem;
+    border: 2px dashed rgba(255, 255, 255, 0.6);
+    opacity: 0.85;
+}
+
+.debug-terror-btn:hover {
+    opacity: 1;
+}
+
 /* Audio Control Slider styling */
 .audio-control {
     display: flex;
@@ -1701,6 +1718,36 @@ body {
 @keyframes mp-deck-pulse {
     0%, 100% { box-shadow: 0 8px 20px rgba(0,0,0,0.7), 0 0 10px rgba(153,51,255,0.3); }
     50%       { box-shadow: 0 8px 30px rgba(0,0,0,0.5), 0 0 28px rgba(153,51,255,0.85), 0 0 8px rgba(255,255,255,0.12); }
+}
+
+/* ---------------------------------------------------------
+   TERROR LEVEL NEON RING
+   --------------------------------------------------------- */
+.neon-outer-pulse {
+    animation: neonOuterPulse 2.4s ease-in-out infinite;
+}
+
+.neon-mid-pulse {
+    animation: neonMidPulse 2.4s ease-in-out infinite;
+}
+
+.neon-core-pulse {
+    animation: neonCorePulse 2.4s ease-in-out infinite;
+}
+
+@keyframes neonOuterPulse {
+    0%, 100% { opacity: 0.32; }
+    50%       { opacity: 0.48; }
+}
+
+@keyframes neonMidPulse {
+    0%, 100% { opacity: 0.62; }
+    50%       { opacity: 0.85; }
+}
+
+@keyframes neonCorePulse {
+    0%, 100% { opacity: 0.92; }
+    50%       { opacity: 1; }
 }
 
 .mp-draw-hint {
