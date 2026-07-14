@@ -1,5 +1,5 @@
-# Ignore large local music assets
-Music/
+
+Music/Background Music.mp3
 
 # Ignore virtual environments
 venv/
