@@ -309,6 +309,21 @@
         </div>
     </div>
 
-    <script src="game.js?v=89"></script>
+    <!-- DICE ROLL MODAL -->
+    <div id="dice-modal-overlay" class="game-over-overlay hidden" style="z-index: 10000; background: rgba(0,0,0,0.85);">
+        <div class="glass" style="padding: 40px; border-radius: 20px; text-align: center; max-width: 600px; display: flex; flex-direction: column; align-items: center;">
+            <h2 id="dice-modal-title" style="color: #ff3366; margin-bottom: 10px; font-size: 2.2rem; text-shadow: 0 0 10px rgba(255, 51, 102, 0.5);">Monster Attack!</h2>
+            <p id="dice-modal-desc" style="color: #b0a0cf; margin-bottom: 30px; font-size: 1.1rem;"></p>
+            <div id="dice-container" style="display: flex; gap: 25px; justify-content: center; min-height: 100px;">
+                <!-- Dice will be injected here -->
+            </div>
+            <button id="btn-finish-dice" class="btn btn-primary hidden" style="margin-top: 35px; font-size: 1.1rem; padding: 12px 35px;">Continue</button>
+        </div>
+    </div>
+
+    <!-- TEMP TEST BUTTON: forces the Lose condition. Remove before shipping. -->
+    <button id="btn-debug-lose" class="btn btn-danger debug-lose-btn hidden">TEST: Force Lose</button>
+
+    <script src="game.js?v=90"></script>
 </body>
 </html>

@@ -18,6 +18,7 @@ let chosenHero = "The Guardian";
 let dragType = null;
 let dragLocName = null;
 let lastGamePhaseSeen = null;
+let lastPendingDiceRollId = "";
 let intentionalDisconnect = false;
 let lastTerrorLevel = null;
 let pendingTerrorTransitionFrom = null; // consumed once by renderSVGMap to slide the neon ring from its old slot
@@ -562,8 +563,187 @@ function updateGameUI() {
         }
         lastGamePhaseSeen = gameState.game_phase;
 
+        // Handle Interactive Dice Roll
+        const elDiceOverlay = document.getElementById("dice-modal-overlay");
+        const btnFinishDice = document.getElementById("btn-finish-dice");
+        if (elDiceOverlay) {
+            if (gameState.pending_dice_roll) {
+                // Generate a unique ID for this exact attack
+                const currentRollId = gameState.pending_dice_roll.id || `${gameState.pending_dice_roll.hero}_${gameState.pending_dice_roll.monster}_${gameState.pending_dice_roll.dice}_${Date.now()}`;
+                const isMyRoll = (gameState.pending_dice_roll.hero === playerName);
+                const descEl = document.getElementById("dice-modal-desc");
+                
+                if (isMyRoll) {
+                    descEl.textContent = `${gameState.pending_dice_roll.monster} is attacking you! Roll the dice!`;
+                } else {
+                    descEl.textContent = `${gameState.pending_dice_roll.monster} is attacking ${gameState.pending_dice_roll.hero}! Waiting for them to roll...`;
+                }
+
+                if (lastPendingDiceRollId !== currentRollId) {
+                    lastPendingDiceRollId = currentRollId;
+                    
+                    const container = document.getElementById("dice-container");
+                    container.innerHTML = "";
+                    btnFinishDice.classList.add("hidden");
+                    btnFinishDice.disabled = false;
+                    btnFinishDice.onclick = null;
+                    
+                    let diceRolled = 0;
+                    
+                    gameState.pending_dice_roll.results.forEach((result, idx) => {
+                        const die = document.createElement("div");
+                        die.className = "die-button";
+                        die.textContent = "?";
+                        container.appendChild(die);
+                        
+                        if (isMyRoll) {
+                            die.onclick = () => {
+                                if (die.classList.contains("rolled")) return;
+                                
+                                die.classList.add("die-rolling");
+                                setTimeout(() => {
+                                    die.classList.remove("die-rolling");
+                                    die.classList.add("rolled");
+                                    if (result === "Hit") {
+                                        die.textContent = "❗";
+                                    } else if (result === "Frenzy") {
+                                        die.textContent = "💥";
+                                    } else {
+                                        die.textContent = "—";
+                                    }
+                                    
+                                    diceRolled++;
+                                    if (diceRolled === gameState.pending_dice_roll.dice) {
+                                        const hits = gameState.pending_dice_roll.results.filter(r => r === "Hit").length;
+                                        if (hits === 0) {
+                                            btnFinishDice.textContent = "Continue";
+                                            btnFinishDice.className = "btn btn-primary";
+                                            btnFinishDice.classList.remove("hidden");
+                                            btnFinishDice.onclick = () => {
+                                                btnFinishDice.disabled = true;
+                                                btnFinishDice.textContent = "Processing...";
+                                                elDiceOverlay.classList.add("hidden");
+                                                ws.send(JSON.stringify({ action: "finish_dice_roll" }));
+                                            };
+                                        } else {
+                                            btnFinishDice.textContent = "Take Damage";
+                                            btnFinishDice.className = "btn btn-danger";
+                                            btnFinishDice.classList.remove("hidden");
+                                            btnFinishDice.onclick = () => {
+                                                showDamageSelection(hits);
+                                            };
+                                        }
+                                    }
+                                }, 500); // Wait for animation to finish
+                            };
+                        }
+                    });
+                }
+                
+                elDiceOverlay.classList.remove("hidden");
+            } else {
+                elDiceOverlay.classList.add("hidden");
+                lastPendingDiceRollId = "";
+                const existing = document.getElementById("btn-block-damage");
+                if (existing) existing.remove();
+            }
+        }
+
         // Render Sidebar lists (Inventory)
         renderPlayerPanel();
+        
+        function showDamageSelection(hits) {
+            const container = document.getElementById("dice-container");
+            const descEl = document.getElementById("dice-modal-desc");
+            const btnFinishDice = document.getElementById("btn-finish-dice");
+            
+            descEl.textContent = `You took ${hits} damage (!)! Select items with total strength >= ${hits} to block it, or take the damage.`;
+            container.innerHTML = "";
+            
+            const myState = gameState.heroes_state[playerName];
+            let selectedIds = new Set();
+            
+            if (myState.items.length === 0) {
+                container.innerHTML = `<p style="color: #ff3366; font-size: 1.2rem;">You have no items to block the damage!</p>`;
+            } else {
+                const itemsDiv = document.createElement("div");
+                itemsDiv.style.display = "flex";
+                itemsDiv.style.gap = "10px";
+                itemsDiv.style.flexWrap = "wrap";
+                itemsDiv.style.justifyContent = "center";
+                
+                myState.items.forEach(item => {
+                    const itemEl = document.createElement("div");
+                    itemEl.className = "inventory-item";
+                    itemEl.style.cursor = "pointer";
+                    itemEl.style.padding = "10px";
+                    itemEl.style.border = "2px solid transparent";
+                    itemEl.style.borderRadius = "8px";
+                    itemEl.innerHTML = `<div class="item-color-box ${item.color.toLowerCase()}"></div> 
+                                        <span class="item-strength">${item.strength}</span> ${item.name}`;
+                                        
+                    itemEl.onclick = () => {
+                        if (selectedIds.has(item.id)) {
+                            selectedIds.delete(item.id);
+                            itemEl.style.borderColor = "transparent";
+                        } else {
+                            selectedIds.add(item.id);
+                            itemEl.style.borderColor = "#ffcc00";
+                        }
+                        updateDamageButtons();
+                    };
+                    itemsDiv.appendChild(itemEl);
+                });
+                container.appendChild(itemsDiv);
+            }
+            
+            btnFinishDice.textContent = "Take Damage (Terror +1)";
+            btnFinishDice.className = "btn btn-danger";
+            btnFinishDice.onclick = () => {
+                btnFinishDice.disabled = true;
+                btnFinishDice.textContent = "Processing...";
+                const existingBlockBtn = document.getElementById("btn-block-damage");
+                if (existingBlockBtn) existingBlockBtn.disabled = true;
+                const overlay = document.getElementById("dice-modal-overlay");
+                if (overlay) overlay.classList.add("hidden");
+                ws.send(JSON.stringify({ action: "finish_dice_roll" }));
+            };
+            
+            const existing = document.getElementById("btn-block-damage");
+            if (existing) existing.remove();
+            
+            const btnBlock = document.createElement("button");
+            btnBlock.id = "btn-block-damage";
+            btnBlock.className = "btn btn-primary hidden";
+            btnBlock.style.marginLeft = "15px";
+            btnBlock.style.marginTop = "35px";
+            btnBlock.style.fontSize = "1.1rem";
+            btnBlock.style.padding = "12px 35px";
+            btnBlock.textContent = "Block Damage";
+            
+            btnFinishDice.parentNode.appendChild(btnBlock);
+            
+            function updateDamageButtons() {
+                let totalStr = 0;
+                myState.items.forEach(i => {
+                    if (selectedIds.has(i.id)) totalStr += i.strength;
+                });
+                
+                if (totalStr >= hits) {
+                    btnBlock.classList.remove("hidden");
+                    btnBlock.onclick = () => {
+                        btnBlock.disabled = true;
+                        btnBlock.textContent = "Processing...";
+                        btnFinishDice.disabled = true;
+                        const overlay = document.getElementById("dice-modal-overlay");
+                        if (overlay) overlay.classList.add("hidden");
+                        ws.send(JSON.stringify({ action: "finish_dice_roll", item_ids: Array.from(selectedIds) }));
+                    };
+                } else {
+                    btnBlock.classList.add("hidden");
+                }
+            }
+        }
 
         // Render AP counter bar
         renderApCounterBar();
