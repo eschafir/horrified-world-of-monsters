@@ -145,6 +145,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
 
 elCloseModal.addEventListener("click", () => {
     elModalContainer.classList.add("hidden");
+    elModalContainer.querySelector(".modal-content")?.classList.remove("modal-wide");
 });
 
 // Volume Slider Event Listener
@@ -418,8 +419,11 @@ function renderHeroSelectOptions() {
         card.className = `hero-card ${chosenHero === hero ? "selected" : ""} ${takenByName ? "taken" : ""}`;
 
         card.innerHTML = `
-            <div class="hero-card-portrait">
-                <img src="/Images/Heroes/${hero} Image.png" alt="${hero}">
+            <div class="hero-card-portrait-wrap">
+                <div class="hero-card-portrait">
+                    <img src="/Images/Heroes/${hero} Image.png" alt="${hero}">
+                </div>
+                <button type="button" class="hero-card-info-btn" title="View ${hero} card" onclick="event.stopPropagation(); showHeroCardModal('${hero}')">i</button>
             </div>
             <div class="hero-card-name">${hero}</div>
             <div class="hero-card-ap">${data.ap} AP</div>
@@ -441,6 +445,50 @@ function renderHeroSelectOptions() {
         elHeroOptions.appendChild(card);
     });
 }
+
+// In-world lore excerpts shown alongside a hero's Card image, sourced from found
+// letters/journals — only heroes with a written entry appear here.
+const HERO_LORE = {
+    "The Guardian": {
+        text: "Whooo originally created this beast of steel remains a mystery. It... or rather... they were discovered alongside the void. But it was under the guidance of Dr. Weir that the early stewards brought the Guardian to life, intending them to be this terrestrial plane's first line of defense. Is their penchant for the finer things something awoken by human meddling or a clue to the Guardian's origins?",
+        signature: "Howard"
+    },
+    "The Fortune Teller": {
+        text: "When artifacts defy science and even the Spindlewood Institute's prodding, whooo do you call but the Fortune Teller! This infuriates Dr. Weir, a fact that brings a smirk to my beak when I remember the Fortune Teller is the good doctor's daughter. When not rapt by an object's ghostly memory or some such vision, she runs The Fool's Journey, the best teahouse this side of the void.",
+        signature: "Howard"
+    }
+};
+
+window.showHeroCardModal = (heroName) => {
+    const modalContentEl = elModalContainer.querySelector(".modal-content");
+    const imgSrc = `/Images/Heroes/${heroName} Card.png`;
+    const lore = HERO_LORE[heroName];
+
+    if (lore) {
+        if (modalContentEl) modalContentEl.classList.add("modal-wide");
+        elModalBody.innerHTML = `
+            <h2 style="margin-top:0;">${heroName}</h2>
+            <div class="hero-lore-layout">
+                <img src="${imgSrc}" alt="${heroName} Card" class="hero-lore-card-img">
+                <div class="hero-lore-text-wrap">
+                    <p class="hero-lore-text">${lore.text}</p>
+                    <p class="hero-lore-signature">&mdash;${lore.signature}</p>
+                </div>
+            </div>
+            <p style="text-align: center; color: #a491c3; font-size: 0.9rem; margin-top: 16px;">Close this window to continue.</p>
+        `;
+    } else {
+        if (modalContentEl) modalContentEl.classList.remove("modal-wide");
+        elModalBody.innerHTML = `
+            <h2 style="margin-top:0;">${heroName}</h2>
+            <div style="text-align: center; margin: 20px 0;">
+                <img src="${imgSrc}" alt="${heroName} Card" style="max-width: 100%; max-height: 500px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+            </div>
+            <p style="text-align: center; color: #a491c3; font-size: 0.9rem;">Close this window to continue.</p>
+        `;
+    }
+    elModalContainer.classList.remove("hidden");
+};
 
 // ---------------------------------------------------------
 // GAME UI SYNC AND RENDER ENGINE

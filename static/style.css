@@ -392,6 +392,11 @@ body {
     letter-spacing: 0.03em;
 }
 
+.hero-card-portrait-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
 .hero-card-portrait {
     width: 62px;
     height: 62px;
@@ -399,12 +404,52 @@ body {
     border: 2.5px solid #33ccff;
     box-shadow: 0 0 10px rgba(51, 204, 255, 0.45);
     overflow: hidden;
-    flex-shrink: 0;
 }
 
 .hero-card.selected .hero-card-portrait {
     border-color: #ffd533;
     box-shadow: 0 0 16px rgba(255, 213, 51, 0.65);
+}
+
+.hero-card-info-btn {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(10, 5, 20, 0.9);
+    border: 1.5px solid #33ccff;
+    color: #33ccff;
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 2;
+}
+
+.hero-card-info-btn:hover {
+    background: #33ccff;
+    color: #0a0514;
+    box-shadow: 0 0 8px rgba(51, 204, 255, 0.7);
+}
+
+.hero-card.selected .hero-card-info-btn {
+    border-color: #ffd533;
+    color: #ffd533;
+}
+
+.hero-card.selected .hero-card-info-btn:hover {
+    background: #ffd533;
+    color: #0a0514;
+    box-shadow: 0 0 8px rgba(255, 213, 51, 0.7);
 }
 
 .hero-card-portrait img {
@@ -1458,6 +1503,62 @@ body {
     padding: 25px;
     border-radius: 16px;
     position: relative;
+    transition: max-width 0.25s ease;
+}
+
+.modal-content.modal-wide {
+    max-width: 820px;
+}
+
+/* Hero Card modal: portrait card + in-world lore excerpt, side by side */
+.hero-lore-layout {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    margin: 16px 0;
+}
+
+.hero-lore-card-img {
+    flex: 0 0 auto;
+    max-width: 260px;
+    width: 45%;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.hero-lore-text-wrap {
+    flex: 1;
+    min-width: 0;
+    padding-top: 6px;
+}
+
+.hero-lore-text {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-style: italic;
+    font-size: 1.28rem;
+    line-height: 1.55;
+    color: #e5d9c8;
+    margin: 0;
+}
+
+.hero-lore-signature {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #ffd533;
+    text-align: right;
+    margin: 10px 0 0 0;
+}
+
+@media (max-width: 640px) {
+    .hero-lore-layout {
+        flex-direction: column;
+        align-items: center;
+    }
+    .hero-lore-card-img {
+        width: 70%;
+    }
 }
 
 .close-modal {
