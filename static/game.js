@@ -2766,13 +2766,13 @@ function renderSVGMap() {
             itemCircle.setAttribute("id", "map-item-" + item.id);
             itemCircle.setAttribute("cx", coord.x + offset.x);
             itemCircle.setAttribute("cy", coord.y + offset.y);
-            itemCircle.setAttribute("r", 10);
+            itemCircle.setAttribute("r", 14);
             itemCircle.setAttribute("class", `token-item ${item.color.toLowerCase()}`);
             itemG.appendChild(itemCircle);
 
             const itemVal = document.createElementNS("http://www.w3.org/2000/svg", "text");
             itemVal.setAttribute("x", coord.x + offset.x);
-            itemVal.setAttribute("y", coord.y + offset.y + 3);
+            itemVal.setAttribute("y", coord.y + offset.y + 4);
             itemVal.setAttribute("text-anchor", "middle");
             itemVal.setAttribute("class", "token-label");
             itemVal.textContent = item.strength;
@@ -2844,12 +2844,12 @@ function renderSVGMap() {
             const isHero = (char.type === "hero");
             const isCitizen = (char.type === "citizen") && !isYetiChild;
             let charR;
-            if (isCustomMonster) charR = 35;
-            else if (isYetiChild) charR = 18;
-            else if (isHero) charR = 24;
-            else if (isLair) charR = 20;
-            else if (isCitizen) charR = 18;
-            else charR = 14;
+            if (isCustomMonster) charR = 48;
+            else if (isYetiChild) charR = 26;
+            else if (isHero) charR = 34;
+            else if (isLair) charR = 28;
+            else if (isCitizen) charR = 26;
+            else charR = 20;
 
             const offset = getCharOffset(index, characters.length, coord.r || 35);
             const charG = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -2861,8 +2861,8 @@ function renderSVGMap() {
             const shapeType = isLair ? "rect" : "circle";
             const charShape = document.createElementNS("http://www.w3.org/2000/svg", shapeType);
             
-            const lairW = 40;
-            const lairH = 28;
+            const lairW = 56;
+            const lairH = 40;
             if (isLair) {
                 charShape.setAttribute("width", lairW);
                 charShape.setAttribute("height", lairH);
@@ -3058,7 +3058,7 @@ function renderSVGMap() {
                 const charVal = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 charVal.setAttribute("text-anchor", "middle");
                 charVal.setAttribute("fill", "#000");
-                charVal.setAttribute("font-size", "10px");
+                charVal.setAttribute("font-size", "14px");
                 charVal.setAttribute("font-weight", "bold");
                 charVal.textContent = char.label;
 
@@ -3148,8 +3148,8 @@ function isDoubleJump(start, target) {
 }
 
 function getItemOffset(index, nodeRadius = 35) {
-    // Orbit around node center outside transparent hitbox
-    const radius = nodeRadius - 7;
+    // Orbit around node center outside transparent hitbox (accounts for the larger r=14 item token)
+    const radius = nodeRadius - 11;
     const angle = (index * 60) * (Math.PI / 180);
     return {
         x: radius * Math.cos(angle),
@@ -3158,9 +3158,9 @@ function getItemOffset(index, nodeRadius = 35) {
 }
 
 function getCharOffset(index, total, nodeRadius = 35) {
-    // Arrange in center or slightly offset
+    // Arrange in center or slightly offset (spread out a bit more to fit the bigger tokens)
     if (total === 1) return { x: 0, y: 0 };
-    const radius = nodeRadius * 0.43;
+    const radius = nodeRadius * 0.48;
     const angle = (index * (360 / total)) * (Math.PI / 180);
     return {
         x: radius * Math.cos(angle),
@@ -3198,42 +3198,76 @@ function showLairImageModal(lairType) {
 // ---------------------------------------------------------
 
 function showNodeInfo(locName) {
-    const coord = gameState.node_coordinates[locName];
     const items = gameState.items_on_board[locName] || [];
-    
-    let html = `<h3>${locName}</h3><hr style="border-color: rgba(255,255,255,0.05); margin: 10px 0;">`;
-    
+
+    let html = `<div style="text-align:center;">`;
+    html += `<h3>${locName}</h3><hr style="border-color: rgba(255,255,255,0.05); margin: 10px 0;">`;
+
     if (items.length > 0) {
-        html += `<p style="margin-bottom:8px;"><strong>Items at this location:</strong></p><ul style="list-style:none; padding-left:0;">`;
+        html += `<p style="margin-bottom:8px;"><strong>Items at this location:</strong></p>`;
+        html += `<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-bottom:14px;">`;
         items.forEach(item => {
-            html += `<li style="padding: 6px; margin-bottom: 4px; border-radius: 4px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.02)">
-                ${item.name} (${item.color} ${item.strength})
-            </li>`;
+            const imgSrc = item.artwork ? `/assets/items/${item.artwork}` : "";
+            html += `
+                <div style="width:84px; text-align:center;">
+                    <div style="width:64px; height:64px; margin:0 auto 6px; border-radius:8px; overflow:hidden; background:rgba(255,255,255,0.05); border:2px solid rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center;">
+                        ${imgSrc ? `<img src="${imgSrc}" alt="${item.name}" style="width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.style.visibility='hidden'">` : ''}
+                    </div>
+                    <div style="font-size:0.68rem; color:#e5d9c8; line-height:1.2;">${item.name}</div>
+                    <div style="font-size:0.65rem; color:#a491c3;">${item.color} ${item.strength}</div>
+                </div>
+            `;
         });
-        html += `</ul>`;
+        html += `</div>`;
     } else {
-        html += `<p>No items here.</p>`;
+        html += `<p style="color:#a491c3; font-style:italic;">No items here.</p>`;
     }
 
-    // Citizens / Monsters present
+    // Characters present: heroes, active monsters, citizens, and Yeti children
     const chars = [];
     for (const pName in gameState.heroes_state) {
-        if (gameState.heroes_state[pName].location === locName) chars.push(`${pName} (${gameState.heroes_state[pName].hero})`);
+        const h = gameState.heroes_state[pName];
+        if (h.location === locName) {
+            chars.push({ img: `/Images/Heroes/${h.hero} Image.png`, label: pName, sub: h.hero });
+        }
     }
     for (const mName in gameState.monster_locations) {
-        if (gameState.monster_locations[mName] === locName) chars.push(`<strong>${mName}</strong> (Monster)`);
+        if (gameState.active_monsters.includes(mName) && gameState.monster_locations[mName] === locName) {
+            chars.push({ img: `/Images/Monsters/${mName}.png`, label: mName, sub: "Monster" });
+        }
     }
     for (const citName in gameState.citizens) {
         const cit = gameState.citizens[citName];
-        if (cit.active && cit.location === locName) chars.push(`${citName} (Citizen, heading to ${cit.safe})`);
+        if (cit.active && cit.location === locName) {
+            chars.push({ img: `/Images/Citizens/${cit.portrait || `${citName}.png`}`, label: citName, sub: `Heading to ${cit.safe}` });
+        }
+    }
+    if (gameState.active_monsters.includes("Yeti") && gameState.monster_states["Yeti"]) {
+        gameState.monster_states["Yeti"].children.forEach(child => {
+            if (!child.rescued && child.location === locName) {
+                chars.push({ img: `/Images/Monsters/Yeti Child ${child.id}.png`, label: `Yeti Child ${child.id}`, sub: "Legend" });
+            }
+        });
     }
 
     if (chars.length > 0) {
-        html += `<p style="margin-top:12px;"><strong>Characters present:</strong></p><ul>`;
-        chars.forEach(c => html += `<li>${c}</li>`);
-        html += `</ul>`;
+        html += `<p style="margin-bottom:8px;"><strong>Characters present:</strong></p>`;
+        html += `<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px;">`;
+        chars.forEach(c => {
+            html += `
+                <div style="width:84px; text-align:center;">
+                    <div style="width:64px; height:64px; margin:0 auto 6px; border-radius:50%; overflow:hidden; background:rgba(255,255,255,0.05); border:2px solid rgba(255,213,51,0.45);">
+                        <img src="${c.img}" alt="${c.label}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.visibility='hidden'">
+                    </div>
+                    <div style="font-size:0.68rem; color:#f0e8ff; font-weight:600; line-height:1.2;">${c.label}</div>
+                    <div style="font-size:0.62rem; color:#a491c3;">${c.sub}</div>
+                </div>
+            `;
+        });
+        html += `</div>`;
     }
 
+    html += `</div>`;
     elModalBody.innerHTML = html;
     elModalContainer.classList.remove("hidden");
 }
@@ -3331,48 +3365,77 @@ document.getElementById("action-pickup").addEventListener("click", () => {
     }
 
     // Modal to choose items
-    let html = `
+    let html = `<div style="text-align:center;">`;
+    html += `
         <h3>Pick Up Items</h3>
         <p style="font-size:0.85rem; color:#b0a0cf;">Select items to add to inventory</p>
         <hr style="border-color:rgba(255,255,255,0.05); margin: 10px 0;">
-        <div id="pickup-items-list">
+        <div id="pickup-items-list" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px;">
     `;
 
     items.forEach(item => {
+        const imgSrc = item.artwork ? `/assets/items/${item.artwork}` : "";
         html += `
-            <div style="margin: 10px 0; display:flex; align-items:center;">
-                <label style="display:flex; align-items:center; gap:10px; cursor:pointer; width:100%;">
-                    <input type="checkbox" class="pickup-item-checkbox" value="${item.id}" 
-                           data-color="${item.color}" data-strength="${item.strength}" data-name="${item.name}"
-                           style="width: 18px; height: 18px; cursor: pointer;">
-                    <span style="font-size: 0.95rem; color:#f0e8ff;">${item.name} (${item.color} ${item.strength})</span>
-                </label>
-            </div>
+            <label class="pickup-item-card" style="width:84px; text-align:center; cursor:pointer;">
+                <input type="checkbox" class="pickup-item-checkbox" value="${item.id}"
+                       data-color="${item.color}" data-strength="${item.strength}" data-name="${item.name}"
+                       style="display:none;">
+                <div class="pickup-item-thumb" style="width:64px; height:64px; margin:0 auto 6px; border-radius:8px; overflow:hidden; background:rgba(255,255,255,0.05); border:2px solid rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center; transition: border-color 0.15s ease, box-shadow 0.15s ease;">
+                    ${imgSrc ? `<img src="${imgSrc}" alt="${item.name}" style="width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.style.visibility='hidden'">` : ''}
+                </div>
+                <div style="font-size:0.68rem; color:#e5d9c8; line-height:1.2;">${item.name}</div>
+                <div style="font-size:0.65rem; color:#a491c3;">${item.color} ${item.strength}</div>
+            </label>
         `;
     });
 
     html += `
         </div>
         <hr style="border-color:rgba(255,255,255,0.05); margin: 15px 0 10px 0;">
-        <div style="display: flex; justify-content: flex-end; gap: 10px;">
-            <button class="btn btn-secondary btn-small" onclick="elModalContainer.classList.add('hidden')">Cancel</button>
-            <button class="btn btn-primary btn-small" id="btn-confirm-pickup" disabled>Done</button>
+        <div style="display: flex; justify-content: space-between; align-items:center; gap: 10px;">
+            <button class="btn btn-secondary btn-small" id="btn-pickup-all">Pick All</button>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-secondary btn-small" onclick="elModalContainer.classList.add('hidden')">Cancel</button>
+                <button class="btn btn-primary btn-small" id="btn-confirm-pickup" disabled>Done</button>
+            </div>
         </div>
     `;
+    html += `</div>`;
 
     elModalBody.innerHTML = html;
     elModalContainer.classList.remove("hidden");
 
-    // Add event listener to checkboxes to toggle the Done button
+    // Add event listener to checkboxes to toggle the Done button + card highlight
     const checkboxes = document.querySelectorAll(".pickup-item-checkbox");
     const confirmBtn = document.getElementById("btn-confirm-pickup");
+    const pickAllBtn = document.getElementById("btn-pickup-all");
+
+    const updateCardHighlight = (cb) => {
+        const thumb = cb.nextElementSibling;
+        if (cb.checked) {
+            thumb.style.borderColor = "#ffd533";
+            thumb.style.boxShadow = "0 0 8px rgba(255, 213, 51, 0.7)";
+        } else {
+            thumb.style.borderColor = "rgba(255, 255, 255, 0.12)";
+            thumb.style.boxShadow = "none";
+        }
+    };
 
     confirmBtn.addEventListener("click", () => {
         triggerMultiplePickup(myState.location);
     });
 
+    pickAllBtn.addEventListener("click", () => {
+        checkboxes.forEach(cb => {
+            cb.checked = true;
+            updateCardHighlight(cb);
+        });
+        confirmBtn.disabled = (checkboxes.length === 0);
+    });
+
     checkboxes.forEach(cb => {
         cb.addEventListener("change", () => {
+            updateCardHighlight(cb);
             const checkedCount = document.querySelectorAll(".pickup-item-checkbox:checked").length;
             confirmBtn.disabled = (checkedCount === 0);
         });
