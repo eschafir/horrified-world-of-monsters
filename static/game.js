@@ -2567,7 +2567,7 @@ function renderSVGMap() {
 
     // Create Background Map Image programmatically (namespace-safe)
     const bgImage = document.createElementNS("http://www.w3.org/2000/svg", "image");
-    bgImage.setAttribute("href", "/Images/Map.png?v=2");
+    bgImage.setAttribute("href", "/Images/Map2.png?v=2");
     bgImage.setAttribute("x", "0");
     bgImage.setAttribute("y", "0");
     bgImage.setAttribute("width", "1304");
