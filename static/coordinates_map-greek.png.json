@@ -1,154 +1,154 @@
 {
     "nodes": {
         "Temple of Athena": {
-            "x": 197,
-            "y": 135,
-            "r": 65,
+            "x": 192,
+            "y": 121,
+            "r": 60,
             "type": "circle"
         },
         "Trading Post": {
-            "x": 305,
-            "y": 268,
+            "x": 299,
+            "y": 250,
             "r": 65,
             "type": "circle"
         },
         "Mount Iliad": {
-            "x": 515,
-            "y": 239,
-            "r": 70,
+            "x": 512,
+            "y": 227,
+            "r": 75,
             "type": "circle"
         },
-        "Cross Roads": {
-            "x": 450,
-            "y": 393,
+        "CrossRoads": {
+            "x": 445,
+            "y": 374,
             "r": 65,
             "type": "circle"
         },
         "Ruins": {
-            "x": 262,
-            "y": 444,
+            "x": 254,
+            "y": 430,
             "r": 80,
             "type": "circle"
         },
         "Battlefield": {
-            "x": 484,
-            "y": 596,
+            "x": 479,
+            "y": 581,
             "r": 100,
             "type": "circle"
         },
+        "Temple of Nyx": {
+            "x": 256,
+            "y": 630,
+            "r": 77,
+            "type": "circle"
+        },
         "Forest of the Dryads": {
-            "x": 390,
-            "y": 840,
-            "r": 75,
+            "x": 383,
+            "y": 834,
+            "r": 73,
             "type": "circle"
         },
         "Statue of Talos": {
-            "x": 242,
-            "y": 915,
+            "x": 228,
+            "y": 912,
             "r": 50,
             "type": "circle"
         },
         "Temple of Hades": {
-            "x": 210,
-            "y": 1075,
-            "r": 70,
-            "type": "circle"
-        },
-        "Cross Roads 2": {
-            "x": 597,
-            "y": 869,
+            "x": 195,
+            "y": 1078,
             "r": 65,
             "type": "circle"
         },
-        "Lighthouse": {
-            "x": 433,
-            "y": 996,
-            "r": 70,
+        "CrossRoads2": {
+            "x": 591,
+            "y": 862,
+            "r": 65,
             "type": "circle"
         },
         "Bay of Ghosts": {
-            "x": 596,
-            "y": 1075,
-            "r": 85,
+            "x": 591,
+            "y": 1079,
+            "r": 90,
             "type": "circle"
         },
-        "Temple of Nyx": {
-            "x": 266,
-            "y": 642,
-            "r": 75,
+        "LightHouse": {
+            "x": 423,
+            "y": 994,
+            "r": 70,
             "type": "circle"
         },
         "Stables": {
-            "x": 672,
-            "y": 728,
-            "r": 75,
+            "x": 665,
+            "y": 718,
+            "r": 80,
             "type": "circle"
         },
         "Gaseous Swamp": {
-            "x": 798,
-            "y": 1027,
+            "x": 794,
+            "y": 1026,
             "r": 80,
             "type": "circle"
         },
         "Odeon": {
-            "x": 727,
-            "y": 534,
+            "x": 726,
+            "y": 526,
             "r": 85,
             "type": "circle"
         },
         "Agora": {
-            "x": 1010,
-            "y": 614,
-            "r": 160,
+            "x": 1014,
+            "y": 602,
+            "r": 170,
             "type": "circle"
         },
         "Vineyards": {
-            "x": 841,
-            "y": 835,
-            "r": 90,
+            "x": 839,
+            "y": 830,
+            "r": 95,
             "type": "circle"
         },
         "Port": {
-            "x": 1075,
-            "y": 951,
-            "r": 115,
+            "x": 1083,
+            "y": 949,
+            "r": 120,
             "type": "circle"
         },
         "Acropolis": {
             "x": 906,
-            "y": 376,
-            "r": 90,
+            "y": 351,
+            "r": 85,
             "type": "circle"
         },
         "Gymnasium": {
-            "x": 816,
-            "y": 186,
-            "r": 75,
+            "x": 813,
+            "y": 168,
+            "r": 80,
             "type": "circle"
         },
         "Stadium": {
-            "x": 670,
-            "y": 329,
-            "r": 90,
+            "x": 667,
+            "y": 319,
+            "r": 95,
             "type": "circle"
         },
-        "Necropolois": {
+        "Necropolis": {
             "x": 1066,
-            "y": 183,
-            "r": 110,
+            "y": 166,
+            "r": 120,
             "type": "circle"
         },
         "Temple of Zeus": {
-            "x": 1121,
-            "y": 366,
-            "r": 75,
+            "x": 1123,
+            "y": 358,
+            "r": 80,
             "type": "circle"
         }
     },
     "terror": [
         {
-            "x": 390,
-            "y": 75,
+            "x": 386,
+            "y": 57,
             "r": 30,
             "points": [
                 [
@@ -186,8 +186,8 @@
             ]
         },
         {
-            "x": 466,
-            "y": 74,
+            "x": 463,
+            "y": 58,
             "r": 31,
             "points": [
                 [
@@ -225,8 +225,8 @@
             ]
         },
         {
-            "x": 544,
-            "y": 74,
+            "x": 539,
+            "y": 58,
             "r": 31,
             "points": [
                 [
@@ -264,8 +264,8 @@
             ]
         },
         {
-            "x": 620,
-            "y": 74,
+            "x": 616,
+            "y": 60,
             "r": 32,
             "points": [
                 [
@@ -303,8 +303,8 @@
             ]
         },
         {
-            "x": 695,
-            "y": 75,
+            "x": 691,
+            "y": 60,
             "r": 31,
             "points": [
                 [
@@ -342,8 +342,8 @@
             ]
         },
         {
-            "x": 771,
-            "y": 75,
+            "x": 769,
+            "y": 58,
             "r": 32,
             "points": [
                 [
@@ -381,8 +381,8 @@
             ]
         },
         {
-            "x": 846,
-            "y": 74,
+            "x": 844,
+            "y": 58,
             "r": 32,
             "points": [
                 [
@@ -420,8 +420,8 @@
             ]
         },
         {
-            "x": 924,
-            "y": 75,
+            "x": 918,
+            "y": 58,
             "r": 32,
             "points": [
                 [
@@ -469,26 +469,29 @@
         ],
         "Mount Iliad": [
             "Trading Post",
-            "Cross Roads"
+            "CrossRoads"
         ],
-        "Cross Roads": [
+        "CrossRoads": [
             "Mount Iliad",
             "Ruins",
             "Battlefield"
         ],
         "Ruins": [
-            "Cross Roads"
+            "CrossRoads"
         ],
         "Battlefield": [
+            "CrossRoads",
             "Temple of Nyx",
-            "Cross Roads",
             "Forest of the Dryads",
             "Odeon"
+        ],
+        "Temple of Nyx": [
+            "Battlefield"
         ],
         "Forest of the Dryads": [
             "Battlefield",
             "Statue of Talos",
-            "Cross Roads 2"
+            "CrossRoads2"
         ],
         "Statue of Talos": [
             "Forest of the Dryads",
@@ -497,36 +500,33 @@
         "Temple of Hades": [
             "Statue of Talos"
         ],
-        "Cross Roads 2": [
+        "CrossRoads2": [
             "Forest of the Dryads",
             "Bay of Ghosts",
             "Stables",
             "Gaseous Swamp"
         ],
-        "Lighthouse": [
+        "Bay of Ghosts": [
+            "CrossRoads2",
+            "LightHouse"
+        ],
+        "LightHouse": [
             "Bay of Ghosts"
         ],
-        "Bay of Ghosts": [
-            "Cross Roads 2",
-            "Lighthouse"
-        ],
-        "Temple of Nyx": [
-            "Battlefield"
-        ],
         "Stables": [
-            "Cross Roads 2",
+            "CrossRoads2",
             "Agora"
         ],
         "Gaseous Swamp": [
-            "Cross Roads 2"
+            "CrossRoads2"
         ],
         "Odeon": [
             "Battlefield",
             "Agora"
         ],
         "Agora": [
-            "Stables",
             "Odeon",
+            "Stables",
             "Vineyards",
             "Port",
             "Acropolis"
@@ -540,7 +540,7 @@
         "Acropolis": [
             "Agora",
             "Gymnasium",
-            "Necropolois"
+            "Necropolis"
         ],
         "Gymnasium": [
             "Acropolis",
@@ -549,12 +549,12 @@
         "Stadium": [
             "Gymnasium"
         ],
-        "Necropolois": [
+        "Necropolis": [
             "Acropolis",
             "Temple of Zeus"
         ],
         "Temple of Zeus": [
-            "Necropolois"
+            "Necropolis"
         ]
     }
 }
