@@ -696,12 +696,8 @@ class GameRoom:
             
         state = self.heroes_state[player_name]
         loc = state["location"]
-        
-        # Max inventory size is 4
-        if len(state["items"]) + len(item_ids) > 4:
-            self.add_log(f"{player_name} cannot carry more than 4 items.")
-            return False
-            
+
+
         if state["ap"] < 1 or not item_ids:
             return False
             
@@ -737,13 +733,7 @@ class GameRoom:
             
         if h1["ap"] < 1:
             return False
-            
-        # Perform check on inventory limits
-        if len(h1["items"]) - len(give_item_ids) + len(take_item_ids) > 4:
-            return False
-        if len(h2["items"]) - len(take_item_ids) + len(give_item_ids) > 4:
-            return False
-            
+
         # Move items
         giving = []
         for iid in give_item_ids:
@@ -1030,11 +1020,7 @@ class GameRoom:
             
             if not target_hero or not item:
                 return False
-                
-            if len(target_hero["items"]) >= 4:
-                self.add_log(f"{target_hero_name} already has a full inventory (max 4 items).")
-                return False
-                
+
             h_state["items"].remove(item)
             target_hero["items"].append(item)
             self.add_log(f"The Parapsychologist distributed {item['name']} ({item['color']} {item['strength']}) to {target_hero_name}.")
@@ -1404,6 +1390,7 @@ class GameRoom:
         if target_hero:
             await self.perform_attack(name, target_hero, dice, broadcast_fn)
         else:
+            # Yeti's children are never attacked by any monster, including the Yeti itself.
             target_citizen = None
             for cit_name, cit in self.citizens.items():
                 if cit["active"] and cit["location"] == curr_loc:
@@ -1411,14 +1398,6 @@ class GameRoom:
                     break
             if target_citizen:
                 await self.perform_attack_citizen(name, target_citizen, dice)
-            elif name == "Yeti":
-                # Check if Yeti is on a child token
-                y_state = self.monster_states["Yeti"]
-                for child in y_state["children"]:
-                    if not child["rescued"] and child["location"] == curr_loc:
-                        # Yeti attacks its own child
-                        await self.perform_attack_citizen(name, f"Yeti's Child", dice, is_yeti_child=True, child_obj=child)
-                        break
 
     async def perform_attack(self, monster: str, hero_name: str, dice: int, broadcast_fn=None):
         self.add_log(f"{monster} is attacking {hero_name}!")
@@ -1493,24 +1472,20 @@ class GameRoom:
         if broadcast_fn:
             await broadcast_fn()
 
-    async def perform_attack_citizen(self, monster: str, citizen_name: str, dice: int, is_yeti_child: bool = False, child_obj: dict = None):
+    async def perform_attack_citizen(self, monster: str, citizen_name: str, dice: int):
         self.add_log(f"{monster} is attacking {citizen_name}!")
-        
+
         hits = 0
         for _ in range(dice):
             roll = random.choice(["Hit", "Hit", "Frenzy", "Blank", "Blank", "Blank"])
             if roll == "Hit":
                 hits += 1
-                
+
         if hits > 0:
-            if is_yeti_child and child_obj:
-                child_obj["rescued"] = True
-                self.add_log(f"Yeti's Child was DEFEATED by the attack!")
-            else:
-                self.citizens[citizen_name]["active"] = False
-                self.citizens[citizen_name]["location"] = "Defeated"
-                self.add_log(f"Citizen {citizen_name} was DEFEATED by the attack!")
-            
+            self.citizens[citizen_name]["active"] = False
+            self.citizens[citizen_name]["location"] = "Defeated"
+            self.add_log(f"Citizen {citizen_name} was DEFEATED by the attack!")
+
             self.terror_level = min(7, self.terror_level + 1)
             self.check_terror()
         else:

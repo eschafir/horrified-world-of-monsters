@@ -816,6 +816,62 @@ function updateGameUI() {
 // SIDEBAR RENDERING HELPER METHODS
 // ---------------------------------------------------------
 
+// Compact grid of small color-coded strength chips instead of a one-row-per-item list —
+// inventories are unlimited now, so this keeps the hero panel from growing without bound.
+// Hovering a chip instantly shows a custom tooltip (name + image) via showItemTooltip below,
+// instead of relying on the browser's slow native title tooltip.
+function buildItemChipsHtml(items, options = {}) {
+    const { selectable = false, selectedIds = [] } = options;
+    if (!items || items.length === 0) {
+        return `<p style="font-size: 0.72rem; color: #a491c3; font-style: italic; margin: 4px 0;">No items</p>`;
+    }
+    let html = `<div class="item-chip-grid">`;
+    items.forEach(item => {
+        const isSelected = selectable && selectedIds.includes(item.id);
+        const clickAttr = selectable ? ` onclick="toggleHeroItemSelection('${item.id}')"` : "";
+        const safeName = item.name.replace(/'/g, "\\'");
+        html += `
+            <div class="item-chip item-chip-${item.color.toLowerCase()} ${isSelected ? 'selected' : ''}"
+                 onmouseenter="showItemTooltip(event, '${safeName}')"
+                 onmouseleave="hideItemTooltip()"${clickAttr}>
+                ${item.strength}
+            </div>
+        `;
+    });
+    html += `</div>`;
+    return html;
+}
+
+// Instant hover tooltip for item chips: item name + a small image at
+// /Images/Items/{name}.png (art to be added later; gracefully hides if missing).
+let itemTooltipEl = null;
+
+function showItemTooltip(e, name) {
+    if (!itemTooltipEl) {
+        itemTooltipEl = document.createElement("div");
+        itemTooltipEl.id = "item-hover-tooltip";
+        document.body.appendChild(itemTooltipEl);
+    }
+    itemTooltipEl.innerHTML = `
+        <img src="/Images/Items/${name}.png" alt="${name}" onerror="this.remove()">
+        <div class="item-tooltip-name">${name}</div>
+    `;
+    itemTooltipEl.classList.add("visible");
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const tRect = itemTooltipEl.getBoundingClientRect();
+    let left = rect.left + rect.width / 2 - tRect.width / 2;
+    let top = rect.top - tRect.height - 10;
+    if (top < 4) top = rect.bottom + 10;
+    left = Math.max(4, Math.min(left, window.innerWidth - tRect.width - 4));
+    itemTooltipEl.style.left = `${left}px`;
+    itemTooltipEl.style.top = `${top}px`;
+}
+
+function hideItemTooltip() {
+    if (itemTooltipEl) itemTooltipEl.classList.remove("visible");
+}
+
 function renderPlayerPanel() {
     const elMyHeroContainer = document.getElementById("my-hero-status-container");
     const elHeroesContainer = document.getElementById("heroes-status-container");
@@ -842,22 +898,7 @@ function renderPlayerPanel() {
             card.className = "hero-status-card me-card";
             card.style.width = "100%";
 
-            let itemsHtml = "";
-            if (myState.items && myState.items.length > 0) {
-                myState.items.forEach(item => {
-                    const isSelected = selectedItemsForAction.includes(item.id);
-                    itemsHtml += `
-                        <div class="item-row ${item.color.toLowerCase()} ${isSelected ? 'selected' : ''}" 
-                             style="cursor: pointer; margin: 3px 0; display:flex; justify-content:space-between; ${isSelected ? 'box-shadow: 0 0 8px #ffd533;' : ''}"
-                             onclick="toggleHeroItemSelection('${item.id}')">
-                            <span>${item.name}</span>
-                            <span class="item-val">${item.color} ${item.strength}</span>
-                        </div>
-                    `;
-                });
-            } else {
-                itemsHtml = `<p style="font-size: 0.72rem; color: #a491c3; font-style: italic; margin: 2px 0;">No items</p>`;
-            }
+            const itemsHtml = buildItemChipsHtml(myState.items, { selectable: true, selectedIds: selectedItemsForAction });
 
             let perksHtml = "";
             if (myState.perks && myState.perks.length > 0) {
@@ -893,11 +934,9 @@ function renderPlayerPanel() {
                 <div class="hero-card-body" style="display:flex; flex-direction:column; gap:6px;">
                     <p style="font-size: 0.72rem; color: #e0d0ff; margin:0; line-height:1.3; font-style:italic; text-align:center;">${abilityDesc}</p>
                     <div style="margin-top:4px;">
-                        <div style="font-size: 0.72rem; font-weight:700; color:#a491c3; margin-bottom:4px;">Inventory / Perks:</div>
-                        <div style="display:flex; flex-direction:column; gap:2px; width:100%;">
-                            ${itemsHtml}
-                            ${perksHtml}
-                        </div>
+                        <div style="font-size: 0.72rem; font-weight:700; color:#a491c3; margin-bottom:4px;">Inventory (${myState.items.length}):</div>
+                        ${itemsHtml}
+                        ${perksHtml ? `<div style="font-size: 0.72rem; font-weight:700; color:#a491c3; margin:8px 0 4px;">Perks:</div><div style="display:flex; flex-direction:column; gap:2px; width:100%;">${perksHtml}</div>` : ''}
                     </div>
                 </div>
             `;
@@ -939,20 +978,7 @@ function renderPlayerPanel() {
         card.className = "hero-status-card";
         card.style.width = "100%";
         
-        let itemsHtml = "";
-        if (hState.items && hState.items.length > 0) {
-            hState.items.forEach(item => {
-                itemsHtml += `
-                    <div class="item-row ${item.color.toLowerCase()}" 
-                         style="cursor: default; margin: 3px 0; display:flex; justify-content:space-between;">
-                        <span>${item.name}</span>
-                        <span class="item-val">${item.color} ${item.strength}</span>
-                    </div>
-                `;
-            });
-        } else {
-            itemsHtml = `<p style="font-size: 0.72rem; color: #a491c3; font-style: italic; margin: 2px 0;">No items</p>`;
-        }
+        const itemsHtml = buildItemChipsHtml(hState.items);
 
         let perksHtml = "";
         if (hState.perks && hState.perks.length > 0) {
@@ -989,11 +1015,9 @@ function renderPlayerPanel() {
             <div class="hero-card-body" style="display:flex; flex-direction:column; gap:6px;">
                 <p style="font-size: 0.72rem; color: #e0d0ff; margin:0; line-height:1.3; font-style:italic; text-align:center;">${abilityDesc}</p>
                 <div style="margin-top:4px;">
-                    <div style="font-size: 0.72rem; font-weight:700; color:#a491c3; margin-bottom:4px;">Inventory / Perks:</div>
-                    <div style="display:flex; flex-direction:column; gap:2px; width:100%;">
-                        ${itemsHtml}
-                        ${perksHtml}
-                    </div>
+                    <div style="font-size: 0.72rem; font-weight:700; color:#a491c3; margin-bottom:4px;">Inventory (${hState.items.length}):</div>
+                    ${itemsHtml}
+                    ${perksHtml ? `<div style="font-size: 0.72rem; font-weight:700; color:#a491c3; margin:8px 0 4px;">Perks:</div><div style="display:flex; flex-direction:column; gap:2px; width:100%;">${perksHtml}</div>` : ''}
                 </div>
             </div>
         `;
@@ -3258,16 +3282,10 @@ document.getElementById("action-pickup").addEventListener("click", () => {
         return;
     }
 
-    const spaceLeft = 4 - myState.items.length;
-    if (spaceLeft <= 0) {
-        alert("Your inventory is full (Max 4 items)!");
-        return;
-    }
-
     // Modal to choose items
     let html = `
         <h3>Pick Up Items</h3>
-        <p style="font-size:0.85rem; color:#b0a0cf;">Select items to add to inventory (Space left: ${spaceLeft})</p>
+        <p style="font-size:0.85rem; color:#b0a0cf;">Select items to add to inventory</p>
         <hr style="border-color:rgba(255,255,255,0.05); margin: 10px 0;">
         <div id="pickup-items-list">
     `;
@@ -3297,7 +3315,7 @@ document.getElementById("action-pickup").addEventListener("click", () => {
     elModalBody.innerHTML = html;
     elModalContainer.classList.remove("hidden");
 
-    // Add event listener to checkboxes to disable/enable based on limit & toggle Done button
+    // Add event listener to checkboxes to toggle the Done button
     const checkboxes = document.querySelectorAll(".pickup-item-checkbox");
     const confirmBtn = document.getElementById("btn-confirm-pickup");
 
@@ -3308,18 +3326,7 @@ document.getElementById("action-pickup").addEventListener("click", () => {
     checkboxes.forEach(cb => {
         cb.addEventListener("change", () => {
             const checkedCount = document.querySelectorAll(".pickup-item-checkbox:checked").length;
-            
-            // Enable/disable confirm button
             confirmBtn.disabled = (checkedCount === 0);
-
-            // Limit selection
-            if (checkedCount >= spaceLeft) {
-                checkboxes.forEach(box => {
-                    if (!box.checked) box.disabled = true;
-                });
-            } else {
-                checkboxes.forEach(box => box.disabled = false);
-            }
         });
     });
 });

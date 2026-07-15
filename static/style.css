@@ -1308,6 +1308,84 @@ body {
     font-size: 0.95rem;
 }
 
+/* Compact inventory display: a wrapping grid of small strength chips instead of a
+   one-row-per-item list, so unlimited items don't blow up the hero panel's height. */
+.item-chip-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.item-chip {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #0a0514;
+    border: 2px solid transparent;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    flex-shrink: 0;
+}
+
+.item-chip-red { background: #ff3366; }
+.item-chip-blue { background: #33ccff; }
+.item-chip-yellow { background: #ffd533; }
+
+.item-chip[onclick] {
+    cursor: pointer;
+}
+
+.item-chip[onclick]:hover {
+    transform: scale(1.12);
+}
+
+.item-chip.selected {
+    border-color: #fff;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.85);
+    transform: scale(1.1);
+}
+
+/* Instant hover tooltip for item chips (name + small image) */
+#item-hover-tooltip {
+    position: fixed;
+    z-index: 30000;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    background: rgba(14, 8, 25, 0.95);
+    border: 1px solid rgba(153, 51, 255, 0.45);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+    max-width: 160px;
+    text-align: center;
+}
+
+#item-hover-tooltip.visible {
+    display: flex;
+}
+
+#item-hover-tooltip img {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+#item-hover-tooltip .item-tooltip-name {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #f0e8ff;
+    line-height: 1.2;
+}
+
 /* Log & Chat Tabs */
 .logs-chats-sec {
     flex: 1;
