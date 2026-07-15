@@ -1377,6 +1377,7 @@ body {
     object-fit: contain;
     border-radius: 6px;
     background: rgba(255, 255, 255, 0.04);
+    border: 3px solid rgba(255, 255, 255, 0.3);
 }
 
 #item-hover-tooltip .item-tooltip-name {

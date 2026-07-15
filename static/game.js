@@ -833,6 +833,13 @@ function updateGameUI() {
 // inventories are unlimited now, so this keeps the hero panel from growing without bound.
 // Hovering a chip instantly shows a custom tooltip (name + image) via showItemTooltip below,
 // instead of relying on the browser's slow native title tooltip.
+// Shared color lookup so an item's contour/border always reflects its color
+// (Purple/Blue/Green) wherever its artwork is shown, for quick identification.
+function getItemColorHex(color) {
+    const map = { purple: "#a64dff", blue: "#33ccff", green: "#33ff66" };
+    return map[(color || "").toLowerCase()] || "rgba(255, 255, 255, 0.3)";
+}
+
 function buildItemChipsHtml(items, options = {}) {
     const { selectable = false, selectedIds = [] } = options;
     if (!items || items.length === 0) {
@@ -846,7 +853,7 @@ function buildItemChipsHtml(items, options = {}) {
         const artwork = item.artwork || "";
         html += `
             <div class="item-chip item-chip-${item.color.toLowerCase()} ${isSelected ? 'selected' : ''}"
-                 onmouseenter="showItemTooltip(event, '${safeName}', '${artwork}')"
+                 onmouseenter="showItemTooltip(event, '${safeName}', '${artwork}', '${item.color}')"
                  onmouseleave="hideItemTooltip()"${clickAttr}>
                 ${item.strength}
             </div>
@@ -861,7 +868,7 @@ function buildItemChipsHtml(items, options = {}) {
 // hides the image if it 404s.
 let itemTooltipEl = null;
 
-function showItemTooltip(e, name, artwork) {
+function showItemTooltip(e, name, artwork, color) {
     if (!itemTooltipEl) {
         itemTooltipEl = document.createElement("div");
         itemTooltipEl.id = "item-hover-tooltip";
@@ -869,7 +876,7 @@ function showItemTooltip(e, name, artwork) {
     }
     const imgSrc = artwork ? `/assets/items/${artwork}` : `/assets/items/${name}.png`;
     itemTooltipEl.innerHTML = `
-        <img src="${imgSrc}" alt="${name}" onerror="this.remove()">
+        <img src="${imgSrc}" alt="${name}" style="border-color: ${getItemColorHex(color)};" onerror="this.remove()">
         <div class="item-tooltip-name">${name}</div>
     `;
     itemTooltipEl.classList.add("visible");
@@ -2779,7 +2786,7 @@ function renderSVGMap() {
             itemG.appendChild(itemVal);
 
             itemG.style.cursor = "pointer";
-            itemG.addEventListener("mouseenter", (e) => showItemTooltip(e, item.name, item.artwork));
+            itemG.addEventListener("mouseenter", (e) => showItemTooltip(e, item.name, item.artwork, item.color));
             itemG.addEventListener("mouseleave", () => hideItemTooltip());
 
             g.appendChild(itemG);
@@ -3208,13 +3215,14 @@ function showNodeInfo(locName) {
         html += `<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-bottom:14px;">`;
         items.forEach(item => {
             const imgSrc = item.artwork ? `/assets/items/${item.artwork}` : "";
+            const colorHex = getItemColorHex(item.color);
             html += `
                 <div style="width:84px; text-align:center;">
-                    <div style="width:64px; height:64px; margin:0 auto 6px; border-radius:8px; overflow:hidden; background:rgba(255,255,255,0.05); border:2px solid rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center;">
+                    <div style="width:64px; height:64px; margin:0 auto 6px; border-radius:8px; overflow:hidden; background:rgba(255,255,255,0.05); border:3px solid ${colorHex}; box-shadow: 0 0 6px ${colorHex}66; display:flex; align-items:center; justify-content:center;">
                         ${imgSrc ? `<img src="${imgSrc}" alt="${item.name}" style="width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.style.visibility='hidden'">` : ''}
                     </div>
                     <div style="font-size:0.68rem; color:#e5d9c8; line-height:1.2;">${item.name}</div>
-                    <div style="font-size:0.65rem; color:#a491c3;">${item.color} ${item.strength}</div>
+                    <div style="font-size:0.65rem; color:#a491c3;"><strong>${item.strength}</strong></div>
                 </div>
             `;
         });
@@ -3375,16 +3383,17 @@ document.getElementById("action-pickup").addEventListener("click", () => {
 
     items.forEach(item => {
         const imgSrc = item.artwork ? `/assets/items/${item.artwork}` : "";
+        const colorHex = getItemColorHex(item.color);
         html += `
             <label class="pickup-item-card" style="width:84px; text-align:center; cursor:pointer;">
                 <input type="checkbox" class="pickup-item-checkbox" value="${item.id}"
                        data-color="${item.color}" data-strength="${item.strength}" data-name="${item.name}"
                        style="display:none;">
-                <div class="pickup-item-thumb" style="width:64px; height:64px; margin:0 auto 6px; border-radius:8px; overflow:hidden; background:rgba(255,255,255,0.05); border:2px solid rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center; transition: border-color 0.15s ease, box-shadow 0.15s ease;">
+                <div class="pickup-item-thumb" style="width:64px; height:64px; margin:0 auto 6px; border-radius:8px; overflow:hidden; background:rgba(255,255,255,0.05); border:3px solid ${colorHex}; display:flex; align-items:center; justify-content:center; transition: box-shadow 0.15s ease;">
                     ${imgSrc ? `<img src="${imgSrc}" alt="${item.name}" style="width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.style.visibility='hidden'">` : ''}
                 </div>
                 <div style="font-size:0.68rem; color:#e5d9c8; line-height:1.2;">${item.name}</div>
-                <div style="font-size:0.65rem; color:#a491c3;">${item.color} ${item.strength}</div>
+                <div style="font-size:0.65rem; color:#a491c3;"><strong>${item.strength}</strong></div>
             </label>
         `;
     });
@@ -3393,7 +3402,7 @@ document.getElementById("action-pickup").addEventListener("click", () => {
         </div>
         <hr style="border-color:rgba(255,255,255,0.05); margin: 15px 0 10px 0;">
         <div style="display: flex; justify-content: space-between; align-items:center; gap: 10px;">
-            <button class="btn btn-secondary btn-small" id="btn-pickup-all">Pick All</button>
+            <button class="btn btn-secondary btn-small" id="btn-pickup-all">Select All</button>
             <div style="display:flex; gap:10px;">
                 <button class="btn btn-secondary btn-small" onclick="elModalContainer.classList.add('hidden')">Cancel</button>
                 <button class="btn btn-primary btn-small" id="btn-confirm-pickup" disabled>Done</button>
@@ -3410,15 +3419,11 @@ document.getElementById("action-pickup").addEventListener("click", () => {
     const confirmBtn = document.getElementById("btn-confirm-pickup");
     const pickAllBtn = document.getElementById("btn-pickup-all");
 
+    // The thumb's border color always shows the item's color; selection is shown as
+    // an added gold glow on top, so both stay visible at once.
     const updateCardHighlight = (cb) => {
         const thumb = cb.nextElementSibling;
-        if (cb.checked) {
-            thumb.style.borderColor = "#ffd533";
-            thumb.style.boxShadow = "0 0 8px rgba(255, 213, 51, 0.7)";
-        } else {
-            thumb.style.borderColor = "rgba(255, 255, 255, 0.12)";
-            thumb.style.boxShadow = "none";
-        }
+        thumb.style.boxShadow = cb.checked ? "0 0 10px 2px rgba(255, 213, 51, 0.8)" : "none";
     };
 
     confirmBtn.addEventListener("click", () => {
