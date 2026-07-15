@@ -1,0 +1,72 @@
+[
+    { "itemId":1, "spawn":"House of Dusk", "value":2 },
+    { "itemId":2, "spawn":"Thornvine Woods", "value":2 },
+    { "itemId":3, "spawn":"South Station", "value":2 },
+    { "itemId":3, "spawn":"Specter Trail Caravan", "value":2 },
+    { "itemId":4, "spawn":"Arcane Forge", "value":2 },
+    { "itemId":1, "spawn":"House of Dawn", "value":2 },
+    { "itemId":2, "spawn":"Skybound Galleon", "value":2 },
+    { "itemId":4, "spawn":"Garden of the Risen", "value":2 },
+  
+    { "itemId":5, "spawn":"Mary's Mill", "value":3 },
+    { "itemId":6, "spawn":"The Scuttled Siren", "value":3 },
+    { "itemId":7, "spawn":"Stewards Spire", "value":3 },
+    { "itemId":8, "spawn":"Stilt Town", "value":3 },
+    { "itemId":8, "spawn":"Steam Plant", "value":3 },
+    { "itemId":7, "spawn":"Door of the World", "value":3 },
+    { "itemId":5, "spawn":"Clockwork Village", "value":3 },
+    { "itemId":6, "spawn":"The Fool's Journey", "value":3 },
+  
+    { "itemId":9, "spawn":"The Roaming Wolf", "value":4 },
+    { "itemId":10, "spawn":"Weir's Observatory", "value":4 },
+    { "itemId":9, "spawn":"North Station", "value":4 },
+    { "itemId":10, "spawn":"Spindlewood Institute", "value":4 },
+  
+    { "itemId":11, "spawn":"Arcane Forge", "value":1 },
+    { "itemId":12, "spawn":"Steam Plant", "value":1 },
+    { "itemId":13, "spawn":"South Station", "value":1 },
+    { "itemId":13, "spawn":"North Station", "value":1 },
+    { "itemId":11, "spawn":"House of Dawn", "value":1 },
+    { "itemId":12, "spawn":"Thornvine Woods", "value":1 },
+  
+    { "itemId":14, "spawn":"Weir's Observatory", "value":2 },
+    { "itemId":14, "spawn":"Skybound Galleon", "value":2 },
+    { "itemId":15, "spawn":"Spindlewood Institute", "value":2 },
+    { "itemId":16, "spawn":"Stilt Town", "value":2 },
+    { "itemId":16, "spawn":"Mary's Mill", "value":2 },
+    { "itemId":17, "spawn":"Door of the World", "value":2 },
+    { "itemId":15, "spawn":"The Scuttled Siren", "value":2 },
+    { "itemId":17, "spawn":"Garden of the Risen", "value":2 },
+  
+    { "itemId":18, "spawn":"The Fool's Journey", "value":3 },
+    { "itemId":19, "spawn":"Stewards Spire", "value":3 },
+    { "itemId":19, "spawn":"The Roaming Wolf", "value":3 },
+    { "itemId":20, "spawn":"Clockwork Village", "value":3 },
+    { "itemId":20, "spawn":"House of Dusk", "value":3 },
+    { "itemId":18, "spawn":"Specter Trail Caravan", "value":3 },
+  
+    { "itemId":21, "spawn":"Skybound Galleon", "value":2 },
+    { "itemId":22, "spawn":"Garden of the Risen", "value":2 },
+    { "itemId":21, "spawn":"Steam Plant", "value":2 },
+    { "itemId":22, "spawn":"Weir's Observatory", "value":2 },
+    { "itemId":23, "spawn":"The Scuttled Siren", "value":2 },
+    { "itemId":23, "spawn":"Stilt Town", "value":2 },
+  
+    { "itemId":24, "spawn":"Spindlewood Institute", "value":3 },
+    { "itemId":25, "spawn":"Clockwork Village", "value":3 },
+    { "itemId":24, "spawn":"House of Dawn", "value":3 },
+    { "itemId":25, "spawn":"Specter Trail Caravan", "value":3 },
+  
+    { "itemId":26, "spawn":"The Roaming Wolf", "value":4 },
+    { "itemId":26, "spawn":"Stewards Spire", "value":4 },
+  
+    { "itemId":27, "spawn":"South Station", "value":5 },
+    { "itemId":28, "spawn":"Thornvine Woods", "value":5 },
+    { "itemId":27, "spawn":"North Station", "value":5 },
+    { "itemId":28, "spawn":"Mary's Mill", "value":5 },
+  
+    { "itemId":29, "spawn":"The Fool's Journey", "value":6 },
+    { "itemId":30, "spawn":"House of Dusk", "value":6 },
+    { "itemId":29, "spawn":"Arcane Forge", "value":6 },
+    { "itemId":30, "spawn":"Door of the World", "value":6 }
+  ]

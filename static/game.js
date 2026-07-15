@@ -14,6 +14,7 @@ let lastCharacterPositions = {};
 let pendingCardData = null;
 let selectedItemsForAction = []; // Track item selections for trades/scaffold
 let destinationNodeSelection = null; // Track movement target
+let guideSelectedLegend = null; // { name, loc, type } — the citizen/Yeti child chosen as the Guide source, on-map, step 2 of 2
 let chosenHero = "The Guardian";
 let dragType = null;
 let dragLocName = null;
@@ -285,7 +286,7 @@ function animateRemoteItemPickup(remotePlayerName, locationId, itemIds) {
 
     itemIds.forEach((itemId, idx) => {
         const item = findItemInGameState(itemId);
-        const itemColor = item ? item.color : "yellow";
+        const itemColor = item ? item.color : "blue";
         const itemStrength = item ? item.strength : "?";
         const itemName = item ? item.name : "Item";
 
@@ -310,8 +311,8 @@ function animateRemoteItemPickup(remotePlayerName, locationId, itemIds) {
 
             const colorMap = {
                 blue: "#33ccff",
-                red: "#ff3366",
-                yellow: "#ffd533"
+                purple: "#a64dff",
+                green: "#33ff66"
             };
             const circleColor = colorMap[itemColor.toLowerCase()] || "#a491c3";
 
@@ -456,6 +457,18 @@ const HERO_LORE = {
     },
     "The Fortune Teller": {
         text: "When artifacts defy science and even the Spindlewood Institute's prodding, whooo do you call but the Fortune Teller! This infuriates Dr. Weir, a fact that brings a smirk to my beak when I remember the Fortune Teller is the good doctor's daughter. When not rapt by an object's ghostly memory or some such vision, she runs The Fool's Journey, the best teahouse this side of the void.",
+        signature: "Howard"
+    },
+    "The Parapsychologist": {
+        text: "The Parapsychologist sees beyond the veil and digs under the surface to provide the stewards critical strategic information... all with the help of a little grub that wriggled its way from who knows where out of the void. The grub speaks to him, and the parapsychologist oft reminds me the grub is quite the wisecracker and not, indeed, a snack. Pity.",
+        signature: "Howard"
+    },
+    "The Investigator": {
+        text: "How lucky we are the Investigator 'retired' from public service to lend her expertise inside the Door of the world! The stories she tells of ancient vampires, cursed mummies, and vicious threats that cannot be perceived by the naked eye... Hooo! They could make even the most seasoned historian molt! (I admit I am not a fan of her companion. An unnerving countenance.)",
+        signature: "Howard"
+    },
+    "The Buccaneer": {
+        text: "Yohoohoo! When the stewards first dredged the siren from the lake bottom, they unwittingly freed the Buccaneer from a locked chest discovered below deck. According to reports, the dastardly specter erupted from his prison cursing his mutinous crew. Whooo would have guessed the Buccaneer would be the last pirate alive (sort of) to tell the tale!",
         signature: "Howard"
     }
 };
@@ -830,9 +843,10 @@ function buildItemChipsHtml(items, options = {}) {
         const isSelected = selectable && selectedIds.includes(item.id);
         const clickAttr = selectable ? ` onclick="toggleHeroItemSelection('${item.id}')"` : "";
         const safeName = item.name.replace(/'/g, "\\'");
+        const artwork = item.artwork || "";
         html += `
             <div class="item-chip item-chip-${item.color.toLowerCase()} ${isSelected ? 'selected' : ''}"
-                 onmouseenter="showItemTooltip(event, '${safeName}')"
+                 onmouseenter="showItemTooltip(event, '${safeName}', '${artwork}')"
                  onmouseleave="hideItemTooltip()"${clickAttr}>
                 ${item.strength}
             </div>
@@ -842,18 +856,20 @@ function buildItemChipsHtml(items, options = {}) {
     return html;
 }
 
-// Instant hover tooltip for item chips: item name + a small image at
-// /Images/Items/{name}.png (art to be added later; gracefully hides if missing).
+// Instant hover tooltip for item chips: item name + its artwork, served from
+// assets/items/{artwork} (per assets/data/item_definitions.json). Gracefully
+// hides the image if it 404s.
 let itemTooltipEl = null;
 
-function showItemTooltip(e, name) {
+function showItemTooltip(e, name, artwork) {
     if (!itemTooltipEl) {
         itemTooltipEl = document.createElement("div");
         itemTooltipEl.id = "item-hover-tooltip";
         document.body.appendChild(itemTooltipEl);
     }
+    const imgSrc = artwork ? `/assets/items/${artwork}` : `/assets/items/${name}.png`;
     itemTooltipEl.innerHTML = `
-        <img src="/Images/Items/${name}.png" alt="${name}" onerror="this.remove()">
+        <img src="${imgSrc}" alt="${name}" onerror="this.remove()">
         <div class="item-tooltip-name">${name}</div>
     `;
     itemTooltipEl.classList.add("visible");
@@ -1444,7 +1460,7 @@ function renderMonstersStatusPanel() {
         const sp_state = gameState.monster_states["Sphinx"];
         const current_sum = sp_state.slots.reduce((acc, slot) => acc + (slot.filled ? slot.item.strength : 0), 0);
         details += `
-            <p style="font-size: 0.8rem; color: #b0a0cf;">Fill slots with Blue items to sum exactly 10 (Current: <strong>${current_sum}</strong>)</p>
+            <p style="font-size: 0.8rem; color: #b0a0cf;">Fill slots with Blue items to sum exactly ${sp_state.target_sum} (Current: <strong>${current_sum}</strong>)</p>
             <div class="monster-puzzle-grid">
         `;
         sp_state.slots.forEach(slot => {
@@ -1790,8 +1806,8 @@ function animateItemFly(fromLoc, itemColor, itemLabel, itemName) {
     
     const colorMap = {
         blue: "#33ccff",
-        red: "#ff3366",
-        yellow: "#ffd533"
+        purple: "#a64dff",
+        green: "#33ff66"
     };
     const circleColor = colorMap[itemColor.toLowerCase()] || "#a491c3";
 
@@ -1997,8 +2013,8 @@ function animateItemSpawn(item, locName) {
     
     const colorMap = {
         blue: "#33ccff",
-        red: "#ff3366",
-        yellow: "#ffd533"
+        purple: "#a64dff",
+        green: "#33ff66"
     };
     const circleColor = colorMap[item.color.toLowerCase()] || "#a491c3";
 
@@ -2515,9 +2531,13 @@ function renderSVGMap() {
         defs.appendChild(patHero);
     });
 
-    // Create image patterns for citizens
-    const citizenNames = ["Delilah", "Mayor Finch", "Professor Higgins", "The Blacksmith", "The Drunkard"];
-    citizenNames.forEach(citName => {
+    // Create image patterns for citizens currently in play. Each citizen's "portrait"
+    // (from server.py) is the real filename in Images/Citizens/ — names don't all
+    // slugify cleanly (e.g. "Dr. Weir" -> dr_weir.png) and not every portrait is a
+    // .png, so we never guess the path client-side.
+    for (const citName in (gameState.citizens || {})) {
+        const cit = gameState.citizens[citName];
+        const portrait = cit.portrait || `${citName}.png`;
         const patCit = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
         patCit.setAttribute("id", `pattern-citizen-${citName.replaceAll(" ", "_")}`);
         patCit.setAttribute("x", "0");
@@ -2526,7 +2546,7 @@ function renderSVGMap() {
         patCit.setAttribute("width", "1");
         patCit.setAttribute("patternContentUnits", "objectBoundingBox");
         const imgCit = document.createElementNS("http://www.w3.org/2000/svg", "image");
-        imgCit.setAttribute("href", `/Images/Citizens/${citName}.svg`);
+        imgCit.setAttribute("href", `/Images/Citizens/${portrait}`);
         imgCit.setAttribute("x", "0");
         imgCit.setAttribute("y", "0");
         imgCit.setAttribute("height", "1");
@@ -2534,7 +2554,7 @@ function renderSVGMap() {
         imgCit.setAttribute("preserveAspectRatio", "xMidYMid slice");
         patCit.appendChild(imgCit);
         defs.appendChild(patCit);
-    });
+    }
 
     elGameMap.appendChild(defs);
 
@@ -2575,15 +2595,34 @@ function renderSVGMap() {
         });
     }
 
+    // Guide Mode: precompute step 1 (eligible legends) or step 2 (valid destinations)
+    // once, outside the per-node loop below.
+    let guideEligibleNames = [];
+    let guideDestinations = [];
+    if (selectedAction === "guide") {
+        const guideMyState = gameState.heroes_state[playerName];
+        const guideIsTurn = (gameState.players[gameState.turn_player_idx].name === playerName);
+        if (guideMyState && guideIsTurn) {
+            const guideAdjacent = adjList[guideMyState.location] || [];
+            if (guideSelectedLegend) {
+                guideDestinations = getGuideValidTargets(guideMyState.location, guideAdjacent, guideSelectedLegend);
+            } else {
+                guideEligibleNames = getEligibleGuideLegends(guideMyState.location, guideAdjacent).map(l => l.name);
+            }
+        }
+    }
+
     // 2. Draw nodes (circles)
     for (const locName in coordinates) {
         const coord = coordinates[locName];
-        
+
         // Highlight destinations if we are in MOVE mode
         const myState = gameState.heroes_state[playerName];
         const isTurn = (gameState.players[gameState.turn_player_idx].name === playerName);
         const adjacent = myState ? adjList[myState.location] : [];
         const isMoveTarget = (selectedAction === "move") && isTurn && (adjacent.includes(locName) || (myState.hero === "Explorer" && isDoubleJump(myState.location, locName)));
+        const isGuideTarget = guideDestinations.includes(locName);
+        const isActiveDest = isMoveTarget || isGuideTarget;
 
         const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
         g.addEventListener("mouseenter", () => {
@@ -2596,7 +2635,7 @@ function renderSVGMap() {
         circle.setAttribute("cy", coord.y);
         const rVal = coord.r || 35;
         circle.setAttribute("r", rVal);
-        circle.setAttribute("class", `map-node ${isMoveTarget ? "active-dest" : ""}`);
+        circle.setAttribute("class", `map-node ${isActiveDest ? "active-dest" : ""}`);
         
         circle.addEventListener("mousedown", (e) => {
             if (elGameMap.classList.contains("debug-hitboxes")) {
@@ -2628,6 +2667,13 @@ function renderSVGMap() {
                 sendMsg({ action: "move", target: locName });
                 selectedAction = null;
             });
+        } else if (isGuideTarget) {
+            circle.addEventListener("click", (e) => {
+                if (window.isDragging) return;
+                sendMsg({ action: "guide", legend: guideSelectedLegend.name, target: locName });
+                selectedAction = null;
+                guideSelectedLegend = null;
+            });
         } else {
             circle.addEventListener("click", (e) => {
                 if (window.isDragging) return;
@@ -2647,7 +2693,7 @@ function renderSVGMap() {
             rect.setAttribute("height", rectH);
             rect.setAttribute("rx", 6);
             rect.setAttribute("ry", 6);
-            rect.setAttribute("class", `map-node ${isMoveTarget ? "active-dest" : ""}`);
+            rect.setAttribute("class", `map-node ${isActiveDest ? "active-dest" : ""}`);
             
             rect.addEventListener("mousedown", (e) => {
                 if (elGameMap.classList.contains("debug-hitboxes")) {
@@ -2684,6 +2730,13 @@ function renderSVGMap() {
                     if (window.isDragging) return;
                     sendMsg({ action: "move", target: locName });
                     selectedAction = null;
+                });
+            } else if (isGuideTarget) {
+                rect.addEventListener("click", (e) => {
+                    if (window.isDragging) return;
+                    sendMsg({ action: "guide", legend: guideSelectedLegend.name, target: locName });
+                    selectedAction = null;
+                    guideSelectedLegend = null;
                 });
             } else {
                 rect.addEventListener("click", (e) => {
@@ -2725,6 +2778,10 @@ function renderSVGMap() {
             itemVal.textContent = item.strength;
             itemG.appendChild(itemVal);
 
+            itemG.style.cursor = "pointer";
+            itemG.addEventListener("mouseenter", (e) => showItemTooltip(e, item.name, item.artwork));
+            itemG.addEventListener("mouseleave", () => hideItemTooltip());
+
             g.appendChild(itemG);
         });
 
@@ -2756,7 +2813,7 @@ function renderSVGMap() {
         for (const citName in gameState.citizens) {
             const cit = gameState.citizens[citName];
             if (cit.active && cit.location === locName) {
-                characters.push({ type: "citizen", name: citName, label: "C", safe: cit.safe });
+                characters.push({ type: "citizen", name: citName, label: "C", safe: cit.safe, portrait: cit.portrait });
             }
         }
 
@@ -2865,11 +2922,25 @@ function renderSVGMap() {
                 charShape.setAttribute("stroke-width", "2.5");
                 charShape.setAttribute("filter", "drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
             } else if (isYetiChild) {
-                charShape.setAttribute("class", "yeti-child-token");
+                const isGuideSource = guideEligibleNames.includes(char.name);
+                const isGuideActive = guideSelectedLegend && guideSelectedLegend.name === char.name;
+                charShape.setAttribute("class", `yeti-child-token ${isGuideSource ? "guide-source-pulse" : ""}`);
                 charShape.setAttribute("fill", `url(#pattern-yeti-child-${childId})`);
-                charShape.setAttribute("stroke", "#33ccff"); // Ice blue border
-                charShape.setAttribute("stroke-width", "2");
-                charShape.setAttribute("filter", "drop-shadow(0 2px 4px rgba(0,0,0,0.4))");
+                charShape.setAttribute("stroke", isGuideActive ? "#ffd533" : "#33ccff"); // Ice blue border, gold while chosen for Guide
+                charShape.setAttribute("stroke-width", isGuideActive ? "3.5" : "2");
+                if (!isGuideSource) {
+                    charShape.setAttribute("filter", isGuideActive
+                        ? "drop-shadow(0 0 10px rgba(255,213,51,0.9))"
+                        : "drop-shadow(0 2px 4px rgba(0,0,0,0.4))");
+                }
+                if (isGuideSource) {
+                    charShape.style.cursor = "pointer";
+                    charShape.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        guideSelectedLegend = { name: char.name, loc: locName, type: "child" };
+                        renderSVGMap();
+                    });
+                }
             } else if (isLair) {
                 charShape.setAttribute("class", "lair-token");
                 const getLairUrl = (type) => {
@@ -2935,15 +3006,26 @@ function renderSVGMap() {
                 });
             } else if (isCitizen) {
                 const patId = `pattern-citizen-${char.name.replaceAll(" ", "_")}`;
-                charShape.setAttribute("class", "citizen-token");
+                const isGuideSource = guideEligibleNames.includes(char.name);
+                const isGuideActive = guideSelectedLegend && guideSelectedLegend.name === char.name;
+                charShape.setAttribute("class", `citizen-token ${isGuideSource ? "guide-source-pulse" : ""}`);
                 charShape.setAttribute("fill", `url(#${patId})`);
-                charShape.setAttribute("stroke", "#20e889");
-                charShape.setAttribute("stroke-width", "2.5");
-                charShape.setAttribute("filter", "drop-shadow(0 0 7px rgba(32,232,137,0.7))");
+                charShape.setAttribute("stroke", isGuideActive ? "#ffd533" : "#20e889");
+                charShape.setAttribute("stroke-width", isGuideActive ? "3.5" : "2.5");
+                if (!isGuideSource) {
+                    charShape.setAttribute("filter", isGuideActive
+                        ? "drop-shadow(0 0 10px rgba(255,213,51,0.9))"
+                        : "drop-shadow(0 0 7px rgba(32,232,137,0.7))");
+                }
                 charShape.style.cursor = "pointer";
                 charShape.addEventListener("click", (e) => {
                     e.stopPropagation();
-                    showCitizenInfo(char.name, char.safe);
+                    if (isGuideSource) {
+                        guideSelectedLegend = { name: char.name, loc: locName, type: "citizen" };
+                        renderSVGMap();
+                    } else {
+                        showCitizenInfo(char.name, char.safe, char.portrait);
+                    }
                 });
             } else {
                 // Generic fallback marker (no monster currently uses this — all 4 have portraits)
@@ -3156,11 +3238,12 @@ function showNodeInfo(locName) {
     elModalContainer.classList.remove("hidden");
 }
 
-function showCitizenInfo(citName, safeHaven) {
+function showCitizenInfo(citName, safeHaven, portrait) {
+    const imgSrc = `/Images/Citizens/${portrait || `${citName}.png`}`;
     elModalBody.innerHTML = `
         <div style="text-align: center; padding: 10px;">
             <h3 style="color: #ffd533; font-size: 1.5rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px;">${citName}</h3>
-            <img src="/Images/Citizens/${citName}.svg" style="width: 120px; height: 120px; margin-bottom: 15px; filter: drop-shadow(0 0 10px rgba(32,232,137,0.7)); border-radius: 50%; border: 3px solid #20e889; object-fit: cover; background: rgba(255,255,255,0.05);">
+            <img src="${imgSrc}" style="width: 120px; height: 120px; margin-bottom: 15px; filter: drop-shadow(0 0 10px rgba(32,232,137,0.7)); border-radius: 50%; border: 3px solid #20e889; object-fit: cover; background: rgba(255,255,255,0.05);">
             <p style="font-size: 1.15rem; color: #e0d0ff;">
                 Safe Haven: <br><strong style="color: #20e889; font-size: 1.3rem;">${safeHaven}</strong>
             </p>
@@ -3180,98 +3263,63 @@ document.getElementById("action-move").addEventListener("click", () => {
     renderSVGMap();
 });
 
-// Guide action trigger
-document.getElementById("action-guide").addEventListener("click", () => {
-    const myState = gameState.heroes_state[playerName];
-    if (!myState) return;
-    
-    const currentLoc = myState.location;
-    const adjacent = gameState.adjacency_list[currentLoc] || [];
-    
-    const eligibleLegends = [];
-    
-    // Check standard citizens/legends
+// Returns the citizens/Yeti children that can currently be picked as a Guide source:
+// active, and either at the hero's own location or at a location adjacent to it.
+function getEligibleGuideLegends(currentLoc, adjacent) {
+    const eligible = [];
     for (const name in gameState.citizens) {
         const cit = gameState.citizens[name];
         if (cit.active && (cit.location === currentLoc || adjacent.includes(cit.location))) {
-            eligibleLegends.push({ name: name, loc: cit.location, type: 'citizen' });
+            eligible.push({ name: name, loc: cit.location, type: "citizen" });
         }
     }
-    
-    // Check Yeti children (legends)
     if (gameState.active_monsters.includes("Yeti") && gameState.monster_states["Yeti"]) {
         const y_state = gameState.monster_states["Yeti"];
         y_state.children.forEach(child => {
             if (!child.rescued && (child.location === currentLoc || adjacent.includes(child.location))) {
-                eligibleLegends.push({ name: `Yeti Child ${child.id}`, loc: child.location, type: 'child' });
+                eligible.push({ name: `Yeti Child ${child.id}`, loc: child.location, type: "child" });
             }
         });
     }
-    
+    return eligible;
+}
+
+// Given a chosen legend, returns the location(s) it can be guided to: any location
+// adjacent to the hero if the legend is standing with the hero, or just the hero's
+// own location if the legend is one step away — mirrors execute_guide on the server.
+function getGuideValidTargets(currentLoc, adjacent, legend) {
+    if (legend.loc === currentLoc) return adjacent;
+    if (adjacent.includes(legend.loc)) return [currentLoc];
+    return [];
+}
+
+// Guide action trigger: toggles on-map Guide Mode (click here to cancel too).
+// Step 1: click a highlighted citizen/Yeti child on the map to choose the legend.
+// Step 2: click the highlighted destination node to send them there. No popup/modal.
+document.getElementById("action-guide").addEventListener("click", () => {
+    if (selectedAction === "guide") {
+        selectedAction = null;
+        guideSelectedLegend = null;
+        renderSVGMap();
+        return;
+    }
+
+    const myState = gameState.heroes_state[playerName];
+    if (!myState) return;
+
+    const currentLoc = myState.location;
+    const adjacent = gameState.adjacency_list[currentLoc] || [];
+    const eligibleLegends = getEligibleGuideLegends(currentLoc, adjacent);
+
     if (eligibleLegends.length === 0) {
         alert("There are no active Legends (citizens or Yeti children) at or adjacent to your location to guide.");
         return;
     }
-    
-    let html = `<h3>Guide Legend</h3><p>Choose a legend to guide to/from an adjacent location (1 AP)</p><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">`;
-    html += `<label style="display:block; margin-bottom:12px;">Choose Legend: <select id="guide-select-legend" style="width:100%; background:#1b152d; color:#fff; border:1px solid #4a3b70; padding:6px; border-radius:4px; margin-top:4px;" onchange="updateGuideTargetOptions()"></select></label>`;
-    html += `<label style="display:block; margin-bottom:15px;">Target Location: <select id="guide-target-loc" style="width:100%; background:#1b152d; color:#fff; border:1px solid #4a3b70; padding:6px; border-radius:4px; margin-top:4px;"></select></label>`;
-    html += `<button class="btn btn-primary" onclick="confirmGuideAction()" style="width:100%;">Guide Legend</button>`;
-    
-    elModalBody.innerHTML = html;
-    
-    const selLegend = document.getElementById("guide-select-legend");
-    eligibleLegends.forEach((leg, idx) => {
-        const opt = document.createElement("option");
-        opt.value = idx;
-        opt.textContent = `${leg.name} (at ${leg.loc})`;
-        selLegend.appendChild(opt);
-    });
-    
-    window.guideData = {
-        legends: eligibleLegends,
-        currentLoc: currentLoc,
-        adjacent: adjacent
-    };
-    
-    window.updateGuideTargetOptions = () => {
-        const idx = document.getElementById("guide-select-legend").value;
-        const leg = window.guideData.legends[idx];
-        const selTarget = document.getElementById("guide-target-loc");
-        selTarget.innerHTML = "";
-        
-        if (leg.loc === window.guideData.currentLoc) {
-            window.guideData.adjacent.forEach(loc => {
-                const opt = document.createElement("option");
-                opt.value = loc;
-                opt.textContent = loc;
-                selTarget.appendChild(opt);
-            });
-        } else {
-            const opt = document.createElement("option");
-            opt.value = window.guideData.currentLoc;
-            opt.textContent = window.guideData.currentLoc;
-            selTarget.appendChild(opt);
-        }
-    };
-    
-    window.updateGuideTargetOptions();
-    elModalContainer.classList.remove("hidden");
-});
 
-window.confirmGuideAction = () => {
-    const idx = document.getElementById("guide-select-legend").value;
-    const leg = window.guideData.legends[idx];
-    const targetLoc = document.getElementById("guide-target-loc").value;
-    
-    sendMsg({
-        action: "guide",
-        legend: leg.name,
-        target: targetLoc
-    });
-    
-    elModalContainer.classList.add("hidden");
-};
+    selectedAction = "guide";
+    guideSelectedLegend = null;
+    renderSVGMap();
+});
 
 document.getElementById("action-pickup").addEventListener("click", () => {
     const myState = gameState.heroes_state[playerName];

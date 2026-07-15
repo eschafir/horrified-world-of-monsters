@@ -1,4 +1,5 @@
 import json
+import os
 import random
 import uuid
 import asyncio
@@ -107,58 +108,37 @@ HERO_CLASSES = {
     "The Parapsychologist": {"name": "The Parapsychologist", "ap": 4, "start": "Weir's Observatory", "ability": "You may distribute any items you have to other players."}
 }
 
-ITEMS_POOL = [
-    # Red items (Physical/Weapons)
-    {"name": "Crowbar", "color": "Red", "strength": 3, "location": "Steam Plant"},
-    {"name": "Iron Hammer", "color": "Red", "strength": 4, "location": "Arcane Forge"},
-    {"name": "Old Pistol", "color": "Red", "strength": 5, "location": "House of Dusk"},
-    {"name": "Harpoon", "color": "Red", "strength": 4, "location": "The Scuttled Siren"},
-    {"name": "Heavy Chain", "color": "Red", "strength": 3, "location": "Stilt Town"},
-    {"name": "Steel Sword", "color": "Red", "strength": 5, "location": "Arcane Forge"},
-    {"name": "Rope", "color": "Red", "strength": 2, "location": "North Station"},
-    {"name": "Shovel", "color": "Red", "strength": 2, "location": "Mary's Mill"},
-    {"name": "Shield", "color": "Red", "strength": 3, "location": "Crossroads West"},
-    {"name": "Pickaxe", "color": "Red", "strength": 4, "location": "South Station"},
-    {"name": "Matches", "color": "Red", "strength": 1, "location": "Specter Trail Caravan"},
-    {"name": "Axe", "color": "Red", "strength": 4, "location": "Thornvine Woods"},
-    {"name": "Net", "color": "Red", "strength": 2, "location": "The Scuttled Siren"},
-    {"name": "Brass Knuckles", "color": "Red", "strength": 3, "location": "Crossroads Center"},
-    {"name": "Crossbow", "color": "Red", "strength": 5, "location": "Stewards Spire"},
+# Item catalog + physical token pool are now data-driven, loaded from
+# assets/data/item_definitions.json (the 30 unique items: name/category/artwork)
+# and assets/data/item_tokens.json (the 60 physical tokens: which item, where it
+# spawns, and its strength). Categories map onto the puzzle-facing "color" a
+# monster's Advance requirements check against: Weapon=Purple, Arcane=Green,
+# Mundane=Blue.
+CATEGORY_COLOR_MAP = {"Weapon": "Purple", "Arcane": "Green", "Mundane": "Blue"}
 
-    # Blue items (Intellectual/Science)
-    {"name": "Ancient Map", "color": "Blue", "strength": 3, "location": "Spindlewood Institute"},
-    {"name": "Journal", "color": "Blue", "strength": 2, "location": "Spindlewood Institute"},
-    {"name": "Compass", "color": "Blue", "strength": 2, "location": "Skybound Galleon"},
-    {"name": "Sextant", "color": "Blue", "strength": 3, "location": "Weir's Observatory"},
-    {"name": "Telescope", "color": "Blue", "strength": 4, "location": "Weir's Observatory"},
-    {"name": "Strange Formula", "color": "Blue", "strength": 4, "location": "Steam Plant"},
-    {"name": "Magnifying Glass", "color": "Blue", "strength": 1, "location": "Crossroads West"},
-    {"name": "Decoded Rune", "color": "Blue", "strength": 5, "location": "Door of the World"},
-    {"name": "Clockwork Gear", "color": "Blue", "strength": 3, "location": "Clockwork Village"},
-    {"name": "History Book", "color": "Blue", "strength": 3, "location": "Mary's Mill"},
-    {"name": "Research Notes", "color": "Blue", "strength": 4, "location": "Spindlewood Institute"},
-    {"name": "Blueprints", "color": "Blue", "strength": 3, "location": "Steam Plant"},
-    {"name": "Astrolabe", "color": "Blue", "strength": 5, "location": "Weir's Observatory"},
-    {"name": "Pocket Watch", "color": "Blue", "strength": 2, "location": "Clockwork Village"},
-    {"name": "Medical Kit", "color": "Blue", "strength": 4, "location": "House of Dawn"},
 
-    # Yellow items (Spiritual/Mystic)
-    {"name": "Holy Water", "color": "Yellow", "strength": 4, "location": "Reviving Throne"},
-    {"name": "Sacred Amulet", "color": "Yellow", "strength": 5, "location": "Reviving Throne"},
-    {"name": "Incense Burner", "color": "Yellow", "strength": 2, "location": "House of Dusk"},
-    {"name": "Silver Bell", "color": "Yellow", "strength": 3, "location": "Garden of the Risen"},
-    {"name": "Tome of Souls", "color": "Yellow", "strength": 5, "location": "Reviving Throne"},
-    {"name": "Tarot Cards", "color": "Yellow", "strength": 2, "location": "The Fool's Journey"},
-    {"name": "Crystal Ball", "color": "Yellow", "strength": 4, "location": "The Fool's Journey"},
-    {"name": "Mystic Herbs", "color": "Yellow", "strength": 2, "location": "Thornvine Woods"},
-    {"name": "Ankh", "color": "Yellow", "strength": 3, "location": "Door of the World"},
-    {"name": "Wolfsbane", "color": "Yellow", "strength": 4, "location": "The Roaming Wolf"},
-    {"name": "Golden Chalice", "color": "Yellow", "strength": 5, "location": "Garden of the Risen"},
-    {"name": "Old Key", "color": "Yellow", "strength": 1, "location": "Crossroads Center"},
-    {"name": "Phial of Light", "color": "Yellow", "strength": 4, "location": "House of Dawn"},
-    {"name": "Runestone", "color": "Yellow", "strength": 3, "location": "The Void"},
-    {"name": "Spirit Lantern", "color": "Yellow", "strength": 3, "location": "Garden of the Risen"}
-]
+def _load_items_pool() -> List[Dict]:
+    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "data")
+    with open(os.path.join(data_dir, "item_definitions.json"), "r", encoding="utf-8") as f:
+        definitions = {d["id"]: d for d in json.load(f)}
+    with open(os.path.join(data_dir, "item_tokens.json"), "r", encoding="utf-8") as f:
+        tokens = json.load(f)
+
+    pool = []
+    for token in tokens:
+        definition = definitions[token["itemId"]]
+        pool.append({
+            "name": definition["name"],
+            "color": CATEGORY_COLOR_MAP[definition["category"]],
+            "category": definition["category"],
+            "artwork": definition["artwork"],
+            "strength": token["value"],
+            "location": token["spawn"]
+        })
+    return pool
+
+
+ITEMS_POOL = _load_items_pool()
 
 MONSTER_CARDS = [
     {"id": "c1", "name": "Eerily Quiet", "spawn": 1, "event_title": "Calm Before the Storm", "event_text": "Nothing happens... yet.", "event_type": "none", "activations": {"Yeti": (1, 1), "Sphinx": (1, 1)}},
@@ -166,13 +146,13 @@ MONSTER_CARDS = [
     {"id": "c3", "name": "The Stars Align", "spawn": 2, "event_title": "Sphinx's Gaze", "event_text": "The Sphinx projects a psychic wave. All players at Crossroads locations lose 1 AP on their next turn.", "event_type": "sphinx_gaze", "activations": {"Sphinx": (2, 2)}},
     {"id": "c4", "name": "A Hopping Terror", "spawn": 1, "event_title": "Jiangshi Outbreak", "event_text": "Jiangshi gains 1 extra movement this phase.", "event_type": "jiangshi_speedup", "activations": {"Jiangshi": (2, 2)}},
     {"id": "c5", "name": "Void Eruption", "spawn": 3, "event_title": "The Void Widens", "event_text": "Increase the Terror Level by 1 if Cthulhu is active; otherwise spawn an item at The Void.", "event_type": "void_eruption", "activations": {"Cthulhu": (1, 2)}},
-    {"id": "c6", "name": "Call of the Siren", "spawn": 2, "event_title": "Delilah Appears", "event_text": "Spawn Citizen Delilah at The Scuttled Siren. Safe haven: Mary's Mill.", "event_type": "spawn_delilah", "activations": {"Jiangshi": (1, 1), "Cthulhu": (1, 2)}},
-    {"id": "c7", "name": "Midnight Bells", "spawn": 1, "event_title": "Mayor Finch in Danger", "event_text": "Spawn Citizen Mayor Finch at North Station. Safe haven: House of Dawn.", "event_type": "spawn_mayor", "activations": {"Yeti": (1, 2), "Sphinx": (1, 1)}},
+    {"id": "c6", "name": "Call of the Siren", "spawn": 2, "event_title": "Morgan Appears", "event_text": "Spawn Citizen Morgan at The Scuttled Siren. Safe haven: The Fool's Journey.", "event_type": "spawn_delilah", "activations": {"Jiangshi": (1, 1), "Cthulhu": (1, 2)}},
+    {"id": "c7", "name": "Midnight Bells", "spawn": 1, "event_title": "Mari in Danger", "event_text": "Spawn Citizen Mari at North Station. Safe haven: House of Dawn.", "event_type": "spawn_mayor", "activations": {"Yeti": (1, 2), "Sphinx": (1, 1)}},
     {"id": "c8", "name": "Frenzy!", "spawn": 2, "event_title": "Madness Spreads", "event_text": "The active monster (indicated by current frenzy state) moves 2 spaces and attacks with +1 die.", "event_type": "frenzy", "activations": {"Frenzy": (2, 3)}},
     {"id": "c9", "name": "Heavy Fog", "spawn": 1, "event_title": "Reduced Visibility", "event_text": "All heroes cannot use special abilities on their next turn.", "event_type": "no_abilities", "activations": {"Yeti": (1, 1), "Jiangshi": (1, 1)}},
     {"id": "c10", "name": "Exhaustion", "spawn": 2, "event_title": "Fatigue", "event_text": "The active player must discard 1 item of strength 2+ or lose 2 action points next turn.", "event_type": "exhaustion", "activations": {"Sphinx": (1, 2), "Cthulhu": (1, 1)}},
     {"id": "c11", "name": "Portal Resonance", "spawn": 2, "event_title": "Aura of the Deep", "event_text": "Cthulhu rolls +1 attack die if he attacks inside The Void.", "event_type": "cthulhu_res", "activations": {"Cthulhu": (2, 2)}},
-    {"id": "c12", "name": "Echoes of the Past", "spawn": 1, "event_title": "Professor Higgins Appears", "event_text": "Spawn Citizen Professor Higgins at Spindlewood Institute. Safe haven: Weir's Observatory.", "event_type": "spawn_higgins", "activations": {"Sphinx": (2, 1), "Jiangshi": (1, 2)}},
+    {"id": "c12", "name": "Echoes of the Past", "spawn": 1, "event_title": "Howard Appears", "event_text": "Spawn Citizen Howard at Spindlewood Institute. Safe haven: The Roaming Wolf.", "event_type": "spawn_higgins", "activations": {"Sphinx": (2, 1), "Jiangshi": (1, 2)}},
     {"id": "c13", "name": "Tonic of Youth", "spawn": 2, "event_title": "Health Tonic", "event_text": "Draw 1 Perk card and give it to the player with the fewest items.", "event_type": "tonic", "activations": {"Yeti": (1, 1), "Cthulhu": (1, 1)}},
     {"id": "c14", "name": "Tidal Wave", "spawn": 1, "event_title": "Flooding Path", "event_text": "The path between Skybound Galleon and Scuttled Siren is blocked for movement this turn.", "event_type": "blocked_path", "activations": {"Jiangshi": (2, 1)}},
     {"id": "c15", "name": "Sudden Tempest", "spawn": 2, "event_title": "Scattering Winds", "event_text": "Move all items at Steam Plant to adjacent locations.", "event_type": "scatter_items", "activations": {"Yeti": (2, 1), "Sphinx": (1, 2)}}
@@ -397,13 +377,20 @@ class GameRoom:
                 "ability_used": False
             }
             
-        # Initialize citizens
+        # Initialize citizens. "portrait" points at the actual filename in
+        # Images/Citizens/ (names don't all slugify cleanly, e.g. "Dr. Weir" ->
+        # dr_weir.png, and Raimi's art is a .jpg), so the client never has to guess.
         self.citizens = {
-            "Delilah": {"name": "Delilah", "location": "Board", "start": "The Scuttled Siren", "safe": "Mary's Mill", "active": False},
-            "Mayor Finch": {"name": "Mayor Finch", "location": "Board", "start": "North Station", "safe": "House of Dawn", "active": False},
-            "Professor Higgins": {"name": "Professor Higgins", "location": "Board", "start": "Spindlewood Institute", "safe": "Weir's Observatory", "active": False},
-            "The Blacksmith": {"name": "The Blacksmith", "location": "Board", "start": "Arcane Forge", "safe": "Steam Plant", "active": False},
-            "The Drunkard": {"name": "The Drunkard", "location": "Board", "start": "The Roaming Wolf", "safe": "Specter Trail Caravan", "active": False}
+            "Ms. Spindlewood": {"name": "Ms. Spindlewood", "location": "Board", "start": "Spindlewood Institute", "safe": "Spindlewood Institute", "active": False, "portrait": "ms_spindlewood.png"},
+            "Mari": {"name": "Mari", "location": "Board", "start": "North Station", "safe": "House of Dawn", "active": False, "portrait": "Mari.png"},
+            "Howard": {"name": "Howard", "location": "Board", "start": "Spindlewood Institute", "safe": "The Roaming Wolf", "active": False, "portrait": "Howard.png"},
+            "Dr. Weir": {"name": "Dr. Weir", "location": "Board", "start": "Arcane Forge", "safe": "Weir's Observatory", "active": False, "portrait": "dr_weir.png"},
+            "Shinya": {"name": "Shinya", "location": "Board", "start": "The Roaming Wolf", "safe": "Steam Plant", "active": False, "portrait": "Shinya.png"},
+            "James & Betty": {"name": "James & Betty", "location": "Board", "start": "Specter Trail Caravan", "safe": "Door of the World", "active": False, "portrait": "James_Betty.png"},
+            "Morgan": {"name": "Morgan", "location": "Board", "start": "The Scuttled Siren", "safe": "The Fool's Journey", "active": False, "portrait": "Morgan.png"},
+            "Vaughn": {"name": "Vaughn", "location": "Board", "start": "North Station", "safe": "The Scuttled Siren", "active": False, "portrait": "Vaughn.png"},
+            "Jennifer": {"name": "Jennifer", "location": "Board", "start": "Arcane Forge", "safe": "Stilt Town", "active": False, "portrait": "Jennifer.png"},
+            "Raimi": {"name": "Raimi", "location": "Board", "start": "Stilt Town", "safe": "Specter Trail Caravan", "active": False, "portrait": "Raimi.jpg"}
         }
 
         # Initialize monster states
@@ -439,32 +426,33 @@ class GameRoom:
                     ]
                 }
             elif monster == "Jiangshi":
-                # The polyomino sword layout (3 slots that need Yellow/Red items)
+                # The polyomino sword layout (3 slots that need Green/Purple items)
                 self.monster_states["Jiangshi"] = {
                     "slots": [
-                        {"id": 0, "color": "Red", "req_strength": 3, "filled": False, "item": None},
-                        {"id": 1, "color": "Yellow", "req_strength": 3, "filled": False, "item": None},
-                        {"id": 2, "color": "Yellow", "req_strength": 4, "filled": False, "item": None}
+                        {"id": 0, "color": "Purple", "req_strength": 3, "filled": False, "item": None},
+                        {"id": 1, "color": "Green", "req_strength": 3, "filled": False, "item": None},
+                        {"id": 2, "color": "Green", "req_strength": 4, "filled": False, "item": None}
                     ]
                 }
             elif monster == "Sphinx":
-                # The 3-item math riddle grid. Sum must equal exactly 10 using Blue items.
+                # The 3-item math riddle grid. Sum must equal exactly 9 using Blue (Mundane)
+                # items — Mundane's strength tops out at 3, so 3+3+3=9 is the max reachable sum.
                 self.monster_states["Sphinx"] = {
                     "slots": [
                         {"id": 0, "filled": False, "item": None},
                         {"id": 1, "filled": False, "item": None},
                         {"id": 2, "filled": False, "item": None}
                     ],
-                    "target_sum": 10
+                    "target_sum": 9
                 }
             elif monster == "Cthulhu":
                 # Cthulhu has two phases
                 self.monster_states["Cthulhu"] = {
                     "phase": 1,
                     "runes": [
-                        {"id": 0, "color": "Red", "req_strength": 3, "broken": False},
+                        {"id": 0, "color": "Purple", "req_strength": 3, "broken": False},
                         {"id": 1, "color": "Blue", "req_strength": 3, "broken": False},
-                        {"id": 2, "color": "Yellow", "req_strength": 3, "broken": False},
+                        {"id": 2, "color": "Green", "req_strength": 3, "broken": False},
                         {"id": 3, "color": "Any", "req_strength": 5, "broken": False}
                     ],
                     # Corpse City steps
@@ -895,10 +883,10 @@ class GameRoom:
                     req_color = "Blue"
                     req_strength = 3
                 elif next_idx == 1:
-                    req_color = "Yellow"
+                    req_color = "Green"
                     req_strength = 4
                 elif next_idx == 2:
-                    req_color = "Red"
+                    req_color = "Purple"
                     req_strength = 5
                     
                 if item["color"] != req_color or item["strength"] < req_strength:
@@ -974,7 +962,7 @@ class GameRoom:
                 self.check_victory()
                 return True
             else:
-                self.add_log(f"Defeat condition not met. Fill all 3 slots to sum exactly 10 (Current sum: {current_sum}).")
+                self.add_log(f"Defeat condition not met. Fill all 3 slots to sum exactly {sp_state['target_sum']} (Current sum: {current_sum}).")
                 return False
                 
         elif monster == "Cthulhu":
@@ -982,10 +970,10 @@ class GameRoom:
             if cth_state["phase"] == 2:
                 track_idx = cth_state["player_tracks"].get(player_name, -1)
                 if track_idx == 3:  # Cthulhu's Heart
-                    strong_red = next((i for i in h_state["items"] if i["color"] == "Red" and i["strength"] >= 5), None)
-                    if strong_red:
-                        h_state["items"].remove(strong_red)
-                        self.discarded_items.append(strong_red)
+                    strong_purple = next((i for i in h_state["items"] if i["color"] == "Purple" and i["strength"] >= 5), None)
+                    if strong_purple:
+                        h_state["items"].remove(strong_purple)
+                        self.discarded_items.append(strong_purple)
                         self.active_monsters.remove("Cthulhu")
                         self.defeated_monsters.append("Cthulhu")
                         h_state["ap"] -= 1
@@ -993,7 +981,7 @@ class GameRoom:
                         self.check_victory()
                         return True
                     else:
-                        self.add_log("Requires a Red item of Strength 5+ to defeat Cthulhu.")
+                        self.add_log("Requires a Purple item of Strength 5+ to defeat Cthulhu.")
                         return False
             self.add_log("You must traverse to Cthulhu's Heart in Corpse City.")
             return False
@@ -1288,19 +1276,19 @@ class GameRoom:
                     self.add_log(f"{p_name} was caught in Sphinx's gaze and loses 1 AP.")
                     
         elif ev == "spawn_delilah":
-            self.citizens["Delilah"]["active"] = True
-            self.citizens["Delilah"]["location"] = self.citizens["Delilah"]["start"]
-            self.add_log("Citizen Delilah has arrived at The Scuttled Siren.")
-            
+            self.citizens["Morgan"]["active"] = True
+            self.citizens["Morgan"]["location"] = self.citizens["Morgan"]["start"]
+            self.add_log("Citizen Morgan has arrived at The Scuttled Siren.")
+
         elif ev == "spawn_mayor":
-            self.citizens["Mayor Finch"]["active"] = True
-            self.citizens["Mayor Finch"]["location"] = self.citizens["Mayor Finch"]["start"]
-            self.add_log("Citizen Mayor Finch has arrived at North Station.")
-            
+            self.citizens["Mari"]["active"] = True
+            self.citizens["Mari"]["location"] = self.citizens["Mari"]["start"]
+            self.add_log("Citizen Mari has arrived at North Station.")
+
         elif ev == "spawn_higgins":
-            self.citizens["Professor Higgins"]["active"] = True
-            self.citizens["Professor Higgins"]["location"] = self.citizens["Professor Higgins"]["start"]
-            self.add_log("Citizen Professor Higgins has arrived at Spindlewood Institute.")
+            self.citizens["Howard"]["active"] = True
+            self.citizens["Howard"]["location"] = self.citizens["Howard"]["start"]
+            self.add_log("Citizen Howard has arrived at Spindlewood Institute.")
             
         elif ev == "void_eruption":
             if "Cthulhu" in self.active_monsters:
@@ -1699,6 +1687,8 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
 app.mount("/Images", StaticFiles(directory="Images"), name="images")
 # Serve Music
 app.mount("/Music", StaticFiles(directory="Music"), name="music")
+# Serve item artwork + data (assets/items/*.png, assets/data/*.json)
+app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 # Serve Frontend static files
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 

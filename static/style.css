@@ -976,9 +976,9 @@ body {
     stroke-width: 1.5;
 }
 
-.token-item.red { fill: #ff3366; stroke: #ff668f; }
+.token-item.purple { fill: #a64dff; stroke: #c188ff; }
 .token-item.blue { fill: #33a8ff; stroke: #66c2ff; }
-.token-item.yellow { fill: #ffd533; stroke: #ffe466; }
+.token-item.green { fill: #33ff66; stroke: #85ff9e; }
 
 .token-label {
     fill: #000;
@@ -1299,9 +1299,9 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.item-row.red { background: rgba(255, 51, 102, 0.12); border-color: rgba(255, 51, 102, 0.3); }
+.item-row.purple { background: rgba(166, 77, 255, 0.12); border-color: rgba(166, 77, 255, 0.3); }
 .item-row.blue { background: rgba(51, 204, 255, 0.12); border-color: rgba(51, 204, 255, 0.3); }
-.item-row.yellow { background: rgba(255, 213, 51, 0.12); border-color: rgba(255, 213, 51, 0.3); }
+.item-row.green { background: rgba(51, 255, 102, 0.12); border-color: rgba(51, 255, 102, 0.3); }
 
 .item-val {
     font-weight: 700;
@@ -1331,9 +1331,9 @@ body {
     flex-shrink: 0;
 }
 
-.item-chip-red { background: #ff3366; }
+.item-chip-purple { background: #a64dff; }
 .item-chip-blue { background: #33ccff; }
-.item-chip-yellow { background: #ffd533; }
+.item-chip-green { background: #33ff66; }
 
 .item-chip[onclick] {
     cursor: pointer;
@@ -1554,9 +1554,9 @@ body {
     border-style: solid;
 }
 
-.puzzle-slot.req-red { border-color: rgba(255, 51, 102, 0.4); color: #ff3366; }
+.puzzle-slot.req-purple { border-color: rgba(166, 77, 255, 0.4); color: #a64dff; }
 .puzzle-slot.req-blue { border-color: rgba(51, 204, 255, 0.4); color: #33ccff; }
-.puzzle-slot.req-yellow { border-color: rgba(255, 213, 51, 0.4); color: #ffd533; }
+.puzzle-slot.req-green { border-color: rgba(51, 255, 102, 0.4); color: #33ff66; }
 
 /* ---------------------------------------------------------
    MODAL WINDOWS
@@ -1876,6 +1876,17 @@ body {
     transform: scale(1.8);
     stroke-width: 3.5px !important;
     filter: drop-shadow(0 0 11px rgba(32, 232, 137, 0.95)) !important;
+}
+
+/* Guide Mode, step 1: pulsing gold glow on citizens/Yeti children eligible to be
+   picked as the legend to guide, so they're obvious without any popup/instructions. */
+.guide-source-pulse {
+    animation: guideSourcePulse 1.2s ease-in-out infinite;
+}
+
+@keyframes guideSourcePulse {
+    0%, 100% { filter: drop-shadow(0 0 6px rgba(255, 213, 51, 0.6)); }
+    50%       { filter: drop-shadow(0 0 16px rgba(255, 213, 51, 1)); }
 }
 
 /* ---------------------------------------------------------
