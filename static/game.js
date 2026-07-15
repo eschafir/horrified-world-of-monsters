@@ -899,6 +899,34 @@ function getItemColorHex(color) {
     return map[(color || "").toLowerCase()] || "rgba(255, 255, 255, 0.3)";
 }
 
+// Perception Die symbol colors (distinct palette from item colors above) — used to badge
+// each monster's portrait with the symbols it reacts to during the Monster Phase.
+function getSymbolColorHex(color) {
+    const map = {
+        orange: "#ff8833", yellow: "#ffd533", green: "#33ff66", red: "#ff3366",
+        teal: "#00e5cc", purple: "#a64dff", brown: "#a0764a", blue: "#33ccff"
+    };
+    return map[(color || "").toLowerCase()] || "rgba(255, 255, 255, 0.4)";
+}
+
+// Mirrors the server's _get_monster_symbols: Cthulhu's frenzySymbols live per-phase
+// (only phase 1 has any), every other monster keeps them at the top level.
+function getMonsterSymbols(name) {
+    const entry = gameState.monster_catalog && gameState.monster_catalog[name];
+    if (!entry) return [];
+    if (entry.frenzySymbols && entry.frenzySymbols.length) return entry.frenzySymbols;
+    const phase = (entry.phases || [])[0];
+    return (phase && phase.frenzySymbols) || [];
+}
+
+// Fixed Perception Die symbol -> color mapping (each symbol always has the same color
+// across every monster's frenzySymbols list) so a Monster Card's bare symbol name can be
+// colored without needing to know which monster(s) it belongs to.
+const SYMBOL_TO_COLOR = {
+    Dagger: "Orange", Ghost: "Yellow", Tincture: "Green", Hand: "Red",
+    Jewel: "Teal", Eye: "Purple", Gear: "Brown", Wrench: "Blue"
+};
+
 // Generic multi-select item-card modal used for monster puzzle/defeat item costs
 // (Yeti's one-of-each-color, Sphinx/Jiangshi's combined-strength thresholds, single-item
 // picks for slots/dials, etc). validateFn(selectedItems) -> {valid, message}.
@@ -1297,12 +1325,8 @@ function renderApCounterBar() {
 
 function buildCardHTML(card, alreadyFlipped) {
     const attack = card.monster_attack || {};
-    const whoActs = [];
-    if (attack.frenzy) whoActs.push("Frenzy marker holder");
-    if (attack.symbol) whoActs.push(`${attack.symbol} symbol`);
-    const activationLines = whoActs.length
-        ? `<span class="mp-activation">${whoActs.join(" + ")} acts: ${attack.steps} move${attack.steps !== 1 ? "s" : ""}, ${attack.dice} die</span>`
-        : `<span class="mp-activation">No monster acts this card</span>`;
+    const symbolColor = attack.symbol ? getSymbolColorHex(SYMBOL_TO_COLOR[attack.symbol]) : null;
+
     return `
         <div class="mp-flip-container">
             <div class="mp-card-inner${alreadyFlipped ? " flipped" : ""}" id="mp-card-inner">
@@ -1310,14 +1334,32 @@ function buildCardHTML(card, alreadyFlipped) {
                     <img src="/Images/Monster_Card.png" alt="Monster Card">
                 </div>
                 <div class="mp-card-face">
-                    <div class="mp-card-title">${card.name}</div>
+                    <div class="mp-card-title">
+                        <span class="mp-card-name">${card.name}</span>
+                        <span class="mp-spawn-badge" title="Items spawned">&#9733; ${card.spawn}</span>
+                    </div>
                     <div class="mp-card-event">
                         <span class="mp-event-title">${card.event_title}</span>
                         <span class="mp-event-text">${card.event_text}</span>
                     </div>
-                    <div class="mp-card-footer">
-                        <span class="mp-spawn">&#9733; Spawns ${card.spawn}</span>
-                        <div class="mp-activations">${activationLines}</div>
+                    <div class="mp-card-icons">
+                        <span class="mp-icon-group" title="Frenzy: ${attack.frenzy ? "Yes" : "No"}">
+                            <span class="mp-icon-frenzy-wrap">
+                                <span class="mp-icon-bolt">&#9889;</span>
+                                ${attack.frenzy ? "" : '<span class="mp-icon-cross">&times;</span>'}
+                            </span>
+                        </span>
+                        <span class="mp-icon-group" title="Symbol: ${attack.symbol || "None"}">
+                            ${attack.symbol
+                                ? `<span class="mp-symbol-dot" style="background:${symbolColor}; box-shadow:0 0 5px ${symbolColor}"></span><span class="mp-icon-label">${attack.symbol}</span>`
+                                : `<span class="mp-icon-label mp-icon-dim">&mdash;</span>`}
+                        </span>
+                        <span class="mp-icon-group" title="Move">
+                            <span class="mp-icon-foot">&#128094;</span><span class="mp-icon-label">${attack.steps}</span>
+                        </span>
+                        <span class="mp-icon-group" title="Attack Dice">
+                            <span class="mp-icon-dice">&#127922;</span><span class="mp-icon-label">${attack.dice}</span>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -1545,14 +1587,22 @@ function renderMonstersStatusPanel() {
         "Cthulhu": 4
     };
     const fVal = frenzyValues[m] || 0;
+    const isFrenzyHolder = (m === gameState.frenzy_marker);
+    const symbolDots = getMonsterSymbols(m).map(s =>
+        `<span title="${s.symbol} (${s.color})" style="display:inline-block; width:12px; height:12px; border-radius:50%; background:${getSymbolColorHex(s.color)}; border:1.5px solid rgba(0,0,0,0.4); box-shadow:0 0 4px ${getSymbolColorHex(s.color)}99;"></span>`
+    ).join("");
 
     let details = `
         <div class="monster-card-header" style="display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom:8px; margin-bottom:8px;">
-            <div class="monster-card-portrait" style="width:120px; height:120px; border-radius:50%; border-color:${accent.border}; box-shadow: 0 0 15px ${accent.glow}; margin:0;">
-                ${portrait ? `<img src="${portrait}" alt="${m}">` : ""}
+            <div style="position:relative;">
+                <div class="monster-card-portrait" style="width:120px; height:120px; border-radius:50%; border-color:${isFrenzyHolder ? '#ffd533' : accent.border}; box-shadow: 0 0 ${isFrenzyHolder ? '20px rgba(255,213,51,0.7)' : '15px ' + accent.glow}; margin:0;">
+                    ${portrait ? `<img src="${portrait}" alt="${m}">` : ""}
+                </div>
+                ${symbolDots ? `<div style="position:absolute; bottom:-4px; left:50%; transform:translateX(-50%); display:flex; gap:4px; padding:3px 7px; background:rgba(10,5,20,0.85); border-radius:10px; border:1px solid rgba(255,255,255,0.1);">${symbolDots}</div>` : ''}
             </div>
             <div class="monster-card-info" style="width:100%;">
                 <h5 style="margin:0 0 4px 0; font-size:1rem;">${m} <span class="monster-frenzy-badge" title="Frenzy Order: ${fVal}">⚡ ${fVal}</span></h5>
+                ${isFrenzyHolder ? `<div style="font-size:0.7rem; font-weight:700; color:#1a0f2e; background:#ffd533; display:inline-block; padding:2px 9px; border-radius:9px; margin-bottom:4px; box-shadow:0 0 8px rgba(255,213,51,0.6);">⚡ FRENZY</div>` : ''}
                 <div class="monster-card-loc" style="font-size:0.75rem; display:flex; align-items:center; justify-content:center; gap:6px;">
                     <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px;">&#128205; ${loc}</span>
                     <button class="btn btn-secondary btn-small" style="font-size:0.65rem; padding:2px 6px; flex-shrink:0;" onclick="locateMonster('${m}')">Locate</button>
@@ -1565,6 +1615,7 @@ function renderMonstersStatusPanel() {
         const y_state = gameState.monster_states["Yeti"];
         const kids_left = y_state.children.filter(c => !c.rescued).length;
         const found_cave = y_state.cave_candidates.find(c => c.is_cave && c.revealed);
+        const orderedChildren = [...y_state.children].sort((a, b) => (a.rescued_order || 99) - (b.rescued_order || 99));
 
         details += `
             <p style="font-size: 0.8rem; color: #b0a0cf;">Children Lost: <strong>${kids_left}</strong></p>
@@ -1572,13 +1623,18 @@ function renderMonstersStatusPanel() {
             <p style="font-size: 0.72rem; color: #a491c3;">Defeat: discard one Purple, one Green, and one Blue item at the Yeti's location.</p>
             <div class="monster-puzzle-grid">
         `;
-        y_state.cave_candidates.forEach((cand, i) => {
+        for (let i = 0; i < 3; i++) {
+            const child = orderedChildren[i];
+            const isHome = child && child.rescued;
             details += `
-                <div class="puzzle-slot ${cand.revealed ? 'filled' : ''}" style="font-size: 0.7rem;">
-                    ${cand.revealed ? (cand.is_cave ? 'TRUE CAVE' : 'FALSE TRAIL') : `Candidate ${i+1}`}
+                <div class="puzzle-slot ${isHome ? 'filled' : ''}" style="height:56px; flex-direction:column; gap:2px; font-size:0.62rem;">
+                    ${isHome
+                        ? `<img src="/Images/Monsters/Yeti Child ${child.id}.png" alt="Yeti Child ${child.id}" style="width:30px; height:30px; border-radius:50%; object-fit:cover; border:2px solid #ffd533;">
+                           <span>Child ${child.id}</span>`
+                        : `Empty`}
                 </div>
             `;
-        });
+        }
         details += `</div>`;
 
     } else if (m === "Jiangshi") {
@@ -3016,6 +3072,7 @@ function renderSVGMap() {
             const isLair = (char.type === "lair");
             const childId = isYetiChild ? char.name.replace("Yeti Child ", "") : null;
             const isCustomMonster = isYeti || isSphinx || isJiangshi || isCthulhu;
+            const isFrenzyMonster = (char.type === "monster") && char.name === gameState.frenzy_marker;
             const isHero = (char.type === "hero");
             const isCitizen = (char.type === "citizen") && !isYetiChild;
             let charR;
@@ -3226,7 +3283,39 @@ function renderSVGMap() {
                     }
                 });
             }
+            // The monster currently holding the Frenzy marker gets a pulsing gold ring,
+            // overriding its normal border, so it's identifiable at a glance on the map.
+            if (isFrenzyMonster) {
+                charShape.classList.add("frenzy-marker-token");
+                charShape.setAttribute("stroke", "#ffd533");
+                charShape.setAttribute("stroke-width", "4");
+                charShape.setAttribute("filter", "drop-shadow(0 0 10px rgba(255,213,51,0.9))");
+            }
+
             charG.appendChild(charShape);
+
+            if (isFrenzyMonster) {
+                const badgeR = charR * 0.32;
+                const badgeCx = targetX + charR * 0.72;
+                const badgeCy = targetY - charR * 0.72;
+                const badgeCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                badgeCircle.setAttribute("cx", badgeCx);
+                badgeCircle.setAttribute("cy", badgeCy);
+                badgeCircle.setAttribute("r", badgeR);
+                badgeCircle.setAttribute("fill", "#1a0f2e");
+                badgeCircle.setAttribute("stroke", "#ffd533");
+                badgeCircle.setAttribute("stroke-width", "2");
+                badgeCircle.setAttribute("class", "frenzy-marker-badge");
+                charG.appendChild(badgeCircle);
+
+                const badgeIcon = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                badgeIcon.setAttribute("x", badgeCx);
+                badgeIcon.setAttribute("y", badgeCy + badgeR * 0.4);
+                badgeIcon.setAttribute("text-anchor", "middle");
+                badgeIcon.setAttribute("font-size", `${badgeR * 1.3}px`);
+                badgeIcon.textContent = "⚡";
+                charG.appendChild(badgeIcon);
+            }
 
             // Render text label only for monsters without portrait images
             if (!isCustomMonster && !isYetiChild && !isHero && !isCitizen && !isLair) {
@@ -3693,12 +3782,19 @@ document.getElementById("action-advance").addEventListener("click", () => {
     const myState = gameState.heroes_state[playerName];
     const loc = myState.location;
 
-    // Free reveal: an unrevealed Yeti Cave or Moon Shrine candidate at this location.
+    // Reveal an unrevealed Lair token (Yeti Cave or Moon Shrine candidate) at this location
+    // by discarding a chosen item.
     if (gameState.active_monsters.includes("Yeti")) {
         const yeti_state = gameState.monster_states["Yeti"];
         const candHere = yeti_state.cave_candidates.find(c => c.location === loc && !c.revealed);
         if (candHere) {
-            sendMsg({ action: "advance", monster: "Yeti", args: { type: "reveal_cave" } });
+            openItemPicker({
+                title: "Reveal Lair Token",
+                description: "Discard an item of strength 3+ to reveal this Lair token.",
+                items: myState.items.filter(i => i.strength >= 3),
+                validateFn: (sel) => ({ valid: sel.length === 1, message: sel.length ? "" : "Select one item (strength 3+)." }),
+                onConfirm: (ids) => sendMsg({ action: "advance", monster: "Yeti", args: { type: "reveal_cave", item_id: ids[0] } })
+            });
             return;
         }
     }
@@ -3707,7 +3803,13 @@ document.getElementById("action-advance").addEventListener("click", () => {
         const js_state = gameState.monster_states["Jiangshi"];
         const candHere = js_state.shrine_candidates.find(c => c.location === loc && !c.revealed);
         if (candHere) {
-            sendMsg({ action: "advance", monster: "Jiangshi", args: { type: "reveal_shrine" } });
+            openItemPicker({
+                title: "Reveal Lair Token",
+                description: "Discard an item of strength 3+ to reveal this Lair token.",
+                items: myState.items.filter(i => i.strength >= 3),
+                validateFn: (sel) => ({ valid: sel.length === 1, message: sel.length ? "" : "Select one item (strength 3+)." }),
+                onConfirm: (ids) => sendMsg({ action: "advance", monster: "Jiangshi", args: { type: "reveal_shrine", item_id: ids[0] } })
+            });
             return;
         }
     }

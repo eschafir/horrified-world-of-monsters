@@ -1928,6 +1928,27 @@ body {
     50%       { filter: drop-shadow(0 0 16px rgba(255, 213, 51, 1)); }
 }
 
+/* The monster currently holding the Frenzy marker: pulsing gold ring on the map token,
+   plus a small lightning badge rendered alongside it (see renderSVGMap). */
+.frenzy-marker-token {
+    animation: frenzyMarkerPulse 1.1s ease-in-out infinite;
+}
+
+@keyframes frenzyMarkerPulse {
+    0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 213, 51, 0.7)); }
+    50%       { filter: drop-shadow(0 0 18px rgba(255, 213, 51, 1)); }
+}
+
+.frenzy-marker-badge {
+    animation: frenzyBadgePulse 1.1s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes frenzyBadgePulse {
+    0%, 100% { filter: drop-shadow(0 0 3px rgba(255, 213, 51, 0.7)); }
+    50%       { filter: drop-shadow(0 0 8px rgba(255, 213, 51, 1)); }
+}
+
 /* ---------------------------------------------------------
    MONSTER PHASE DECK GLOW (draw prompt)
    --------------------------------------------------------- */
@@ -2083,6 +2104,10 @@ body {
 }
 
 .mp-card-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
     font-size: 0.78rem;
     font-weight: 700;
     color: #e0d0ff;
@@ -2090,6 +2115,24 @@ body {
     letter-spacing: 0.09em;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     padding-bottom: 5px;
+}
+
+.mp-card-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mp-spawn-badge {
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #1a0f2e;
+    background: #33ccff;
+    padding: 2px 8px;
+    border-radius: 8px;
+    box-shadow: 0 0 6px rgba(51, 204, 255, 0.6);
+    white-space: nowrap;
 }
 
 .mp-card-event {
@@ -2112,33 +2155,65 @@ body {
     font-style: italic;
 }
 
-.mp-card-footer {
+/* Bottom info bar: Frenzy | Symbol | Move | Dice, left to right */
+.mp-card-icons {
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    align-items: flex-end;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    padding-top: 5px;
     gap: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 6px;
 }
 
-.mp-spawn {
-    font-size: 0.68rem;
-    font-weight: 600;
-    color: #33ccff;
-    white-space: nowrap;
-}
-
-.mp-activations {
+.mp-icon-group {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
-    align-items: flex-end;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #e0d0ff;
 }
 
-.mp-activation {
-    font-size: 0.65rem;
-    color: rgba(255, 140, 50, 0.88);
-    text-align: right;
+.mp-icon-frenzy-wrap {
+    position: relative;
+    display: inline-flex;
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+.mp-icon-bolt {
+    filter: drop-shadow(0 0 3px rgba(255, 213, 51, 0.6));
+}
+
+.mp-icon-cross {
+    position: absolute;
+    top: -3px;
+    right: -5px;
+    font-size: 0.75rem;
+    font-weight: 900;
+    color: #ff3366;
+    text-shadow: 0 0 3px rgba(0, 0, 0, 0.8), 0 0 5px rgba(255, 51, 102, 0.7);
+}
+
+.mp-symbol-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(0, 0, 0, 0.4);
+    flex-shrink: 0;
+}
+
+.mp-icon-label {
+    font-size: 0.68rem;
+}
+
+.mp-icon-dim {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.mp-icon-foot, .mp-icon-dice {
+    font-size: 0.85rem;
+    line-height: 1;
 }
 
 /* Smooth layout transitions for game board tokens */

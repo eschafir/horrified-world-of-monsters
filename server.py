@@ -186,7 +186,22 @@ MONSTER_CARDS = [
     {"id": "c12", "name": "Echoes of the Past", "spawn": 1, "event_title": "Howard Appears", "event_text": "Spawn Citizen Howard at Spindlewood Institute. Safe haven: The Roaming Wolf.", "event_type": "spawn_higgins", "monster_attack": {"frenzy": False, "symbol": "Hand", "steps": 1, "dice": 2}},
     {"id": "c13", "name": "Tonic of Youth", "spawn": 2, "event_title": "Health Tonic", "event_text": "Draw 1 Perk card and give it to the player with the fewest items.", "event_type": "tonic", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 1, "dice": 1}},
     {"id": "c14", "name": "Tidal Wave", "spawn": 1, "event_title": "Flooding Path", "event_text": "The path between Skybound Galleon and Scuttled Siren is blocked for movement this turn.", "event_type": "blocked_path", "monster_attack": {"frenzy": False, "symbol": "Gear", "steps": 2, "dice": 1}},
-    {"id": "c15", "name": "Sudden Tempest", "spawn": 2, "event_title": "Scattering Winds", "event_text": "Move all items at Steam Plant to adjacent locations.", "event_type": "scatter_items", "monster_attack": {"frenzy": False, "symbol": "Dagger", "steps": 2, "dice": 1}}
+    {"id": "c15", "name": "Sudden Tempest", "spawn": 2, "event_title": "Scattering Winds", "event_text": "Move all items at Steam Plant to adjacent locations.", "event_type": "scatter_items", "monster_attack": {"frenzy": False, "symbol": "Dagger", "steps": 2, "dice": 1}},
+    {"id": "c16", "name": "Whispers in the Dark", "spawn": 1, "event_title": "Ms. Spindlewood Vanishes", "event_text": "Spawn Ms. Spindlewood at Spindlewood Institute.", "event_type": "spawn_spindlewood", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 1, "dice": 1}},
+    {"id": "c17", "name": "Midnight Consultation", "spawn": 2, "event_title": "Dr. Weir Investigates", "event_text": "Spawn Dr. Weir at Arcane Forge. Safe haven: Weir's Observatory.", "event_type": "spawn_weir", "monster_attack": {"frenzy": False, "symbol": "Hand", "steps": 2, "dice": 2}},
+    {"id": "c18", "name": "A Distant Melody", "spawn": 1, "event_title": "Shinya Wanders", "event_text": "Spawn Citizen Shinya at The Roaming Wolf. Safe haven: Steam Plant.", "event_type": "spawn_shinya", "monster_attack": {"frenzy": False, "symbol": "Eye", "steps": 1, "dice": 2}},
+    {"id": "c19", "name": "Caravan of Shadows", "spawn": 2, "event_title": "James & Betty Arrive", "event_text": "Spawn James & Betty at Specter Trail Caravan. Safe haven: Door of the World.", "event_type": "spawn_james_betty", "monster_attack": {"frenzy": False, "symbol": "Tincture", "steps": 2, "dice": 1}},
+    {"id": "c20", "name": "Bells of the North", "spawn": 1, "event_title": "Vaughn's Warning", "event_text": "Spawn Citizen Vaughn at North Station. Safe haven: The Scuttled Siren.", "event_type": "spawn_vaughn", "monster_attack": {"frenzy": False, "symbol": "Wrench", "steps": 1, "dice": 1}},
+    {"id": "c21", "name": "Forge Fire Flickers", "spawn": 2, "event_title": "Jennifer's Discovery", "event_text": "Spawn Citizen Jennifer at Arcane Forge. Safe haven: Stilt Town.", "event_type": "spawn_jennifer", "monster_attack": {"frenzy": False, "symbol": "Gear", "steps": 2, "dice": 2}},
+    {"id": "c22", "name": "Stilted Silence", "spawn": 1, "event_title": "Raimi Stirs", "event_text": "Spawn Citizen Raimi at Stilt Town. Safe haven: Specter Trail Caravan.", "event_type": "spawn_raimi", "monster_attack": {"frenzy": False, "symbol": "Jewel", "steps": 2, "dice": 1}},
+    {"id": "c23", "name": "A Blade in the Fog", "spawn": 2, "event_title": "Steel Glints", "event_text": "Something sharp moves through the mist.", "event_type": "none", "monster_attack": {"frenzy": False, "symbol": "Dagger", "steps": 1, "dice": 2}},
+    {"id": "c24", "name": "Feral Tincture", "spawn": 1, "event_title": "Spilled Tincture", "event_text": "If the Frenzy monster also answers to spilled poisons, it strikes twice.", "event_type": "none", "monster_attack": {"frenzy": True, "symbol": "Tincture", "steps": 2, "dice": 2}},
+    {"id": "c25", "name": "Unblinking Frenzy", "spawn": 2, "event_title": "Watched From Afar", "event_text": "If the Frenzy monster also answers to the watching eye, it strikes twice.", "event_type": "none", "monster_attack": {"frenzy": True, "symbol": "Eye", "steps": 2, "dice": 2}},
+    {"id": "c26", "name": "A Chill Wind", "spawn": 1, "event_title": "Restless Spirits", "event_text": "The dead stir uneasily.", "event_type": "none", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 2, "dice": 1}},
+    {"id": "c27", "name": "A Reaching Hand", "spawn": 2, "event_title": "Grasping Shadows", "event_text": "Something reaches out from the dark.", "event_type": "none", "monster_attack": {"frenzy": False, "symbol": "Hand", "steps": 1, "dice": 2}},
+    {"id": "c28", "name": "Total Frenzy", "spawn": 2, "event_title": "Unstoppable", "event_text": "The monster holding the Frenzy marker attacks with everything it has.", "event_type": "none", "monster_attack": {"frenzy": True, "symbol": None, "steps": 3, "dice": 3}},
+    {"id": "c29", "name": "Twin Terrors", "spawn": 2, "event_title": "Doubled Fury", "event_text": "If the Frenzy monster also answers to the blade, it strikes twice.", "event_type": "none", "monster_attack": {"frenzy": True, "symbol": "Dagger", "steps": 2, "dice": 2}},
+    {"id": "c30", "name": "Haunted Frenzy", "spawn": 3, "event_title": "Echoes of Madness", "event_text": "If the Frenzy monster also answers to restless spirits, it strikes twice.", "event_type": "none", "monster_attack": {"frenzy": True, "symbol": "Ghost", "steps": 2, "dice": 2}}
 ]
 
 PERK_CARDS = [
@@ -416,9 +431,9 @@ class GameRoom:
                 self.monster_states["Yeti"] = {
                     "cave_candidates": cave_candidates,
                     "children": [
-                        {"id": 1, "location": child_locs[0], "rescued": False},
-                        {"id": 2, "location": child_locs[1], "rescued": False},
-                        {"id": 3, "location": child_locs[2], "rescued": False}
+                        {"id": 1, "location": child_locs[0], "rescued": False, "rescued_order": None},
+                        {"id": 2, "location": child_locs[1], "rescued": False, "rescued_order": None},
+                        {"id": 3, "location": child_locs[2], "rescued": False, "rescued_order": None}
                     ]
                 }
             elif monster == "Jiangshi":
@@ -651,6 +666,7 @@ class GameRoom:
             true_cave_loc = next((c["location"] for c in y_state["cave_candidates"] if c["is_cave"]), None)
             if target == true_cave_loc:
                 child["rescued"] = True
+                child["rescued_order"] = sum(1 for c in y_state["children"] if c["rescued_order"] is not None) + 1
                 self.add_log(f"Yeti Child {child['id']} has reached the True Lair!")
                 if self.perk_deck:
                     perk = self.perk_deck.pop(0)
@@ -767,12 +783,20 @@ class GameRoom:
             action_type = args.get("type")
             if action_type == "reveal_cave":
                 yeti_state = self.monster_states["Yeti"]
-                for cand in yeti_state["cave_candidates"]:
-                    if cand["location"] == loc and not cand["revealed"]:
-                        cand["revealed"] = True
-                        h_state["ap"] -= 1
-                        self.add_log(f"{player_name} revealed the cave candidate at {loc}. It is {'the TRUE Yeti Cave!' if cand['is_cave'] else 'a false trail.'}")
-                        return True
+                cand = next((c for c in yeti_state["cave_candidates"] if c["location"] == loc and not c["revealed"]), None)
+                if not cand:
+                    return False
+                item_id = args.get("item_id")
+                item = next((i for i in h_state["items"] if i["id"] == item_id), None)
+                if not item or item["strength"] < 3:
+                    self.add_log("Select an item of strength 3+ to discard to reveal this Lair token.")
+                    return False
+                h_state["items"].remove(item)
+                self.discarded_items.append(item)
+                cand["revealed"] = True
+                h_state["ap"] -= 1
+                self.add_log(f"{player_name} discarded {item['name']} (strength {item['strength']}) to reveal the Lair token at {loc}. It is {'the TRUE Yeti Cave!' if cand['is_cave'] else 'a false trail.'}")
+                return True
             return False
 
         elif monster == "Jiangshi":
@@ -780,13 +804,20 @@ class GameRoom:
             action_type = args.get("type")
 
             if action_type == "reveal_shrine":
-                for cand in js_state["shrine_candidates"]:
-                    if cand["location"] == loc and not cand["revealed"]:
-                        cand["revealed"] = True
-                        h_state["ap"] -= 1
-                        self.add_log(f"{player_name} revealed the shrine candidate at {loc}. It is {'the TRUE Moon Shrine!' if cand['is_shrine'] else 'a false trail.'}")
-                        return True
-                return False
+                cand = next((c for c in js_state["shrine_candidates"] if c["location"] == loc and not c["revealed"]), None)
+                if not cand:
+                    return False
+                item_id = args.get("item_id")
+                item = next((i for i in h_state["items"] if i["id"] == item_id), None)
+                if not item or item["strength"] < 3:
+                    self.add_log("Select an item of strength 3+ to discard to reveal this Lair token.")
+                    return False
+                h_state["items"].remove(item)
+                self.discarded_items.append(item)
+                cand["revealed"] = True
+                h_state["ap"] -= 1
+                self.add_log(f"{player_name} discarded {item['name']} (strength {item['strength']}) to reveal the Lair token at {loc}. It is {'the TRUE Moon Shrine!' if cand['is_shrine'] else 'a false trail.'}")
+                return True
 
             shrine_loc = next((c["location"] for c in js_state["shrine_candidates"] if c["is_shrine"] and c["revealed"]), None)
             if loc != shrine_loc:
@@ -1323,16 +1354,20 @@ class GameRoom:
             await asyncio.sleep(1.5)
 
             attack = card["monster_attack"]
-            acting_monsters = []
+
+            # Step 1: resolve the Frenzy flame first, if the card has one - the monster
+            # currently holding the Frenzy marker moves/attacks.
             if attack["frenzy"] and self.frenzy_marker in self.active_monsters:
-                acting_monsters.append(self.frenzy_marker)
+                await self.activate_monster(self.frenzy_marker, attack["steps"], attack["dice"], broadcast_fn)
+
+            # Step 2: resolve the card's symbol - every active monster reacting to it
+            # moves/attacks. If the Frenzy monster from Step 1 also matches this symbol,
+            # it activates again here (a full second, independent movement + attack from
+            # its new position) - this double-activation is intentional, not deduplicated.
             if attack["symbol"]:
                 for name in self.active_monsters:
-                    if name not in acting_monsters and attack["symbol"] in MONSTER_SYMBOLS.get(name, []):
-                        acting_monsters.append(name)
-
-            for name in acting_monsters:
-                await self.activate_monster(name, attack["steps"], attack["dice"], broadcast_fn)
+                    if attack["symbol"] in MONSTER_SYMBOLS.get(name, []):
+                        await self.activate_monster(name, attack["steps"], attack["dice"], broadcast_fn)
 
             self.active_perks_limit.clear()
 
@@ -1398,7 +1433,42 @@ class GameRoom:
             self.citizens["Howard"]["active"] = True
             self.citizens["Howard"]["location"] = self.citizens["Howard"]["start"]
             self.add_log("Citizen Howard has arrived at Spindlewood Institute.")
-            
+
+        elif ev == "spawn_spindlewood":
+            self.citizens["Ms. Spindlewood"]["active"] = True
+            self.citizens["Ms. Spindlewood"]["location"] = self.citizens["Ms. Spindlewood"]["start"]
+            self.add_log("Ms. Spindlewood has arrived at Spindlewood Institute.")
+
+        elif ev == "spawn_weir":
+            self.citizens["Dr. Weir"]["active"] = True
+            self.citizens["Dr. Weir"]["location"] = self.citizens["Dr. Weir"]["start"]
+            self.add_log("Dr. Weir has arrived at Arcane Forge.")
+
+        elif ev == "spawn_shinya":
+            self.citizens["Shinya"]["active"] = True
+            self.citizens["Shinya"]["location"] = self.citizens["Shinya"]["start"]
+            self.add_log("Citizen Shinya has arrived at The Roaming Wolf.")
+
+        elif ev == "spawn_james_betty":
+            self.citizens["James & Betty"]["active"] = True
+            self.citizens["James & Betty"]["location"] = self.citizens["James & Betty"]["start"]
+            self.add_log("James & Betty have arrived at Specter Trail Caravan.")
+
+        elif ev == "spawn_vaughn":
+            self.citizens["Vaughn"]["active"] = True
+            self.citizens["Vaughn"]["location"] = self.citizens["Vaughn"]["start"]
+            self.add_log("Citizen Vaughn has arrived at North Station.")
+
+        elif ev == "spawn_jennifer":
+            self.citizens["Jennifer"]["active"] = True
+            self.citizens["Jennifer"]["location"] = self.citizens["Jennifer"]["start"]
+            self.add_log("Citizen Jennifer has arrived at Arcane Forge.")
+
+        elif ev == "spawn_raimi":
+            self.citizens["Raimi"]["active"] = True
+            self.citizens["Raimi"]["location"] = self.citizens["Raimi"]["start"]
+            self.add_log("Citizen Raimi has arrived at Stilt Town.")
+
         elif ev == "void_eruption":
             if "Cthulhu" in self.active_monsters:
                 self.terror_level = min(7, self.terror_level + 1)
