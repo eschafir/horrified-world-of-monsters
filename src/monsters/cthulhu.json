@@ -1,0 +1,131 @@
+{
+    "id": "cthulhu",
+    "name": "Cthulhu",
+    "complexity": "High",
+    "hasLair": false,
+    "objective": "Phase 1: Open the cryptic lock by matching the runic carvings. Once the locks are open, force Cthulhu through the void to The Corpse-City R'lyeh. Phase 2: Use items to avoid Cthulhu's attacks and place manacles on his tentacles. When all four manacles are placed, you can lock Cthulhu in R'lyeh... for now.",
+  
+    "phases": [
+      {
+        "id": 1,
+        "name": "Main Map",
+        "frenzyLevel": 4,
+        "frenzySymbols": [
+          {
+            "symbol": "Wrench",
+            "color": "Blue"
+          },
+          {
+            "symbol": "Eye",
+            "color": "Purple"
+          },
+          {
+            "symbol": "Ghost",
+            "color": "Yellow"
+          },
+          {
+            "symbol": "Jewel",
+            "color": "Teal"
+          }
+        ],
+  
+        "setup": [
+          {
+            "action": "PlaceMonster",
+            "target": "Cthulhu",
+            "locations": [
+              "The Void"
+            ]
+          },
+          {
+            "action": "ShuffleRunicTokens"
+          },
+          {
+            "action": "RevealRunicTokens",
+            "quantity": 3
+          },
+          {
+            "action": "PlaceRunicTokensOnMat"
+          }
+        ],
+  
+        "powers": [
+          {
+            "name": "Touch of Madness",
+            "description": "Choose one: Increase the Terror Level by 1 or discard the top Monster card."
+          }
+        ],
+  
+        "steps": [
+          {
+            "number": 1,
+            "title": "Open the Portal",
+            "type": "Advance",
+            "description": "At the void, discard an item to rotate the dial that matches the item's color a number of spaces equal to the item's strength. Once all dials match the indicated runes, the portal is open and travel to R'lyeh is possible."
+          },
+          {
+            "number": 2,
+            "title": "The Path Is Clear",
+            "type": "Advance",
+            "description": "Lure Cthulhu to the void. Cthulhu may move there on its own or, at its location, discard Green Item to move Cthulhu a number of locations up to the strength of the item. Once Cthulhu is at the void, remove the Cthulhu miniature from the main map and set up The Corpse-City R'lyeh to defeat Cthulhu."
+          }
+        ]
+      },
+  
+      {
+        "id": 2,
+        "name": "The Corpse-City R'lyeh",
+        "frenzyLevel": 0,
+        "frenzySymbols": [],
+  
+        "setup": [
+          {
+            "action": "BuildMonsterModel"
+          },
+          {
+            "action": "PlaceMonsterOnMat"
+          },
+          {
+            "action": "PlaceTokensNearMat",
+            "target": "Manacle",
+            "quantity": 4
+          },
+          {
+            "action": "DrawItem",
+            "target": "CthulhuItem",
+            "quantity": 1
+          },
+          {
+            "action": "PlaceItemOnMat",
+            "target": "CthulhuItem"
+          }
+        ],
+  
+        "powers": [
+          {
+            "name": "Tentacles of Insanity",
+            "description": "Cthulhu's tentacles deal 1 damage to every Hero standing in the same color area as Cthulhu's item. This damage can only be blocked by an item of the same color as Cthulhu's item. For each Power rolled, discard and replace Cthulhu's item with a new item."
+          }
+        ],
+  
+        "steps": [
+          {
+            "number": 3,
+            "title": "Bind the Tentacles",
+            "type": "Advance",
+            "description": "Discard a number of the same-color items that equals or exceeds the value of the item controlled by Cthulhu. The type of Cthulhu's item does not matter. Place the Hero in the specific location that matches the type of items being discarded. You can only discard one item per action. Then place a mystic manacle on one of Cthulhu's tentacles."
+          },
+          {
+            "number": 4,
+            "title": "Locked Away Forever?",
+            "type": "Defeat",
+            "description": "When all the tentacles are manacled, all Heroes must be in R'lyeh. Use the share action to gather an item from each other Hero. Discard the items to defeat Cthulhu and lock it in its vault."
+          }
+        ],
+  
+        "notes": [
+          "See the back of the Monster mat for additional R'lyeh rules."
+        ]
+      }
+    ]
+  }

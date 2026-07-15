@@ -1,0 +1,76 @@
+{
+    "id": "yeti",
+    "name": "Yeti",
+    "complexity": "Low",
+    "hasLair": true,
+    "frenzyLevel": 1,
+    "frenzySymbols": [
+      {
+        "symbol": "Dagger",
+        "color": "Orange"
+      },
+      {
+        "symbol": "Ghost",
+        "color": "Yellow"
+      },
+      {
+        "symbol": "Tincture",
+        "color": "Green"
+      }
+    ],
+    "objective": "The Yeti only wants to survive and humanity has stolen everything... including its children. Return the Yeti's children to remove its threat.",
+  
+    "phases": [
+      {
+        "id": 1,
+        "name": "Main Map",
+  
+        "setup": [
+          {
+            "action": "PlaceMonster",
+            "target": "Yeti",
+            "locations": [
+              "The Roaming Wolf"
+            ]
+          },
+          {
+            "action": "PlaceToken",
+            "target": "YetiChild",
+            "locations": [
+              "House of Dusk",
+              "Thornvine Woods",
+              "Stewards Spire"
+            ]
+          }
+        ],
+  
+        "powers": [
+          {
+            "name": "Snow Blast",
+            "description": "Hero or Citizen not in the Yeti's location takes 1 hit. This has no effect if everyone is in the Yeti's location."
+          }
+        ],
+  
+        "steps": [
+          {
+            "number": 1,
+            "title": "Let's Go Home",
+            "type": "Advance",
+            "description": "Reveal the Yeti's Cave. Escort the Yeti's Children there using Guide."
+          },
+          {
+            "number": 2,
+            "title": "Calm the Yeti",
+            "type": "Defeat",
+            "description": "In the Yeti's location, use one of each type of Item to defeat it."
+          }
+        ],
+  
+        "notes": [
+          "Yeti's Children are not Citizens.",
+          "Yeti's Children cannot be attacked.",
+          "Yeti's Children cannot be moved by Monster or Perk cards."
+        ]
+      }
+    ]
+  }

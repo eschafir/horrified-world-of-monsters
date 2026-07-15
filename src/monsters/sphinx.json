@@ -1,0 +1,72 @@
+{
+    "id": "sphinx",
+    "name": "Sphinx",
+    "complexity": "Low",
+    "hasLair": false,
+    "frenzyLevel": 2,
+    "frenzySymbols": [
+      {
+        "symbol": "Dagger",
+        "color": "Orange"
+      },
+      {
+        "symbol": "Hand",
+        "color": "Red"
+      },
+      {
+        "symbol": "Jewel",
+        "color": "Teal"
+      }
+    ],
+    "objective": "A simple proposition: solve the sphinx's riddle or get eaten. To solve the puzzle, make sure the numbers sum up to the values printed at the end of each row or column.",
+  
+    "phases": [
+      {
+        "id": 1,
+        "name": "Main Map",
+  
+        "setup": [
+          {
+            "action": "PlaceMonster",
+            "target": "Sphinx",
+            "locations": [
+              "Specter Trail Caravan"
+            ]
+          },
+          {
+            "action": "DrawItem",
+            "quantity": 1
+          },
+          {
+            "action": "PlaceItemOnPuzzle"
+          }
+        ],
+  
+        "powers": [
+          {
+            "name": "Lethal Conundrum",
+            "description": "As a group, discard two items with the same strength or increase the Terror Level by 1."
+          }
+        ],
+  
+        "steps": [
+          {
+            "number": 1,
+            "title": "Answer the Riddle",
+            "type": "Advance",
+            "description": "At the sphinx's location, place an item on the puzzle grid. Once the strength of the items in each column and row add up to the number at the end of that column or row, you have answered the sphinx's riddle. You may discard an item to move or remove an already placed item."
+          },
+          {
+            "number": 2,
+            "title": "Outwit the Sphinx",
+            "type": "Defeat",
+            "description": "Once you have correctly solved the sphinx's riddle in the sphinx's location, discard Green Item 6+ to defeat it."
+          }
+        ],
+  
+        "notes": [
+          "The first Item placed cannot be moved or removed."
+        ]
+      }
+    ]
+  }

@@ -1,0 +1,65 @@
+{
+    "id": "jiangshi",
+    "name": "Jiangshi",
+    "complexity": "Medium",
+    "hasLair": true,
+    "frenzyLevel": 3,
+    "frenzySymbols": [
+        {
+            "symbol": "Hand",
+            "color": "Red"
+        },
+        {
+            "symbol": "Eye",
+            "color": "Purple"
+        },
+        {
+            "symbol": "Ghost",
+            "color": "Yellow"
+        },
+        {
+            "symbol": "Gear",
+            "color": "Brown"
+        }
+    ],
+    "objective": "The Jiangshi is a restless corpse seeking to feed on the energy of the living. Stop the Jiangshi by crafting a mystic blade powered by ancient rituals under moonlight.",
+    "phases": [
+        {
+            "id": 1,
+            "name": "Main Map",
+            "setup": [
+                {
+                    "action": "PlaceMonster",
+                    "target": "Jiangshi",
+                    "locations": [
+                        "House of Dusk"
+                    ]
+                },
+                {
+                    "action": "PlaceTokensNearMat",
+                    "target": "CoinSword"
+                }
+            ],
+            "powers": [
+                {
+                    "name": "Drain Vital Energy",
+                    "description": "After dealing all damage, place the Jiangshi in the location of the player taking the next turn."
+                }
+            ],
+            "steps": [
+                {
+                    "number": 1,
+                    "title": "Construct the Coin Sword",
+                    "type": "Advance",
+                    "description": "Reveal the Moon shrine. At that location, discard an item. Place a Coin sword token that matches the item's strength into the sword pattern or move or remove any already placed Coin sword token."
+                },
+                {
+                    "number": 2,
+                    "title": "Dispossessed",
+                    "type": "Defeat",
+                    "description": "In the Jiangshi's location, discard Purple Item 9+ and use the Coin sword to defeat it."
+                }
+            ]
+        }
+    ]
+}
