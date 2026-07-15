@@ -2417,3 +2417,14 @@ body {
     80% { transform: scale(0.95) rotate(340deg) translateY(5px); }
     100% { transform: scale(1) rotate(360deg) translateY(0); }
 }
+.map-select-card input:checked + img {
+    border-color: #ff3366 !important;
+    box-shadow: 0 0 15px rgba(255, 51, 102, 0.5);
+}
+
+/* Make links visible in debug mode */
+.debug-hitboxes .map-link {
+    stroke: rgba(255, 0, 0, 0.8) !important;
+    stroke-width: 4 !important;
+    stroke-dasharray: none !important;
+}

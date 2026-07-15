@@ -75,11 +75,30 @@ const elApDisplay = document.getElementById("action-points-left");
 // INITIALIZE EVENTS
 // ---------------------------------------------------------
 
+const elMapSelectView = document.getElementById("map-select-view");
+const elBtnConfirmMap = document.getElementById("btn-confirm-map");
+
 elBtnCreate.addEventListener("click", () => {
+    playerName = elPlayerNameInput.value.trim();
+    if (!playerName) {
+        alert("Please enter your name!");
+        return;
+    }
+    elSetupView.classList.add("hidden");
+    elMapSelectView.classList.remove("hidden");
+});
+
+elBtnConfirmMap.addEventListener("click", () => {
+    elMapSelectView.classList.add("hidden");
     setupConnection(true);
 });
 
 elBtnJoin.addEventListener("click", () => {
+    playerName = elPlayerNameInput.value.trim();
+    if (!playerName) {
+        alert("Please enter your name!");
+        return;
+    }
     setupConnection(false);
 });
 
@@ -173,12 +192,6 @@ if (elBtnMainMenu) {
 // ---------------------------------------------------------
 
 function setupConnection(isHost) {
-    playerName = elPlayerNameInput.value.trim();
-    if (!playerName) {
-        alert("Please enter your name!");
-        return;
-    }
-
     if (isHost) {
         // Generate random 4-letter room code
         roomCode = "";
@@ -203,9 +216,16 @@ function setupConnection(isHost) {
 
     socket.onopen = () => {
         elSetupView.classList.add("hidden");
+        elMapSelectView.classList.add("hidden");
         elWaitingView.classList.remove("hidden");
         elDisplayRoomCode.innerText = roomCode;
         renderHeroSelectOptions();
+        
+        if (isHost) {
+            const chosenMap = document.querySelector('input[name="map-choice"]:checked').value;
+            sendMsg({ action: "chat", text: `Host selected map: ${chosenMap}` });
+            sendMsg({ action: "set_map", map: chosenMap });
+        }
     };
 
     socket.onmessage = (event) => {
@@ -258,6 +278,7 @@ function returnToMainMenu() {
     elGameScreen.classList.add("hidden");
     elLobbyScreen.classList.remove("hidden");
     elWaitingView.classList.add("hidden");
+    elMapSelectView.classList.add("hidden");
     elSetupView.classList.remove("hidden");
     elRoomCodeInput.value = "";
 }
@@ -619,6 +640,14 @@ window.showMonsterInfoModal = (monsterName) => {
 function updateGameUI() {
     if (!gameState) return;
 
+    if (gameState.selected_map) {
+        const mapImage = document.getElementById("game-map-image");
+        if (mapImage) {
+            mapImage.setAttribute("href", `/Images/${gameState.selected_map}?v=2`);
+            mapImage.setAttributeNS("http://www.w3.org/1999/xlink", "href", `/Images/${gameState.selected_map}?v=2`);
+        }
+    }
+
     if (!gameState.game_started) {
         // We are in Lobby Waiting view
         elLobbyScreen.classList.remove("hidden");
@@ -630,6 +659,8 @@ function updateGameUI() {
         const myPlayer = gameState.players.find(p => p.name === playerName);
         if (myPlayer) chosenHero = myPlayer.hero;
         renderHeroSelectOptions();
+        
+
 
         // Sync player lists
         elConnectedPlayers.innerHTML = "";
@@ -2227,7 +2258,7 @@ function createNeonRing(cx, cy, r = 28, polygonPoints = null) {
     const svgNS = "http://www.w3.org/2000/svg";
     const g = document.createElementNS(svgNS, "g");
     g.setAttribute("class", "neon-ring-group");
-    g.style.pointerEvents = "none"; // purely decorative — never block dragging the hitbox/vertex handles underneath
+    g.setAttribute("pointer-events", "none"); // purely decorative — never block dragging the hitbox/vertex handles underneath
 
     const usePolygon = polygonPoints && polygonPoints.length >= 3;
     const pointsAttr = usePolygon
@@ -2249,10 +2280,12 @@ function createNeonRing(cx, cy, r = 28, polygonPoints = null) {
     const makeShape = () => {
         if (usePolygon) {
             const p = document.createElementNS(svgNS, "polygon");
+            p.setAttribute("pointer-events", "none");
             p.setAttribute("points", pointsAttr);
             return p;
         }
         const c = document.createElementNS(svgNS, "circle");
+        c.setAttribute("pointer-events", "none");
         c.setAttribute("cx", cx);
         c.setAttribute("cy", cy);
         c.setAttribute("r", r);
@@ -2906,12 +2939,35 @@ function renderSVGMap() {
 
     // Create Background Map Image programmatically (namespace-safe)
     const bgImage = document.createElementNS("http://www.w3.org/2000/svg", "image");
-    bgImage.setAttribute("href", "/Images/Map2.png?v=2");
+    bgImage.setAttribute("id", "game-map-image");
+    const mapFile = gameState.selected_map || "Map.png";
+    bgImage.setAttribute("href", `/Images/${mapFile}?v=2`);
+    bgImage.setAttributeNS("http://www.w3.org/1999/xlink", "href", `/Images/${mapFile}?v=2`);
     bgImage.setAttribute("x", "0");
     bgImage.setAttribute("y", "0");
     bgImage.setAttribute("width", "1304");
     bgImage.setAttribute("height", "1206");
     elGameMap.appendChild(bgImage);
+
+    // --- START INJECT FALLBACK COORDINATES ---
+    let fallbackX = 60;
+    let fallbackY = 60;
+    const checkLoc = (loc) => {
+        if (loc && loc !== "Board" && !gameState.node_coordinates[loc]) {
+            gameState.node_coordinates[loc] = {x: fallbackX, y: fallbackY, r: 28, type: "circle"};
+            fallbackX += 80;
+            if (fallbackX > 1200) { fallbackX = 60; fallbackY += 80; }
+        }
+    };
+    if (gameState.items_on_board) Object.keys(gameState.items_on_board).forEach(checkLoc);
+    if (gameState.heroes_state) Object.values(gameState.heroes_state).forEach(h => checkLoc(h.location));
+    if (gameState.monster_locations) Object.values(gameState.monster_locations).forEach(checkLoc);
+    if (gameState.citizens) Object.values(gameState.citizens).forEach(c => checkLoc(c.location));
+    if (gameState.monster_states && gameState.monster_states["Yeti"]) {
+        gameState.monster_states["Yeti"].lairs.forEach(l => checkLoc(l.location));
+        gameState.monster_states["Yeti"].children.forEach(c => checkLoc(c.location));
+    }
+    // --- END INJECT FALLBACK COORDINATES ---
 
     // 1. Draw paths (lines)
     const coordinates = gameState.node_coordinates;
@@ -3512,6 +3568,31 @@ function renderSVGMap() {
 
                 terrorTrackG.appendChild(ring);
             }
+            
+            // Add a draggable hitbox for the terror track slot
+            const hitbox = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            hitbox.setAttribute("cx", slotX);
+            hitbox.setAttribute("cy", slotY);
+            hitbox.setAttribute("r", slotR);
+            hitbox.setAttribute("fill", "transparent");
+            hitbox.setAttribute("class", "terror-hitbox");
+            if (elGameMap.classList.contains("debug-hitboxes")) {
+                hitbox.style.pointerEvents = "all";
+                hitbox.style.cursor = "move";
+                hitbox.setAttribute("stroke", "rgba(255, 255, 0, 0.8)");
+                hitbox.setAttribute("stroke-width", "2");
+            } else {
+                hitbox.style.pointerEvents = "none";
+            }
+            hitbox.addEventListener("mousedown", (e) => {
+                if (elGameMap.classList.contains("debug-hitboxes")) {
+                    e.stopPropagation();
+                    dragType = "terror";
+                    dragLocName = i; // using index 0-7
+                    window.isDragging = false;
+                }
+            });
+            terrorTrackG.appendChild(hitbox);
         }
         pendingTerrorTransitionFrom = null;
         elGameMap.appendChild(terrorTrackG);
@@ -4263,7 +4344,8 @@ window.bindCthulhuTentacle = (color) => {
     });
 };
 
-// Press 'D' to toggle hitbox debug mode (drag location nodes or terror-slot
+
+// Press \'D\' to toggle hitbox debug mode (drag location nodes or terror-slot
 // placeholders into position). Ignored while typing in a text field.
 document.addEventListener("keydown", (e) => {
     const activeTag = document.activeElement && document.activeElement.tagName;
@@ -4271,6 +4353,7 @@ document.addEventListener("keydown", (e) => {
 
     if (e.key.toLowerCase() === "d") {
         elGameMap.classList.toggle("debug-hitboxes");
+        
         console.log("Hitbox debug mode toggled.");
     }
 });
@@ -4301,6 +4384,15 @@ document.addEventListener("mousemove", (e) => {
     } else if (dragType === "rect") {
         gameState.node_coordinates[dragLocName].bx = clampedX;
         gameState.node_coordinates[dragLocName].by = clampedY;
+    } else if (dragType === "terror") {
+        if (!gameState.terror_track_coordinates) {
+            gameState.terror_track_coordinates = [];
+        }
+        if (!gameState.terror_track_coordinates[dragLocName]) {
+            gameState.terror_track_coordinates[dragLocName] = {x: 0, y: 0, r: 28};
+        }
+        gameState.terror_track_coordinates[dragLocName].x = clampedX;
+        gameState.terror_track_coordinates[dragLocName].y = clampedY;
     }
 
     renderSVGMap(); // Redraw everything in real-time!
@@ -4311,10 +4403,12 @@ document.addEventListener("mouseup", () => {
         // Send updated coordinates to the server
         sendMsg({
             action: "update_coordinates",
-            coordinates: gameState.node_coordinates
+            coordinates: gameState.node_coordinates,
+            terror_coordinates: gameState.terror_track_coordinates,
+        adjacency: gameState.adjacency_list
         });
 
-        console.log(`Saved coordinates for ${dragLocName}:`, gameState.node_coordinates[dragLocName]);
+        console.log(`Saved coordinates for ${dragLocName}`);
 
         // Wait a split second to clear window.isDragging to block trailing click events
         setTimeout(() => {

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Map Editor - Horrified: World of Monsters</title>
+    <link rel="stylesheet" href="style.css?v=69">
+    <style>
+        body { margin: 0; background: #111; color: white; display: flex; font-family: 'Outfit', sans-serif; overflow: hidden; }
+        .sidebar { width: 300px; background: rgba(20, 20, 20, 0.95); border-right: 2px solid #555; padding: 20px; display: flex; flex-direction: column; overflow-y: auto; height: 100vh; }
+        .map-container { flex: 1; position: relative; height: 100vh; overflow: auto; cursor: crosshair; }
+        svg { background: #000; width: 1304px; height: 1206px; display: block; }
+        h2 { margin-top: 0; color: #ffcc00; }
+        .btn { background: #555; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; margin-bottom: 10px; width: 100%; font-weight: bold; }
+        .btn:hover { background: #777; }
+        .btn-danger { background: #8c0f34; }
+        .btn-danger:hover { background: #b3123f; }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 12px; margin-bottom: 5px; color: #aaa; }
+        .input-group input, .input-group select { width: 100%; padding: 6px; box-sizing: border-box; background: #333; color: white; border: 1px solid #666; border-radius: 4px; }
+        .conn-item { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 5px; border-radius: 4px; margin-bottom: 5px; font-size: 12px; }
+        .conn-item button { background: #8c0f34; border: none; color: white; border-radius: 3px; cursor: pointer; padding: 2px 5px; }
+        
+        .map-node { fill: rgba(255, 255, 0, 0.1); stroke: rgba(255, 255, 0, 0.8); stroke-width: 2; cursor: pointer; }
+        .map-node:hover { fill: rgba(255, 255, 0, 0.3); }
+        .map-node.selected { stroke: #00ffcc; stroke-width: 4; fill: rgba(0, 255, 204, 0.2); }
+        .map-link { stroke: rgba(255, 255, 255, 0.5); stroke-width: 4; stroke-dasharray: none; pointer-events: none; }
+        
+        #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #4CAF50; color: white; padding: 10px 20px; border-radius: 4px; display: none; z-index: 9999; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Map Editor</h2>
+        
+        <div class="input-group">
+            <label>Select Map</label>
+            <select id="map-select">
+                <option value="Map.png">Standard Map</option>
+                <option value="map-greek.png">Greek Map</option>
+            </select>
+        </div>
+        
+        <button id="btn-load" class="btn">Load Map Data</button>
+        <button id="btn-save" class="btn" style="background: #4CAF50;">Save Map Data</button>
+        
+        <hr style="width: 100%; border-color: #444; margin: 20px 0;">
+        
+        <div id="editor-panel" style="display: none;">
+            <h3 style="margin-top: 0; color: #00ffcc;">Selected Element</h3>
+            
+            <div class="input-group">
+                <label>Name / ID</label>
+                <input type="text" id="node-name">
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button id="btn-rename" class="btn">Rename</button>
+                <button id="btn-delete" class="btn btn-danger">Delete</button>
+            </div>
+            
+            <div class="input-group" style="margin-top: 10px;">
+                <label>Radius</label>
+                <input type="number" id="node-radius" min="10" max="200">
+            </div>
+            
+            <hr style="width: 100%; border-color: #444; margin: 15px 0;">
+            
+            <div id="connections-panel">
+                <h4 style="margin-top: 0;">Connections</h4>
+                <div id="conn-list"></div>
+                <div style="display: flex; gap: 5px; margin-top: 10px;">
+                    <select id="conn-select"></select>
+                    <button id="btn-connect" class="btn" style="padding: 5px; margin-bottom: 0;">Link</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="empty-panel" style="color: #888; font-size: 14px; text-align: center;">
+            <p>Click any node or terror slot on the map to edit it.</p>
+        </div>
+        
+        <hr style="width: 100%; border-color: #444; margin: 20px 0;">
+        <button id="btn-add-loc" class="btn" style="background: #2196F3;">+ New Location</button>
+    </div>
+
+    <div class="map-container">
+        <svg id="game-map" viewBox="0 0 1304 1206">
+            <image id="game-map-image" href="" x="0" y="0" width="1304" height="1206" />
+        </svg>
+    </div>
+    
+    <div id="toast">Saved Successfully!</div>
+
+    <script src="editor.js"></script>
+</body>
+</html>

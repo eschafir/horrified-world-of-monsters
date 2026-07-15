@@ -100,6 +100,26 @@ TERROR_TRACK_COORDS = [
     for anchor in _TERROR_SLOT_ANCHORS
 ]
 
+import copy
+def load_map_coordinates(map_name):
+    filename = f"static/coordinates_{map_name}.json"
+    if os.path.exists(filename):
+        try:
+            with open(filename, "r") as f:
+                data = json.load(f)
+                return data.get("nodes", NODE_COORDINATES), data.get("terror", TERROR_TRACK_COORDS), data.get("adjacency", ADJACENCY_LIST)
+        except:
+            pass
+    return copy.deepcopy(NODE_COORDINATES), copy.deepcopy(TERROR_TRACK_COORDS), copy.deepcopy(ADJACENCY_LIST)
+
+def save_map_coordinates(map_name, nodes, terror, adjacency):
+    filename = f"static/coordinates_{map_name}.json"
+    try:
+        with open(filename, "w") as f:
+            json.dump({"nodes": nodes, "terror": terror, "adjacency": adjacency}, f, indent=4)
+    except:
+        pass
+
 HERO_CLASSES = {
     "The Guardian": {"name": "The Guardian", "ap": 5, "start": "Arcane Forge", "ability": "You may use a Guide action on a Hero, with their permission. This does not take an action."},
     "The Investigator": {"name": "The Investigator", "ap": 4, "start": "South Station", "ability": "Discard two items to pick one item from the discard pile and keep it."},
@@ -229,7 +249,7 @@ def find_shortest_path(start: str, targets: Set[str]) -> Optional[str]:
         node = queue.pop(0)
         curr_len = len(paths[node][0])
         
-        for neighbor in ADJACENCY_LIST.get(node, []):
+        for neighbor in self.adjacency_list.get(node, []):
             if neighbor not in paths:
                 paths[neighbor] = [p + [neighbor] for p in paths[node]]
                 queue.append(neighbor)
@@ -265,7 +285,7 @@ def get_best_monster_move(start: str, hero_targets: Set[str], citizen_targets: S
         node = queue.pop(0)
         curr_len = len(paths[node][0])
         
-        for neighbor in ADJACENCY_LIST.get(node, []):
+        for neighbor in self.adjacency_list.get(node, []):
             if neighbor not in paths:
                 paths[neighbor] = [p + [neighbor] for p in paths[node]]
                 queue.append(neighbor)
@@ -304,6 +324,8 @@ def get_best_monster_move(start: str, hero_targets: Set[str], citizen_targets: S
 class GameRoom:
     def __init__(self, room_code: str):
         self.room_code = room_code
+        self.selected_map = "Map.png"
+        self.node_coordinates, self.terror_track_coordinates, self.adjacency_list = load_map_coordinates(self.selected_map)
         self.players: List[Dict] = []  # list of {"sid": str, "name": str, "hero": str, "is_host": bool, "ws": WebSocket}
         self.game_started = False
         self.terror_level = 0
@@ -320,7 +342,7 @@ class GameRoom:
         
         # Board entities
         self.heroes_state: Dict[str, Dict] = {} # player_name -> state
-        self.items_on_board: Dict[str, List[Dict]] = {loc: [] for loc in ADJACENCY_LIST.keys()}
+        self.items_on_board: Dict[str, List[Dict]] = {loc: [] for loc in self.adjacency_list.keys()}
         self.citizens: Dict[str, Dict] = {}
         self.monster_locations: Dict[str, str] = {}
         self.monster_states: Dict[str, Dict] = {}
@@ -356,19 +378,20 @@ class GameRoom:
         self.current_card = None
         
         # Set up item bag
-        self.item_bag = list(ITEMS_POOL)
+        import copy
+        self.item_bag = copy.deepcopy(ITEMS_POOL)
         random.shuffle(self.item_bag)
         self.discarded_items = []
         
         # Set up decks
-        self.deck = list(MONSTER_CARDS)
+        self.deck = copy.deepcopy(MONSTER_CARDS)
         random.shuffle(self.deck)
         self.discard = []
         self.perk_deck = list(PERK_CARDS)
         random.shuffle(self.perk_deck)
         
         # Reset locations
-        self.items_on_board = {loc: [] for loc in ADJACENCY_LIST.keys()}
+        self.items_on_board = {loc: [] for loc in self.adjacency_list.keys()}
         
         # Spawn initial 12 items
         for _ in range(12):
@@ -383,7 +406,7 @@ class GameRoom:
             self.heroes_state[p["name"]] = {
                 "name": p["name"],
                 "hero": hero_class,
-                "location": config["start"],
+                "location": self.get_safe_loc(config["start"]),
                 "items": [],
                 "perks": starting_perk,
                 "ap": config["ap"],
@@ -395,16 +418,16 @@ class GameRoom:
         # Images/Citizens/ (names don't all slugify cleanly, e.g. "Dr. Weir" ->
         # dr_weir.png, and Raimi's art is a .jpg), so the client never has to guess.
         self.citizens = {
-            "Ms. Spindlewood": {"name": "Ms. Spindlewood", "location": "Board", "start": "Spindlewood Institute", "safe": "Spindlewood Institute", "active": False, "portrait": "ms_spindlewood.png"},
-            "Mari": {"name": "Mari", "location": "Board", "start": "North Station", "safe": "House of Dawn", "active": False, "portrait": "Mari.png"},
-            "Howard": {"name": "Howard", "location": "Board", "start": "Spindlewood Institute", "safe": "The Roaming Wolf", "active": False, "portrait": "Howard.png"},
-            "Dr. Weir": {"name": "Dr. Weir", "location": "Board", "start": "Arcane Forge", "safe": "Weir's Observatory", "active": False, "portrait": "dr_weir.png"},
-            "Shinya": {"name": "Shinya", "location": "Board", "start": "The Roaming Wolf", "safe": "Steam Plant", "active": False, "portrait": "Shinya.png"},
-            "James & Betty": {"name": "James & Betty", "location": "Board", "start": "Specter Trail Caravan", "safe": "Door of the World", "active": False, "portrait": "James_Betty.png"},
-            "Morgan": {"name": "Morgan", "location": "Board", "start": "The Scuttled Siren", "safe": "The Fool's Journey", "active": False, "portrait": "Morgan.png"},
-            "Vaughn": {"name": "Vaughn", "location": "Board", "start": "North Station", "safe": "The Scuttled Siren", "active": False, "portrait": "Vaughn.png"},
-            "Jennifer": {"name": "Jennifer", "location": "Board", "start": "Arcane Forge", "safe": "Stilt Town", "active": False, "portrait": "Jennifer.png"},
-            "Raimi": {"name": "Raimi", "location": "Board", "start": "Stilt Town", "safe": "Specter Trail Caravan", "active": False, "portrait": "Raimi.jpg"}
+            "Ms. Spindlewood": {"name": "Ms. Spindlewood", "location": "Board", "start": self.get_safe_loc("Spindlewood Institute"), "safe": self.get_safe_loc("Spindlewood Institute"), "active": False, "portrait": "ms_spindlewood.png"},
+            "Mari": {"name": "Mari", "location": "Board", "start": self.get_safe_loc("North Station"), "safe": self.get_safe_loc("House of Dawn"), "active": False, "portrait": "Mari.png"},
+            "Howard": {"name": "Howard", "location": "Board", "start": self.get_safe_loc("Spindlewood Institute"), "safe": self.get_safe_loc("The Roaming Wolf"), "active": False, "portrait": "Howard.png"},
+            "Dr. Weir": {"name": "Dr. Weir", "location": "Board", "start": self.get_safe_loc("Arcane Forge"), "safe": self.get_safe_loc("Weir's Observatory"), "active": False, "portrait": "dr_weir.png"},
+            "Shinya": {"name": "Shinya", "location": "Board", "start": self.get_safe_loc("The Roaming Wolf"), "safe": self.get_safe_loc("Steam Plant"), "active": False, "portrait": "Shinya.png"},
+            "James & Betty": {"name": "James & Betty", "location": "Board", "start": self.get_safe_loc("Specter Trail Caravan"), "safe": self.get_safe_loc("Door of the World"), "active": False, "portrait": "James_Betty.png"},
+            "Morgan": {"name": "Morgan", "location": "Board", "start": self.get_safe_loc("The Scuttled Siren"), "safe": self.get_safe_loc("The Fool's Journey"), "active": False, "portrait": "Morgan.png"},
+            "Vaughn": {"name": "Vaughn", "location": "Board", "start": self.get_safe_loc("North Station"), "safe": self.get_safe_loc("The Scuttled Siren"), "active": False, "portrait": "Vaughn.png"},
+            "Jennifer": {"name": "Jennifer", "location": "Board", "start": self.get_safe_loc("Arcane Forge"), "safe": self.get_safe_loc("Stilt Town"), "active": False, "portrait": "Jennifer.png"},
+            "Raimi": {"name": "Raimi", "location": "Board", "start": self.get_safe_loc("Stilt Town"), "safe": self.get_safe_loc("Specter Trail Caravan"), "active": False, "portrait": "Raimi.jpg"}
         }
 
         # Lair Tokens: a single shared pool of 4 fixed board locations. Exactly one hides
@@ -435,15 +458,15 @@ class GameRoom:
         self.monster_states = {}
         for monster in self.active_monsters:
             if monster == "Sphinx":
-                self.monster_locations[monster] = "Specter Trail Caravan"
+                self.monster_locations[monster] = self.get_safe_loc("Specter Trail Caravan")
             elif monster == "Jiangshi":
-                self.monster_locations[monster] = "House of Dusk"
+                self.monster_locations[monster] = self.get_safe_loc("House of Dusk")
             elif monster == "Cthulhu":
-                self.monster_locations[monster] = "The Void"
+                self.monster_locations[monster] = self.get_safe_loc("The Void")
             else:
-                self.monster_locations[monster] = "The Roaming Wolf"
+                self.monster_locations[monster] = self.get_safe_loc("The Roaming Wolf")
             if monster == "Yeti":
-                child_locs = ["House of Dusk", "Thornvine Woods", "Stewards Spire"]
+                child_locs = [self.get_safe_loc("House of Dusk"), self.get_safe_loc("Thornvine Woods"), self.get_safe_loc("Stewards Spire")]
                 random.shuffle(child_locs)
                 self.monster_states["Yeti"] = {
                     "children": [
@@ -508,17 +531,15 @@ class GameRoom:
             return
         item = self.item_bag.pop(0)
         item["id"] = str(uuid.uuid4())[:8]
-        loc = item["location"]
+        loc = self.get_safe_loc(item["location"])
+        item["location"] = loc
+        if loc not in self.items_on_board:
+            self.items_on_board[loc] = []
         self.items_on_board[loc].append(item)
 
-    def _draw_bagged_item(self) -> Optional[Dict]:
-        """Pops one item from the bag without placing it on the board (e.g. Sphinx's
-        locked starter cell, Cthulhu's controlled item)."""
-        if not self.item_bag:
-            return None
-        item = self.item_bag.pop(0)
-        item["id"] = str(uuid.uuid4())[:8]
-        return item
+                self.monster_locations[monster] = self.get_safe_loc("House of Dusk")
+            elif monster == "Cthulhu":
+                self.monster_locations[monster] = self.get_safe_loc("The Void")
 
     def _get_true_lair_location(self, kind: str) -> Optional[str]:
         """kind is 'yeti' or 'jiangshi'. Returns that Lair Token's location, if any."""
@@ -528,6 +549,7 @@ class GameRoom:
     def get_serializable_state(self) -> Dict:
         return {
             "room_code": self.room_code,
+            "selected_map": self.selected_map,
             "game_started": self.game_started,
             "game_phase": self.game_phase,
             "terror_level": self.terror_level,
@@ -555,15 +577,14 @@ class GameRoom:
             "monster_catalog": MONSTER_CATALOG
         }
 
-    def update_coordinates(self, coords: Dict):
-        global NODE_COORDINATES
-        NODE_COORDINATES = coords
-        try:
-            import json
-            with open("static/new_coordinates.json", "w") as f:
-                json.dump(coords, f, indent=4)
-        except Exception as e:
-            print("Error saving coordinates:", e)
+    def update_coordinates(self, coords: Dict, terror_coords: List = None, adjacency: Dict = None):
+        if coords:
+            self.node_coordinates = coords
+        if terror_coords:
+            self.terror_track_coordinates = terror_coords
+        if adjacency:
+            self.adjacency_list = adjacency
+        save_map_coordinates(self.selected_map, self.node_coordinates, self.terror_track_coordinates, self.adjacency_list)
 
     # ---------------------------------------------------------
     # HERO PHASE ACTIONS
@@ -594,7 +615,7 @@ class GameRoom:
 
         # Explorer moves 1 extra path
         is_explorer = state["hero"] == "Explorer"
-        adjacent = ADJACENCY_LIST.get(current, [])
+        adjacent = self.adjacency_list.get(current, [])
         
         valid = False
         if target in adjacent:
@@ -602,7 +623,7 @@ class GameRoom:
         elif is_explorer:
             # Explorer can move 2 spaces for 1 AP
             for n in adjacent:
-                if target in ADJACENCY_LIST.get(n, []):
+                if target in self.adjacency_list.get(n, []):
                     valid = True
                     break
                     
@@ -637,7 +658,7 @@ class GameRoom:
             
         state = self.heroes_state[player_name]
         current_loc = state["location"]
-        adjacent_to_hero = ADJACENCY_LIST.get(current_loc, [])
+        adjacent_to_hero = self.adjacency_list.get(current_loc, [])
         
         # Check standard citizens
         cit = self.citizens.get(legend_name)
@@ -963,7 +984,7 @@ class GameRoom:
                         self._enter_corpse_city(cth_state)
                     return True
 
-                if loc != "The Void":
+                if loc != self.get_safe_loc("The Void"):
                     self.add_log("Must be at The Void to rotate the dials.")
                     return False
 
@@ -1201,7 +1222,7 @@ class GameRoom:
                 self.add_log("The Guardian must be in the same location as the guided hero.")
                 return False
                 
-            adjacent = ADJACENCY_LIST.get(h_state["location"], [])
+            adjacent = self.adjacency_list.get(h_state["location"], [])
             if target_loc not in adjacent:
                 self.add_log(f"Target location {target_loc} is not adjacent.")
                 return False
@@ -1285,7 +1306,7 @@ class GameRoom:
         if perk["name"] == "Swiftness":
             target_hero = args.get("target_hero")
             dest = args.get("destination")
-            if target_hero in self.heroes_state and dest in ADJACENCY_LIST:
+            if target_hero in self.heroes_state and dest in self.adjacency_list:
                 self.heroes_state[target_hero]["location"] = dest
                 self.add_log(f"Perk (Swiftness) used: Moved {target_hero} to {dest}.")
                 activated = True
@@ -1446,7 +1467,7 @@ class GameRoom:
                             
         elif ev == "sphinx_gaze":
             for p_name, h_state in self.heroes_state.items():
-                if "Crossroads" in h_state["location"]:
+                if "Crossroads" in h_state["location"] or "Cross Roads" in h_state["location"]:
                     h_state["ap"] = max(0, h_state["ap"] - 1)
                     self.add_log(f"{p_name} was caught in Sphinx's gaze and loses 1 AP.")
                     
@@ -1829,6 +1850,20 @@ room_manager = RoomManager()
 # FASTAPI ENDPOINTS
 # ---------------------------------------------------------
 
+
+@app.get("/api/map")
+def api_get_map(map: str = "Map.png"):
+    nodes, terror, adjacency = load_map_coordinates(map)
+    return {"nodes": nodes, "terror": terror, "adjacency": adjacency}
+
+@app.post("/api/map")
+async def api_save_map(request: Request):
+    body = await request.json()
+    map_name = body.get("map")
+    data = body.get("data", {})
+    save_map_coordinates(map_name, data.get("nodes", {}), data.get("terror", []), data.get("adjacency", {}))
+    return {"status": "ok"}
+
 @app.websocket("/ws/{room_code}/{player_name}")
 async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: str):
     await websocket.accept()
@@ -1867,6 +1902,12 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
                     if not taken_by_other:
                         player["hero"] = hero
                         room.add_log(f"{player_name} selected {hero}.")
+                        
+            elif action == "set_map":
+                if player["is_host"] and not room.game_started:
+                    room.selected_map = msg.get("map", "Map.png")
+                    room.node_coordinates, room.terror_track_coordinates, room.adjacency_list = load_map_coordinates(room.selected_map)
+                    room.add_log(f"Server actually set map to: {room.selected_map}")
                     
             elif action == "select_monsters":
                 if player["is_host"] and not room.game_started:
@@ -1977,8 +2018,9 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
                     
             elif action == "update_coordinates":
                 coords = msg.get("coordinates")
-                if coords:
-                    room.update_coordinates(coords)
+                terror_coords = msg.get("terror_coordinates")
+                adjacency = msg.get("adjacency")
+                room.update_coordinates(coords, terror_coords, adjacency)
 
             await room_manager.broadcast_state(room_code)
             
