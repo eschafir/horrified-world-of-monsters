@@ -140,57 +140,54 @@ def _load_items_pool() -> List[Dict]:
 
 ITEMS_POOL = _load_items_pool()
 
-MONSTER_CARDS = [
-    {"id": "c1", "name": "Eerily Quiet", "spawn": 1, "event_title": "Calm Before the Storm", "event_text": "Nothing happens... yet.", "event_type": "none", "activations": {"Yeti": (1, 1), "Sphinx": (1, 1)}},
-    {"id": "c2", "name": "A Cry in the Dark", "spawn": 2, "event_title": "Lost Children", "event_text": "Yeti children cry out. If Yeti is active, he moves 2 spaces towards the nearest child.", "event_type": "yeti_cry", "activations": {"Yeti": (2, 2)}},
-    {"id": "c3", "name": "The Stars Align", "spawn": 2, "event_title": "Sphinx's Gaze", "event_text": "The Sphinx projects a psychic wave. All players at Crossroads locations lose 1 AP on their next turn.", "event_type": "sphinx_gaze", "activations": {"Sphinx": (2, 2)}},
-    {"id": "c4", "name": "A Hopping Terror", "spawn": 1, "event_title": "Jiangshi Outbreak", "event_text": "Jiangshi gains 1 extra movement this phase.", "event_type": "jiangshi_speedup", "activations": {"Jiangshi": (2, 2)}},
-    {"id": "c5", "name": "Void Eruption", "spawn": 3, "event_title": "The Void Widens", "event_text": "Increase the Terror Level by 1 if Cthulhu is active; otherwise spawn an item at The Void.", "event_type": "void_eruption", "activations": {"Cthulhu": (1, 2)}},
-    {"id": "c6", "name": "Call of the Siren", "spawn": 2, "event_title": "Morgan Appears", "event_text": "Spawn Citizen Morgan at The Scuttled Siren. Safe haven: The Fool's Journey.", "event_type": "spawn_delilah", "activations": {"Jiangshi": (1, 1), "Cthulhu": (1, 2)}},
-    {"id": "c7", "name": "Midnight Bells", "spawn": 1, "event_title": "Mari in Danger", "event_text": "Spawn Citizen Mari at North Station. Safe haven: House of Dawn.", "event_type": "spawn_mayor", "activations": {"Yeti": (1, 2), "Sphinx": (1, 1)}},
-    {"id": "c8", "name": "Frenzy!", "spawn": 2, "event_title": "Madness Spreads", "event_text": "The active monster (indicated by current frenzy state) moves 2 spaces and attacks with +1 die.", "event_type": "frenzy", "activations": {"Frenzy": (2, 3)}},
-    {"id": "c9", "name": "Heavy Fog", "spawn": 1, "event_title": "Reduced Visibility", "event_text": "All heroes cannot use special abilities on their next turn.", "event_type": "no_abilities", "activations": {"Yeti": (1, 1), "Jiangshi": (1, 1)}},
-    {"id": "c10", "name": "Exhaustion", "spawn": 2, "event_title": "Fatigue", "event_text": "The active player must discard 1 item of strength 2+ or lose 2 action points next turn.", "event_type": "exhaustion", "activations": {"Sphinx": (1, 2), "Cthulhu": (1, 1)}},
-    {"id": "c11", "name": "Portal Resonance", "spawn": 2, "event_title": "Aura of the Deep", "event_text": "Cthulhu rolls +1 attack die if he attacks inside The Void.", "event_type": "cthulhu_res", "activations": {"Cthulhu": (2, 2)}},
-    {"id": "c12", "name": "Echoes of the Past", "spawn": 1, "event_title": "Howard Appears", "event_text": "Spawn Citizen Howard at Spindlewood Institute. Safe haven: The Roaming Wolf.", "event_type": "spawn_higgins", "activations": {"Sphinx": (2, 1), "Jiangshi": (1, 2)}},
-    {"id": "c13", "name": "Tonic of Youth", "spawn": 2, "event_title": "Health Tonic", "event_text": "Draw 1 Perk card and give it to the player with the fewest items.", "event_type": "tonic", "activations": {"Yeti": (1, 1), "Cthulhu": (1, 1)}},
-    {"id": "c14", "name": "Tidal Wave", "spawn": 1, "event_title": "Flooding Path", "event_text": "The path between Skybound Galleon and Scuttled Siren is blocked for movement this turn.", "event_type": "blocked_path", "activations": {"Jiangshi": (2, 1)}},
-    {"id": "c15", "name": "Sudden Tempest", "spawn": 2, "event_title": "Scattering Winds", "event_text": "Move all items at Steam Plant to adjacent locations.", "event_type": "scatter_items", "activations": {"Yeti": (2, 1), "Sphinx": (1, 2)}}
-]
 
-# MONSTER_CARDS = [
-#     # Existing 15 Cards
-#     {"id": "c1", "name": "Eerily Quiet", "items": 1, "event_title": "Calm Before the Storm", "event_text": "Nothing happens... yet.", "monster_attack": {"frenzy": False, "symbol": "Gear", "steps": 1, "dice": 1}},
-#     {"id": "c2", "name": "A Cry in the Dark", "items": 2, "event_title": "Lost Children", "event_text": "Yeti children cry out.", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 2, "dice": 2}},
-#     {"id": "c3", "name": "The Stars Align", "items": 2, "event_title": "Sphinx's Gaze", "event_text": "Sphinx psychic wave.", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 2, "dice": 2}},
-#     {"id": "c4", "name": "A Hopping Terror", "items": 1, "event_title": "Jiangshi Outbreak", "event_text": "Jiangshi gains 1 extra movement.", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 2, "dice": 2}},
-#     {"id": "c5", "name": "Void Eruption", "items": 3, "event_title": "The Void Widens", "event_text": "Increase Terror Level.", "monster_attack": {"frenzy": False, "symbol": "Jewel", "steps": 1, "dice": 2}},
-#     {"id": "c6", "name": "Call of the Siren", "items": 2, "event_title": "Delilah Appears", "event_text": "Spawn Delilah.", "monster_attack": {"frenzy": False, "symbol": "Dagger", "steps": 1, "dice": 1}},
-#     {"id": "c7", "name": "Midnight Bells", "items": 1, "event_title": "Mayor Finch in Danger", "event_text": "Spawn Mayor Finch.", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 1, "dice": 2}},
-#     {"id": "c8", "name": "Frenzy!", "items": 2, "event_title": "Madness Spreads", "event_text": "Active monster moves 2.", "monster_attack": {"frenzy": True, "symbol": "None", "steps": 2, "dice": 3}},
-#     {"id": "c9", "name": "Heavy Fog", "items": 1, "event_title": "Reduced Visibility", "event_text": "No special abilities.", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 1, "dice": 1}},
-#     {"id": "c10", "name": "Exhaustion", "items": 2, "event_title": "Fatigue", "event_text": "Discard item or lose AP.", "monster_attack": {"frenzy": False, "symbol": "Gear", "steps": 1, "dice": 2}},
-#     {"id": "c11", "name": "Portal Resonance", "items": 2, "event_title": "Aura of the Deep", "event_text": "Cthulhu bonus damage.", "monster_attack": {"frenzy": False, "symbol": "Jewel", "steps": 2, "dice": 2}},
-#     {"id": "c12", "name": "Echoes of the Past", "items": 1, "event_title": "Professor Higgins Appears", "event_text": "Spawn Higgins.", "monster_attack": {"frenzy": False, "symbol": "Gear", "steps": 2, "dice": 1}},
-#     {"id": "c13", "name": "Tonic of Youth", "items": 2, "event_title": "Health Tonic", "event_text": "Draw 1 Perk card.", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 1, "dice": 1}},
-#     {"id": "c14", "name": "Tidal Wave", "items": 1, "event_title": "Flooding Path", "event_text": "Path is blocked.", "monster_attack": {"frenzy": False, "symbol": "Gear", "steps": 2, "dice": 1}},
-#     {"id": "c15", "name": "Sudden Tempest", "items": 2, "event_title": "Scattering Winds", "event_text": "Move items at Steam Plant.", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 2, "dice": 1}},
-#     {"id": "c16", "name": "Frenzied Howl", "items": 1, "event_title": "Pack Tactics", "event_text": "Monsters group up.", "monster_attack": {"frenzy": True, "symbol": "None", "steps": 1, "dice": 2}},
-#     {"id": "c17", "name": "Ancient Curse", "items": 2, "event_title": "Dark Omens", "event_text": "All players lose 1 health.", "monster_attack": {"frenzy": False, "symbol": "Eye", "steps": 1, "dice": 2}},
-#     {"id": "c18", "name": "Broken Chains", "items": 1, "event_title": "Escapee", "event_text": "Move nearest monster 1 space.", "monster_attack": {"frenzy": False, "symbol": "Wrench", "steps": 1, "dice": 1}},
-#     {"id": "c19", "name": "Spreading Rot", "items": 2, "event_title": "Blighted Land", "event_text": "Discard 1 item at current location.", "monster_attack": {"frenzy": False, "symbol": "Tincture", "steps": 1, "dice": 2}},
-#     {"id": "c20", "name": "Rising Panic", "items": 1, "event_title": "Fear Factor", "event_text": "Increase terror by 1.", "monster_attack": {"frenzy": False, "symbol": "Hand", "dice": 3, "steps": 1}},
-#     {"id": "c21", "name": "Total Frenzy", "items": 2, "event_title": "Unstoppable", "event_text": "Monster attacks twice.", "monster_attack": {"frenzy": True, "symbol": "None", "steps": 1, "dice": 2}},
-#     {"id": "c22", "name": "Deep Sea Pressure", "items": 2, "event_title": "Crushing Depth", "event_text": "Heroes at beach take 1 dmg.", "monster_attack": {"frenzy": False, "symbol": "Jewel", "steps": 2, "dice": 3}},
-#     {"id": "c23", "name": "Mechanical Malfunction", "items": 1, "event_title": "Power Surge", "event_text": "Steam plant is unusable.", "monster_attack": {"frenzy": False, "symbol": "Wrench", "steps": 1, "dice": 1}},
-#     {"id": "c24", "name": "Ghostly Whisper", "items": 1, "event_title": "Eerie Presence", "event_text": "Target Hero is stunned.", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 1, "dice": 2}},
-#     {"id": "c25", "name": "Alchemist's Folly", "items": 2, "event_title": "Spilled Tincture", "event_text": "Items nearby are destroyed.", "monster_attack": {"frenzy": False, "symbol": "Tincture", "steps": 2, "dice": 1}},
-#     {"id": "c26", "name": "Crimson Mark", "items": 1, "event_title": "Bloodthirst", "event_text": "Monster moves towards wounded.", "monster_attack": {"frenzy": False, "symbol": "Hand", "steps": 2, "dice": 2}},
-#     {"id": "c27", "name": "Eye of the Storm", "items": 2, "event_title": "Focusing Gaze", "event_text": "Reveal top 2 Monster cards.", "monster_attack": {"frenzy": False, "symbol": "Eye", "steps": 1, "dice": 1}},
-#     {"id": "c28", "name": "Rapid Frenzy", "items": 1, "event_title": "Overdrive", "event_text": "Frenzy monster moves 3.", "monster_attack": {"frenzy": True, "symbol": "None", "steps": 3, "dice": 2}},
-#     {"id": "c29", "name": "Blocked Vents", "items": 1, "event_title": "Gas Leak", "event_text": "Hero moves to adjacent.", "monster_attack": {"frenzy": False, "symbol": "Wrench", "steps": 1, "dice": 2}},
-#     {"id": "c30", "name": "Tainted Offering", "items": 2, "event_title": "Ritual Site", "event_text": "Spawn Item at Ritual location.", "monster_attack": {"frenzy": False, "symbol": "Tincture", "steps": 1, "dice": 2}}
-# ]
+def _load_monster_catalog() -> Dict[str, Dict]:
+    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "src", "monsters")
+    catalog = {}
+    for fname in ("yeti.json", "sphinx.json", "jiangshi.json", "cthulhu.json"):
+        with open(os.path.join(data_dir, fname), "r", encoding="utf-8") as f:
+            data = json.load(f)
+            catalog[data["name"]] = data
+    return catalog
+
+
+MONSTER_CATALOG = _load_monster_catalog()
+
+
+def _get_monster_symbols(name: str) -> List[str]:
+    """Frenzy symbols a monster currently reacts to (Cthulhu reads its active phase's list)."""
+    entry = MONSTER_CATALOG.get(name)
+    if not entry:
+        return []
+    if entry.get("frenzySymbols"):
+        return [s["symbol"] for s in entry["frenzySymbols"]]
+    phase = entry.get("phases", [{}])[0]
+    return [s["symbol"] for s in phase.get("frenzySymbols", [])]
+
+
+MONSTER_SYMBOLS: Dict[str, List[str]] = {name: _get_monster_symbols(name) for name in MONSTER_CATALOG}
+
+# Each card's monster_attack.symbol matches against a monster's MONSTER_SYMBOLS (see
+# MONSTER_CATALOG, loaded from src/monsters/*.json) to decide who acts; monster_attack.frenzy
+# means "whoever currently holds the Frenzy marker acts". Both can independently apply to
+# different monsters off the same card. steps/dice feed activate_monster/perform_attack as before.
+MONSTER_CARDS = [
+    {"id": "c1", "name": "Eerily Quiet", "spawn": 1, "event_title": "Calm Before the Storm", "event_text": "Nothing happens... yet.", "event_type": "none", "monster_attack": {"frenzy": False, "symbol": "Dagger", "steps": 1, "dice": 1}},
+    {"id": "c2", "name": "A Cry in the Dark", "spawn": 2, "event_title": "Lost Children", "event_text": "Yeti children cry out. If Yeti is active, he moves 2 spaces towards the nearest child.", "event_type": "yeti_cry", "monster_attack": {"frenzy": False, "symbol": "Tincture", "steps": 2, "dice": 2}},
+    {"id": "c3", "name": "The Stars Align", "spawn": 2, "event_title": "Sphinx's Gaze", "event_text": "The Sphinx projects a psychic wave. All players at Crossroads locations lose 1 AP on their next turn.", "event_type": "sphinx_gaze", "monster_attack": {"frenzy": False, "symbol": "Jewel", "steps": 2, "dice": 2}},
+    {"id": "c4", "name": "A Hopping Terror", "spawn": 1, "event_title": "Jiangshi Outbreak", "event_text": "Jiangshi gains 1 extra movement this phase.", "event_type": "jiangshi_speedup", "monster_attack": {"frenzy": False, "symbol": "Gear", "steps": 2, "dice": 2}},
+    {"id": "c5", "name": "Void Eruption", "spawn": 3, "event_title": "The Void Widens", "event_text": "Increase the Terror Level by 1 if Cthulhu is active; otherwise spawn an item at The Void.", "event_type": "void_eruption", "monster_attack": {"frenzy": False, "symbol": "Wrench", "steps": 1, "dice": 2}},
+    {"id": "c6", "name": "Call of the Siren", "spawn": 2, "event_title": "Morgan Appears", "event_text": "Spawn Citizen Morgan at The Scuttled Siren. Safe haven: The Fool's Journey.", "event_type": "spawn_delilah", "monster_attack": {"frenzy": False, "symbol": "Eye", "steps": 1, "dice": 1}},
+    {"id": "c7", "name": "Midnight Bells", "spawn": 1, "event_title": "Mari in Danger", "event_text": "Spawn Citizen Mari at North Station. Safe haven: House of Dawn.", "event_type": "spawn_mayor", "monster_attack": {"frenzy": False, "symbol": "Dagger", "steps": 1, "dice": 2}},
+    {"id": "c8", "name": "Frenzy!", "spawn": 2, "event_title": "Madness Spreads", "event_text": "The monster holding the Frenzy marker moves 2 spaces and attacks with +1 die.", "event_type": "none", "monster_attack": {"frenzy": True, "symbol": None, "steps": 2, "dice": 3}},
+    {"id": "c9", "name": "Heavy Fog", "spawn": 1, "event_title": "Reduced Visibility", "event_text": "All heroes cannot use special abilities on their next turn.", "event_type": "no_abilities", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 1, "dice": 1}},
+    {"id": "c10", "name": "Exhaustion", "spawn": 2, "event_title": "Fatigue", "event_text": "The active player must discard 1 item of strength 2+ or lose 2 action points next turn.", "event_type": "exhaustion", "monster_attack": {"frenzy": False, "symbol": "Jewel", "steps": 1, "dice": 2}},
+    {"id": "c11", "name": "Portal Resonance", "spawn": 2, "event_title": "Aura of the Deep", "event_text": "Cthulhu rolls +1 attack die if he attacks inside The Void.", "event_type": "cthulhu_res", "monster_attack": {"frenzy": False, "symbol": "Wrench", "steps": 2, "dice": 2}},
+    {"id": "c12", "name": "Echoes of the Past", "spawn": 1, "event_title": "Howard Appears", "event_text": "Spawn Citizen Howard at Spindlewood Institute. Safe haven: The Roaming Wolf.", "event_type": "spawn_higgins", "monster_attack": {"frenzy": False, "symbol": "Hand", "steps": 1, "dice": 2}},
+    {"id": "c13", "name": "Tonic of Youth", "spawn": 2, "event_title": "Health Tonic", "event_text": "Draw 1 Perk card and give it to the player with the fewest items.", "event_type": "tonic", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 1, "dice": 1}},
+    {"id": "c14", "name": "Tidal Wave", "spawn": 1, "event_title": "Flooding Path", "event_text": "The path between Skybound Galleon and Scuttled Siren is blocked for movement this turn.", "event_type": "blocked_path", "monster_attack": {"frenzy": False, "symbol": "Gear", "steps": 2, "dice": 1}},
+    {"id": "c15", "name": "Sudden Tempest", "spawn": 2, "event_title": "Scattering Winds", "event_text": "Move all items at Steam Plant to adjacent locations.", "event_type": "scatter_items", "monster_attack": {"frenzy": False, "symbol": "Dagger", "steps": 2, "dice": 1}}
+]
 
 PERK_CARDS = [
     {"id": "p1", "name": "Swiftness", "text": "Move any hero up to 3 spaces for free."},
@@ -401,24 +398,23 @@ class GameRoom:
                 self.monster_locations[monster] = "Specter Trail Caravan"
             elif monster == "Jiangshi":
                 self.monster_locations[monster] = "House of Dusk"
+            elif monster == "Cthulhu":
+                self.monster_locations[monster] = "The Void"
             else:
                 self.monster_locations[monster] = "The Roaming Wolf"
             if monster == "Yeti":
-                # Lair tokens
-                lair_locs = ["Spindlewood Institute", "Garden of the Risen", "Thornvine Woods", "Door of the World"]
-                random.shuffle(lair_locs)
-                lairs = [
-                    {"location": lair_locs[0], "is_true": True, "type": "yeti", "flipped": False},
-                    {"location": lair_locs[1], "is_true": False, "type": "jiangshi", "flipped": False},
-                    {"location": lair_locs[2], "is_true": False, "type": "blank", "flipped": False},
-                    {"location": lair_locs[3], "is_true": False, "type": "blank", "flipped": False}
+                # Yeti's Cave: one hidden true location among 4 candidates, revealed via Advance.
+                cave_locs = ["Spindlewood Institute", "Garden of the Risen", "Thornvine Woods", "Door of the World"]
+                random.shuffle(cave_locs)
+                cave_candidates = [
+                    {"location": loc, "is_cave": (i == 0), "revealed": False}
+                    for i, loc in enumerate(cave_locs)
                 ]
-                random.shuffle(lairs)
-                print(f"DEBUG - Yeti Lair Location: {[l['location'] for l in lairs if l['type'] == 'yeti'][0]}")
+                print(f"DEBUG - Yeti Cave Location: {[c['location'] for c in cave_candidates if c['is_cave']][0]}")
                 child_locs = ["House of Dusk", "Thornvine Woods", "Stewards Spire"]
                 random.shuffle(child_locs)
                 self.monster_states["Yeti"] = {
-                    "lairs": lairs,
+                    "cave_candidates": cave_candidates,
                     "children": [
                         {"id": 1, "location": child_locs[0], "rescued": False},
                         {"id": 2, "location": child_locs[1], "rescued": False},
@@ -426,38 +422,54 @@ class GameRoom:
                     ]
                 }
             elif monster == "Jiangshi":
-                # The polyomino sword layout (3 slots that need Green/Purple items)
+                # Moon Shrine: one hidden location among 4 candidates, revealed via Advance.
+                shrine_locs = ["Mary's Mill", "Weir's Observatory", "The Fool's Journey", "Stilt Town"]
+                random.shuffle(shrine_locs)
+                shrine_candidates = [
+                    {"location": loc, "is_shrine": (i == 0), "revealed": False}
+                    for i, loc in enumerate(shrine_locs)
+                ]
+                print(f"DEBUG - Jiangshi Moon Shrine Location: {[c['location'] for c in shrine_candidates if c['is_shrine']][0]}")
+                # The Coin Sword pattern: 3 slots, each filled by discarding an item whose
+                # strength exactly matches that slot's target.
                 self.monster_states["Jiangshi"] = {
-                    "slots": [
-                        {"id": 0, "color": "Purple", "req_strength": 3, "filled": False, "item": None},
-                        {"id": 1, "color": "Green", "req_strength": 3, "filled": False, "item": None},
-                        {"id": 2, "color": "Green", "req_strength": 4, "filled": False, "item": None}
+                    "shrine_candidates": shrine_candidates,
+                    "sword_slots": [
+                        {"id": 0, "target_strength": 2, "filled": False, "item": None},
+                        {"id": 1, "target_strength": 3, "filled": False, "item": None},
+                        {"id": 2, "target_strength": 4, "filled": False, "item": None}
                     ]
                 }
             elif monster == "Sphinx":
-                # The 3-item math riddle grid. Sum must equal exactly 9 using Blue (Mundane)
-                # items — Mundane's strength tops out at 3, so 3+3+3=9 is the max reachable sum.
+                # 2x2 riddle grid: row/column sums must match the printed targets exactly.
+                # Cell 0 is auto-filled and locked at setup, per the Sphinx's rules.
+                starter_item = self._draw_bagged_item()
+                grid = [{"id": i, "filled": False, "item": None, "locked": False} for i in range(4)]
+                if starter_item:
+                    grid[0] = {"id": 0, "filled": True, "item": starter_item, "locked": True}
                 self.monster_states["Sphinx"] = {
-                    "slots": [
-                        {"id": 0, "filled": False, "item": None},
-                        {"id": 1, "filled": False, "item": None},
-                        {"id": 2, "filled": False, "item": None}
-                    ],
-                    "target_sum": 9
+                    "grid": grid,
+                    "row_targets": [5, 7],
+                    "col_targets": [6, 6],
+                    "solved": False
                 }
             elif monster == "Cthulhu":
-                # Cthulhu has two phases
+                # Cthulhu has two phases. Phase 1: rotate 3 color dials (cumulative discarded
+                # strength) to their targets to open the portal, then lure Cthulhu to the Void.
                 self.monster_states["Cthulhu"] = {
                     "phase": 1,
-                    "runes": [
-                        {"id": 0, "color": "Purple", "req_strength": 3, "broken": False},
-                        {"id": 1, "color": "Blue", "req_strength": 3, "broken": False},
-                        {"id": 2, "color": "Green", "req_strength": 3, "broken": False},
-                        {"id": 3, "color": "Any", "req_strength": 5, "broken": False}
+                    "dials": [
+                        {"color": "Purple", "target": 9, "progress": 0},
+                        {"color": "Green", "target": 6, "progress": 0},
+                        {"color": "Blue", "target": 6, "progress": 0}
                     ],
+                    "portal_open": False,
                     # Corpse City steps
                     "corpse_city_track": ["Entrance", "Gates of Madness", "Sea of Slumber", "Cthulhu's Heart"],
-                    "player_tracks": {} # player_name -> step index (-1 if on main board)
+                    "player_tracks": {}, # player_name -> step index (-1 if on main board)
+                    "current_item": None,
+                    "manacles_placed": 0,
+                    "bind_progress": {} # player_name -> {"color", "progress"}
                 }
                 for p in self.players:
                     self.monster_states["Cthulhu"]["player_tracks"][p["name"]] = -1
@@ -475,6 +487,15 @@ class GameRoom:
         item["id"] = str(uuid.uuid4())[:8]
         loc = item["location"]
         self.items_on_board[loc].append(item)
+
+    def _draw_bagged_item(self) -> Optional[Dict]:
+        """Pops one item from the bag without placing it on the board (e.g. Sphinx's
+        locked starter cell, Cthulhu's controlled item)."""
+        if not self.item_bag:
+            return None
+        item = self.item_bag.pop(0)
+        item["id"] = str(uuid.uuid4())[:8]
+        return item
 
     def get_serializable_state(self) -> Dict:
         return {
@@ -500,7 +521,8 @@ class GameRoom:
             "players": [{"name": p["name"], "hero": p["hero"], "is_host": p["is_host"]} for p in self.players],
             "node_coordinates": NODE_COORDINATES,
             "adjacency_list": ADJACENCY_LIST,
-            "terror_track_coordinates": TERROR_TRACK_COORDS
+            "terror_track_coordinates": TERROR_TRACK_COORDS,
+            "monster_catalog": MONSTER_CATALOG
         }
 
     def update_coordinates(self, coords: Dict):
@@ -625,9 +647,9 @@ class GameRoom:
             state["ap"] -= 1
             self.add_log(f"{player_name} guided Yeti Child {child['id']} to {target}.")
             
-            # Check true lair
-            true_lair_loc = next((l["location"] for l in y_state["lairs"] if l["is_true"]), None)
-            if target == true_lair_loc:
+            # Check true cave
+            true_cave_loc = next((c["location"] for c in y_state["cave_candidates"] if c["is_cave"]), None)
+            if target == true_cave_loc:
                 child["rescued"] = True
                 self.add_log(f"Yeti Child {child['id']} has reached the True Lair!")
                 if self.perk_deck:
@@ -637,45 +659,6 @@ class GameRoom:
             return True
             
         self.add_log(f"Legend {legend_name} not found or not active.")
-        return False
-
-    def execute_reveal_lair(self, player_name: str, item_ids: List[str]) -> bool:
-        if not self.check_turn(player_name):
-            return False
-            
-        state = self.heroes_state[player_name]
-        if state["ap"] < 1:
-            return False
-            
-        items_to_discard = []
-        total_strength = 0
-        for i_id in item_ids:
-            found = next((item for item in state["items"] if item["id"] == i_id), None)
-            if not found:
-                return False
-            items_to_discard.append(found)
-            total_strength += found.get("strength", 1)
-            
-        if total_strength < 3:
-            self.add_log(f"{player_name} does not have enough strength (need 3, selected {total_strength}) to reveal the lair.")
-            return False
-            
-        loc = state["location"]
-        
-        if "Yeti" in self.active_monsters:
-            yeti_state = self.monster_states["Yeti"]
-            for lair in yeti_state["lairs"]:
-                if lair["location"] == loc and not lair["flipped"]:
-                    for item in items_to_discard:
-                        state["items"].remove(item)
-                        self.discarded_items.append(item)
-                    lair["flipped"] = True
-                    state["ap"] -= 1
-                    is_true = lair["is_true"]
-                    self.add_log(f"{player_name} spent {total_strength} strength to reveal the lair token at {loc}. It is {'the TRUE lair!' if is_true else 'a DECOY.'}")
-                    return True
-                    
-        self.add_log("No unrevealed lair token at your current location.")
         return False
 
     def execute_pickup(self, player_name: str, item_ids: List[str]):
@@ -746,245 +729,367 @@ class GameRoom:
         self.add_log(f"{player_name} shared items with {target_name}.")
         return True
 
+    def _check_sphinx_solved(self, sp_state: Dict):
+        grid = sp_state["grid"]
+        if not all(c["filled"] for c in grid):
+            sp_state["solved"] = False
+            return
+        row_sums = [
+            grid[0]["item"]["strength"] + grid[1]["item"]["strength"],
+            grid[2]["item"]["strength"] + grid[3]["item"]["strength"]
+        ]
+        col_sums = [
+            grid[0]["item"]["strength"] + grid[2]["item"]["strength"],
+            grid[1]["item"]["strength"] + grid[3]["item"]["strength"]
+        ]
+        was_solved = sp_state["solved"]
+        sp_state["solved"] = (row_sums == sp_state["row_targets"] and col_sums == sp_state["col_targets"])
+        if sp_state["solved"] and not was_solved:
+            self.add_log("The Sphinx's riddle grid sums align — the riddle is answered!")
+
+    def _enter_corpse_city(self, cth_state: Dict):
+        cth_state["phase"] = 2
+        cth_state["current_item"] = self._draw_bagged_item()
+        self.monster_locations["Cthulhu"] = "Entrance"
+        self.add_log("PORTAL FORCED OPEN! Cthulhu has retreated to the Corpse-City of R'lyeh!")
+
     def execute_advance(self, player_name: str, monster: str, args: Dict) -> bool:
         if not self.check_turn(player_name):
             return False
-            
+
         h_state = self.heroes_state[player_name]
         if h_state["ap"] < 1:
             return False
-            
+
         loc = h_state["location"]
-        
+
         if monster == "Yeti":
             action_type = args.get("type")
-            if action_type == "reveal_lair":
+            if action_type == "reveal_cave":
                 yeti_state = self.monster_states["Yeti"]
-                for lair in yeti_state["lairs"]:
-                    if lair["location"] == loc and not lair["flipped"]:
-                        lair["flipped"] = True
+                for cand in yeti_state["cave_candidates"]:
+                    if cand["location"] == loc and not cand["revealed"]:
+                        cand["revealed"] = True
                         h_state["ap"] -= 1
-                        is_true = lair["is_true"]
-                        self.add_log(f"{player_name} flipped the lair token at {loc}. It is {'the TRUE lair!' if is_true else 'a DECOY.'}")
+                        self.add_log(f"{player_name} revealed the cave candidate at {loc}. It is {'the TRUE Yeti Cave!' if cand['is_cave'] else 'a false trail.'}")
                         return True
             return False
-            
+
         elif monster == "Jiangshi":
+            js_state = self.monster_states["Jiangshi"]
+            action_type = args.get("type")
+
+            if action_type == "reveal_shrine":
+                for cand in js_state["shrine_candidates"]:
+                    if cand["location"] == loc and not cand["revealed"]:
+                        cand["revealed"] = True
+                        h_state["ap"] -= 1
+                        self.add_log(f"{player_name} revealed the shrine candidate at {loc}. It is {'the TRUE Moon Shrine!' if cand['is_shrine'] else 'a false trail.'}")
+                        return True
+                return False
+
+            shrine_loc = next((c["location"] for c in js_state["shrine_candidates"] if c["is_shrine"] and c["revealed"]), None)
+            if loc != shrine_loc:
+                self.add_log("Must be at the revealed Moon Shrine to work the Coin Sword.")
+                return False
+
             slot_id = args.get("slot_id")
             item_id = args.get("item_id")
-            
-            if loc != self.monster_locations["Jiangshi"]:
-                self.add_log(f"Must be at Jiangshi's location ({self.monster_locations['Jiangshi']}) to Advance.")
-                return False
-                
-            js_state = self.monster_states["Jiangshi"]
-            slot = next((s for s in js_state["slots"] if s["id"] == slot_id), None)
+            slot = next((s for s in js_state["sword_slots"] if s["id"] == slot_id), None)
             if not slot or slot["filled"]:
                 return False
-                
+
             item = next((i for i in h_state["items"] if i["id"] == item_id), None)
-            if not item:
+            if not item or item["strength"] != slot["target_strength"]:
+                self.add_log(f"Item strength must exactly match slot {slot_id}'s target ({slot['target_strength']}).")
                 return False
-                
-            if item["color"] != slot["color"] or item["strength"] < slot["req_strength"]:
-                self.add_log(f"Item does not meet requirements for slot {slot_id}.")
-                return False
-                
+
             h_state["items"].remove(item)
+            self.discarded_items.append(item)
             slot["filled"] = True
             slot["item"] = item
             h_state["ap"] -= 1
-            self.add_log(f"{player_name} placed {item['name']} onto Jiangshi's sword slot {slot_id}.")
+            self.add_log(f"{player_name} placed a strength-{item['strength']} Coin Sword token into slot {slot_id}.")
             return True
-            
+
         elif monster == "Sphinx":
-            slot_id = args.get("slot_id")
-            item_id = args.get("item_id")
-            
+            sp_state = self.monster_states["Sphinx"]
             if loc != self.monster_locations["Sphinx"]:
                 self.add_log(f"Must be at Sphinx's location ({self.monster_locations['Sphinx']}) to Advance.")
                 return False
-                
-            sp_state = self.monster_states["Sphinx"]
-            slot = next((s for s in sp_state["slots"] if s["id"] == slot_id), None)
-            if not slot or slot["filled"]:
-                return False
-                
-            item = next((i for i in h_state["items"] if i["id"] == item_id), None)
-            if not item or item["color"] != "Blue":
-                self.add_log("Sphinx riddles require Blue items.")
-                return False
-                
-            h_state["items"].remove(item)
-            slot["filled"] = True
-            slot["item"] = item
-            h_state["ap"] -= 1
-            
-            self.add_log(f"{player_name} placed {item['name']} (Blue {item['strength']}) into Sphinx riddle slot {slot_id}.")
-            return True
-            
+
+            action_type = args.get("type", "place")
+            if action_type == "place":
+                cell_id = args.get("cell_id")
+                item_id = args.get("item_id")
+                cell = next((c for c in sp_state["grid"] if c["id"] == cell_id), None)
+                if not cell or cell["filled"]:
+                    return False
+                item = next((i for i in h_state["items"] if i["id"] == item_id), None)
+                if not item:
+                    return False
+                h_state["items"].remove(item)
+                cell["filled"] = True
+                cell["item"] = item
+                h_state["ap"] -= 1
+                self.add_log(f"{player_name} placed {item['name']} ({item['color']} {item['strength']}) into Sphinx grid cell {cell_id}.")
+                self._check_sphinx_solved(sp_state)
+                return True
+
+            elif action_type == "clear":
+                cell_id = args.get("cell_id")
+                cost_item_id = args.get("cost_item_id")
+                dest_cell_id = args.get("dest_cell_id")
+                cell = next((c for c in sp_state["grid"] if c["id"] == cell_id), None)
+                if not cell or not cell["filled"] or cell["locked"]:
+                    return False
+                cost_item = next((i for i in h_state["items"] if i["id"] == cost_item_id), None)
+                if not cost_item:
+                    return False
+
+                h_state["items"].remove(cost_item)
+                self.discarded_items.append(cost_item)
+                moved_item = cell["item"]
+                cell["filled"] = False
+                cell["item"] = None
+
+                dest_cell = next((c for c in sp_state["grid"] if c["id"] == dest_cell_id), None) if dest_cell_id is not None else None
+                if dest_cell and not dest_cell["filled"]:
+                    dest_cell["filled"] = True
+                    dest_cell["item"] = moved_item
+                else:
+                    h_state["items"].append(moved_item)
+
+                h_state["ap"] -= 1
+                self.add_log(f"{player_name} discarded {cost_item['name']} to rearrange the Sphinx's riddle grid.")
+                self._check_sphinx_solved(sp_state)
+                return True
+            return False
+
         elif monster == "Cthulhu":
             cth_state = self.monster_states["Cthulhu"]
             if cth_state["phase"] == 1:
+                action_type = args.get("type", "dial")
+
+                if action_type == "lure":
+                    if not cth_state["portal_open"]:
+                        self.add_log("The portal isn't open yet — match all 3 dials first.")
+                        return False
+                    if loc != self.monster_locations["Cthulhu"]:
+                        self.add_log("Must be at Cthulhu's location to lure it.")
+                        return False
+                    item_id = args.get("item_id")
+                    item = next((i for i in h_state["items"] if i["id"] == item_id), None)
+                    if not item or item["color"] != "Green":
+                        self.add_log("Luring Cthulhu towards the Void requires a Green item.")
+                        return False
+                    h_state["items"].remove(item)
+                    self.discarded_items.append(item)
+                    h_state["ap"] -= 1
+                    remaining = item["strength"]
+                    cur = self.monster_locations["Cthulhu"]
+                    while remaining > 0 and cur != "The Void":
+                        nxt = find_shortest_path(cur, {"The Void"})
+                        if not nxt or nxt == cur:
+                            break
+                        cur = nxt
+                        remaining -= 1
+                    self.monster_locations["Cthulhu"] = cur
+                    self.add_log(f"{player_name} discarded {item['name']} to lure Cthulhu to {cur}.")
+                    if cur == "The Void":
+                        self._enter_corpse_city(cth_state)
+                    return True
+
                 if loc != "The Void":
-                    self.add_log("Must be at The Void to break runes.")
+                    self.add_log("Must be at The Void to rotate the dials.")
                     return False
-                    
-                rune_id = args.get("rune_id")
+
+                color = args.get("color")
                 item_id = args.get("item_id")
-                
-                rune = next((r for r in cth_state["runes"] if r["id"] == rune_id), None)
-                if not rune or rune["broken"]:
+                dial = next((d for d in cth_state["dials"] if d["color"] == color), None)
+                if not dial or dial["progress"] >= dial["target"]:
                     return False
-                    
+
                 item = next((i for i in h_state["items"] if i["id"] == item_id), None)
-                if not item:
+                if not item or item["color"] != color:
+                    self.add_log(f"Rotating the {color} dial requires a {color} item.")
                     return False
-                    
-                valid = False
-                if rune["color"] == "Any":
-                    valid = item["strength"] >= rune["req_strength"]
-                else:
-                    valid = (item["color"] == rune["color"]) and (item["strength"] >= rune["req_strength"])
-                    
-                if not valid:
-                    self.add_log("Item doesn't satisfy rune requirement.")
+
+                if dial["progress"] + item["strength"] > dial["target"]:
+                    self.add_log(f"That would overshoot the {color} dial's target ({dial['target']}).")
                     return False
-                    
+
                 h_state["items"].remove(item)
                 self.discarded_items.append(item)
-                rune["broken"] = True
+                dial["progress"] += item["strength"]
                 h_state["ap"] -= 1
-                self.add_log(f"{player_name} shattered Rune {rune_id} using {item['name']}.")
-                
-                if all(r["broken"] for r in cth_state["runes"]):
-                    cth_state["phase"] = 2
-                    self.add_log("PORTAL DESTROYED! Cthulhu has retreated to the Corpse-City of R'lyeh!")
-                    self.monster_locations["Cthulhu"] = "Entrance"
-                    
+                self.add_log(f"{player_name} rotated the {color} dial to {dial['progress']}/{dial['target']}.")
+
+                if all(d["progress"] == d["target"] for d in cth_state["dials"]):
+                    cth_state["portal_open"] = True
+                    self.add_log("The portal's runes align! Lure Cthulhu to The Void to force it through.")
+
                 return True
-                
+
             elif cth_state["phase"] == 2:
-                track_idx = cth_state["player_tracks"].get(player_name, -1)
-                next_idx = track_idx + 1
-                
-                if next_idx >= len(cth_state["corpse_city_track"]):
-                    self.add_log("Already at Cthulhu's heart! Perform the Defeat action.")
-                    return False
-                    
+                color = args.get("color")
                 item_id = args.get("item_id")
+                if color not in ("Blue", "Green", "Purple"):
+                    return False
+
                 item = next((i for i in h_state["items"] if i["id"] == item_id), None)
-                if not item:
+                if not item or item["color"] != color:
+                    self.add_log(f"Binding towards that tentacle requires a {color} item.")
                     return False
-                    
-                req_color = ""
-                req_strength = 0
-                if next_idx == 0:
-                    req_color = "Blue"
-                    req_strength = 3
-                elif next_idx == 1:
-                    req_color = "Green"
-                    req_strength = 4
-                elif next_idx == 2:
-                    req_color = "Purple"
-                    req_strength = 5
-                    
-                if item["color"] != req_color or item["strength"] < req_strength:
-                    self.add_log(f"Required {req_color} {req_strength}+ to advance, but used {item['color']} {item['strength']}.")
-                    return False
-                    
+
+                target_strength = cth_state["current_item"]["strength"] if cth_state["current_item"] else 3
+                progress = cth_state["bind_progress"].get(player_name)
+                if not progress or progress["color"] != color:
+                    progress = {"color": color, "progress": 0}
+
                 h_state["items"].remove(item)
                 self.discarded_items.append(item)
-                cth_state["player_tracks"][player_name] = next_idx
+                progress["progress"] += item["strength"]
                 h_state["ap"] -= 1
-                self.add_log(f"{player_name} advanced to Step {next_idx} ({cth_state['corpse_city_track'][next_idx]}) in Corpse City.")
+
+                if progress["progress"] >= target_strength:
+                    track_idx = {"Blue": 0, "Green": 1, "Purple": 2}[color]
+                    cth_state["player_tracks"][player_name] = track_idx
+                    cth_state["manacles_placed"] = min(4, cth_state["manacles_placed"] + 1)
+                    cth_state["bind_progress"].pop(player_name, None)
+                    self.add_log(f"{player_name} bound a tentacle and stepped into {cth_state['corpse_city_track'][track_idx]}! ({cth_state['manacles_placed']}/4 manacles placed)")
+                else:
+                    cth_state["bind_progress"][player_name] = progress
+                    self.add_log(f"{player_name} discarded {item['name']} towards binding a tentacle ({progress['progress']}/{target_strength}).")
+
                 return True
 
         return False
 
-    def execute_defeat(self, player_name: str, monster: str) -> bool:
+    def execute_defeat(self, player_name: str, monster: str, args: Dict = None) -> bool:
         if not self.check_turn(player_name):
             return False
-            
+
         h_state = self.heroes_state[player_name]
         if h_state["ap"] < 1:
             return False
-            
+
+        args = args or {}
         loc = h_state["location"]
-        
+
         if monster == "Yeti":
             y_state = self.monster_states["Yeti"]
-            true_lair_loc = next((l["location"] for l in y_state["lairs"] if l["is_true"]), None)
-            if not true_lair_loc:
-                return False
-                
-            all_kids_here = all(k["location"] == true_lair_loc for k in y_state["children"])
+            true_cave_loc = next((c["location"] for c in y_state["cave_candidates"] if c["is_cave"]), None)
+            all_kids_here = bool(true_cave_loc) and all(k["location"] == true_cave_loc for k in y_state["children"])
             hero_with_yeti = (loc == self.monster_locations["Yeti"])
-            
-            if all_kids_here and hero_with_yeti:
-                self.active_monsters.remove("Yeti")
-                self.defeated_monsters.append("Yeti")
-                h_state["ap"] -= 1
-                self.add_log("THE YETI HAS BEEN DEFEATED! The children are safe and happy!")
-                self.check_victory()
-                return True
-            else:
-                self.add_log("Defeat condition not met. All children must be at the True Lair, and the hero must be with the Yeti.")
+
+            if not (all_kids_here and hero_with_yeti):
+                self.add_log("Defeat condition not met. All children must be at the True Cave, and the hero must be with the Yeti.")
                 return False
-                
+
+            item_ids = args.get("item_ids", [])
+            items = [next((i for i in h_state["items"] if i["id"] == iid), None) for iid in item_ids]
+            if len(items) != 3 or any(i is None for i in items) or sorted(i["color"] for i in items) != ["Blue", "Green", "Purple"]:
+                self.add_log("Calming the Yeti requires discarding exactly one Purple, one Green, and one Blue item.")
+                return False
+
+            for item in items:
+                h_state["items"].remove(item)
+                self.discarded_items.append(item)
+            self.active_monsters.remove("Yeti")
+            self.defeated_monsters.append("Yeti")
+            h_state["ap"] -= 1
+            self.add_log("THE YETI HAS BEEN CALMED! The children are safe and happy!")
+            self.check_victory()
+            return True
+
         elif monster == "Jiangshi":
             js_state = self.monster_states["Jiangshi"]
-            all_filled = all(s["filled"] for s in js_state["slots"])
+            all_filled = all(s["filled"] for s in js_state["sword_slots"])
             hero_here = (loc == self.monster_locations["Jiangshi"])
-            
-            if all_filled and hero_here:
-                self.active_monsters.remove("Jiangshi")
-                self.defeated_monsters.append("Jiangshi")
-                h_state["ap"] -= 1
-                self.add_log("THE JIANGSHI IS BANISHED! The hopping vampire is sealed.")
-                self.check_victory()
-                return True
-            else:
-                self.add_log("Defeat condition not met. Seal all 3 slots and meet Jiangshi.")
+
+            if not (all_filled and hero_here):
+                self.add_log("Defeat condition not met. Complete the Coin Sword and meet Jiangshi.")
                 return False
-                
+
+            item_ids = args.get("item_ids", [])
+            items = [next((i for i in h_state["items"] if i["id"] == iid), None) for iid in item_ids]
+            if not items or any(i is None for i in items) or any(i["color"] != "Purple" for i in items):
+                self.add_log("Dispossessing Jiangshi requires discarding Purple items.")
+                return False
+            total = sum(i["strength"] for i in items)
+            if total < 9:
+                self.add_log(f"Requires Purple items totaling 9+ strength (selected {total}).")
+                return False
+
+            for item in items:
+                h_state["items"].remove(item)
+                self.discarded_items.append(item)
+            self.active_monsters.remove("Jiangshi")
+            self.defeated_monsters.append("Jiangshi")
+            h_state["ap"] -= 1
+            self.add_log("THE JIANGSHI IS DISPOSSESSED! The hopping vampire is sealed.")
+            self.check_victory()
+            return True
+
         elif monster == "Sphinx":
             sp_state = self.monster_states["Sphinx"]
-            all_filled = all(s["filled"] for s in sp_state["slots"])
-            current_sum = sum(s["item"]["strength"] for s in sp_state["slots"] if s["filled"])
             hero_here = (loc == self.monster_locations["Sphinx"])
-            
-            if all_filled and current_sum == sp_state["target_sum"] and hero_here:
-                self.active_monsters.remove("Sphinx")
-                self.defeated_monsters.append("Sphinx")
-                h_state["ap"] -= 1
-                self.add_log("THE SPHINX SOLVED! The riddle has been cracked and the Sphinx vanishes.")
-                self.check_victory()
-                return True
-            else:
-                self.add_log(f"Defeat condition not met. Fill all 3 slots to sum exactly {sp_state['target_sum']} (Current sum: {current_sum}).")
+
+            if not (sp_state["solved"] and hero_here):
+                self.add_log("Defeat condition not met. Solve the riddle grid and meet the Sphinx.")
                 return False
-                
+
+            item_ids = args.get("item_ids", [])
+            items = [next((i for i in h_state["items"] if i["id"] == iid), None) for iid in item_ids]
+            if not items or any(i is None for i in items) or any(i["color"] != "Green" for i in items):
+                self.add_log("Outwitting the Sphinx requires discarding Green items.")
+                return False
+            total = sum(i["strength"] for i in items)
+            if total < 6:
+                self.add_log(f"Requires Green items totaling 6+ strength (selected {total}).")
+                return False
+
+            for item in items:
+                h_state["items"].remove(item)
+                self.discarded_items.append(item)
+            self.active_monsters.remove("Sphinx")
+            self.defeated_monsters.append("Sphinx")
+            h_state["ap"] -= 1
+            self.add_log("THE SPHINX IS OUTWITTED! The riddle-keeper vanishes.")
+            self.check_victory()
+            return True
+
         elif monster == "Cthulhu":
             cth_state = self.monster_states["Cthulhu"]
-            if cth_state["phase"] == 2:
-                track_idx = cth_state["player_tracks"].get(player_name, -1)
-                if track_idx == 3:  # Cthulhu's Heart
-                    strong_purple = next((i for i in h_state["items"] if i["color"] == "Purple" and i["strength"] >= 5), None)
-                    if strong_purple:
-                        h_state["items"].remove(strong_purple)
-                        self.discarded_items.append(strong_purple)
-                        self.active_monsters.remove("Cthulhu")
-                        self.defeated_monsters.append("Cthulhu")
-                        h_state["ap"] -= 1
-                        self.add_log("CTHULHU BANISHED TO THE VOID! The doorway is sealed forever!")
-                        self.check_victory()
-                        return True
-                    else:
-                        self.add_log("Requires a Purple item of Strength 5+ to defeat Cthulhu.")
-                        return False
-            self.add_log("You must traverse to Cthulhu's Heart in Corpse City.")
-            return False
+            if cth_state["phase"] != 2:
+                self.add_log("You must first force Cthulhu into the Corpse-City of R'lyeh.")
+                return False
+
+            all_manacled = cth_state["manacles_placed"] >= 4
+            all_entered = all(v != -1 for v in cth_state["player_tracks"].values())
+            if not (all_manacled and all_entered):
+                self.add_log("Defeat condition not met. All four tentacles must be manacled and every hero must be in R'lyeh.")
+                return False
+
+            item_ids = args.get("item_ids", [])
+            items = [next((i for i in h_state["items"] if i["id"] == iid), None) for iid in item_ids]
+            if any(i is None for i in items):
+                return False
+            needed = max(0, len(self.players) - 1)
+            if len(items) < needed:
+                self.add_log(f"Gather at least one item from each other hero via Share before sealing Cthulhu ({len(items)}/{needed}).")
+                return False
+
+            for item in items:
+                h_state["items"].remove(item)
+                self.discarded_items.append(item)
+            self.active_monsters.remove("Cthulhu")
+            self.defeated_monsters.append("Cthulhu")
+            h_state["ap"] -= 1
+            self.add_log("CTHULHU IS LOCKED AWAY IN R'LYEH... for now.")
+            self.check_victory()
+            return True
 
         return False
 
@@ -1217,13 +1322,17 @@ class GameRoom:
             await self.resolve_event(card)
             await asyncio.sleep(1.5)
 
-            for name, move_info in card["activations"].items():
-                if name == "Frenzy":
-                    active_monster = self.frenzy_marker
-                    if active_monster in self.active_monsters:
-                        await self.activate_monster(active_monster, move_info[0], move_info[1], broadcast_fn)
-                elif name in self.active_monsters:
-                    await self.activate_monster(name, move_info[0], move_info[1], broadcast_fn)
+            attack = card["monster_attack"]
+            acting_monsters = []
+            if attack["frenzy"] and self.frenzy_marker in self.active_monsters:
+                acting_monsters.append(self.frenzy_marker)
+            if attack["symbol"]:
+                for name in self.active_monsters:
+                    if name not in acting_monsters and attack["symbol"] in MONSTER_SYMBOLS.get(name, []):
+                        acting_monsters.append(name)
+
+            for name in acting_monsters:
+                await self.activate_monster(name, attack["steps"], attack["dice"], broadcast_fn)
 
             self.active_perks_limit.clear()
 
@@ -1385,26 +1494,121 @@ class GameRoom:
                     target_citizen = cit_name
                     break
             if target_citizen:
-                await self.perform_attack_citizen(name, target_citizen, dice)
+                await self.perform_attack_citizen(name, target_citizen, dice, broadcast_fn)
+
+    def _apply_direct_hit(self, hero_name: str):
+        """Applies one unblockable-except-by-Security hit to a hero (used by attacks that
+        have already resolved their block choice, and by monster Powers)."""
+        if self.active_perks_limit.get("block_all_hits", False):
+            return
+        h_state = self.heroes_state[hero_name]
+        self.terror_level = min(7, self.terror_level + 1)
+        self.add_log(f"{hero_name} was DEFEATED by the attack!")
+        self.check_terror()
+        h_state["location"] = "Reviving Throne"
+        self.add_log(f"{hero_name} respawns at Reviving Throne.")
+        if "Cthulhu" in self.active_monsters:
+            self.monster_states["Cthulhu"]["player_tracks"][hero_name] = -1
+
+    def _defeat_citizen(self, citizen_name: str):
+        self.citizens[citizen_name]["active"] = False
+        self.citizens[citizen_name]["location"] = "Defeated"
+        self.add_log(f"Citizen {citizen_name} was DEFEATED by the attack!")
+        self.terror_level = min(7, self.terror_level + 1)
+        self.check_terror()
+
+    async def trigger_monster_power(self, monster: str, broadcast_fn=None):
+        if monster == "Yeti":
+            yeti_loc = self.monster_locations["Yeti"]
+            hit_someone = False
+            for hero_name, h_state in self.heroes_state.items():
+                if h_state["location"] != yeti_loc:
+                    self._apply_direct_hit(hero_name)
+                    hit_someone = True
+            for cit_name, cit in self.citizens.items():
+                if cit["active"] and cit["location"] not in ("Board", "Rescued", "Defeated") and cit["location"] != yeti_loc:
+                    self._defeat_citizen(cit_name)
+                    hit_someone = True
+            self.add_log("Snow Blast! Everyone away from the Yeti is struck by freezing wind." if hit_someone else "Snow Blast has no effect — everyone is with the Yeti.")
+
+        elif monster == "Sphinx":
+            all_items = [(h_name, item) for h_name, h_state in self.heroes_state.items() for item in h_state["items"]]
+            pair = None
+            for i in range(len(all_items)):
+                for j in range(i + 1, len(all_items)):
+                    if all_items[i][1]["strength"] == all_items[j][1]["strength"]:
+                        if pair is None or all_items[i][1]["strength"] < pair[0][1]["strength"]:
+                            pair = (all_items[i], all_items[j])
+            if pair:
+                for h_name, item in pair:
+                    self.heroes_state[h_name]["items"].remove(item)
+                    self.discarded_items.append(item)
+                self.add_log(f"Lethal Conundrum! {pair[0][0]} and {pair[1][0]} discard matching strength-{pair[0][1]['strength']} items.")
+            else:
+                self.terror_level = min(7, self.terror_level + 1)
+                self.check_terror()
+                self.add_log("Lethal Conundrum! No matching items to sacrifice — Terror Level increases by 1.")
+
+        elif monster == "Jiangshi" and self.players:
+            next_idx = (self.turn_player_idx + 1) % len(self.players)
+            next_player = self.players[next_idx]["name"]
+            self.monster_locations["Jiangshi"] = self.heroes_state[next_player]["location"]
+            self.add_log(f"Drain Vital Energy! Jiangshi is drawn to {next_player}'s location.")
+
+        elif monster == "Cthulhu":
+            cth_state = self.monster_states["Cthulhu"]
+            if cth_state["phase"] == 1:
+                if len(self.deck) > 5:
+                    discarded = self.deck.pop()
+                    self.discard.append(discarded)
+                    self.add_log(f"Touch of Madness! The top Monster Card ({discarded['name']}) is discarded.")
+                else:
+                    self.terror_level = min(7, self.terror_level + 1)
+                    self.check_terror()
+                    self.add_log("Touch of Madness! The Monster deck is too thin to risk — Terror Level increases by 1.")
+            else:
+                old_item = cth_state["current_item"]
+                cth_state["current_item"] = self._draw_bagged_item()
+                if old_item:
+                    self.discarded_items.append(old_item)
+                new_item = cth_state["current_item"]
+                if new_item:
+                    track_idx = {"Blue": 0, "Green": 1, "Purple": 2}.get(new_item["color"])
+                    struck = []
+                    for hero_name, h_state in self.heroes_state.items():
+                        if cth_state["player_tracks"].get(hero_name, -1) != track_idx:
+                            continue
+                        block_item = next((i for i in h_state["items"] if i["color"] == new_item["color"]), None)
+                        if block_item:
+                            h_state["items"].remove(block_item)
+                            self.discarded_items.append(block_item)
+                            self.add_log(f"{hero_name} discards {block_item['name']} to block the tentacles.")
+                        else:
+                            self._apply_direct_hit(hero_name)
+                            struck.append(hero_name)
+                    self.add_log(f"Tentacles of Insanity! Cthulhu now controls {new_item['name']} ({new_item['color']} {new_item['strength']}).")
+
+        if broadcast_fn:
+            await broadcast_fn()
 
     async def perform_attack(self, monster: str, hero_name: str, dice: int, broadcast_fn=None):
         self.add_log(f"{monster} is attacking {hero_name}!")
         self.combat_rolls = []
-        
+
         if self.active_perks_limit.get("block_all_hits", False):
             self.add_log(f"Security Perk blocked all damage from the attack on {hero_name}.")
             return
-            
+
         hits = 0
-        frenzies = 0
-        
+        powers = 0
+
         for _ in range(dice):
-            roll = random.choice(["Hit", "Hit", "Frenzy", "Blank", "Blank", "Blank"])
+            roll = random.choice(["Hit", "Hit", "Power", "Blank", "Blank", "Blank"])
             self.combat_rolls.append(roll)
             if roll == "Hit":
                 hits += 1
-            elif roll == "Frenzy":
-                frenzies += 1
+            elif roll == "Power":
+                powers += 1
 
         # Pause and wait for player to roll dice on the frontend
         import uuid
@@ -1419,26 +1623,21 @@ class GameRoom:
             if self.roll_event is None:
                 self.roll_event = asyncio.Event()
             self.roll_event.clear()
-            
+
             if broadcast_fn:
                 await broadcast_fn()
-                
+
             # Block this async task until the player sends finish_dice_roll
             await self.roll_event.wait()
-            
+
             chosen_items = self.pending_dice_roll.get("chosen_items")
             self.pending_dice_roll = None
-            
-        self.add_log(f"Roll results: {', '.join(self.combat_rolls)} (Hits: {hits}, Frenzy: {frenzies})")
-        
-        if frenzies > 0:
-            current_frenzy_idx = self.active_monsters.index(self.frenzy_marker) if self.frenzy_marker in self.active_monsters else 0
-            self.frenzy_marker = self.active_monsters[(current_frenzy_idx + 1) % len(self.active_monsters)]
-            self.add_log(f"Frenzy rolled! The Frenzy marker moves to {self.frenzy_marker}.")
-            
+
+        self.add_log(f"Roll results: {', '.join(self.combat_rolls)} (Hits: {hits}, Power: {powers})")
+
         if hits > 0:
             h_state = self.heroes_state[hero_name]
-            
+
             if chosen_items is not None:
                 for i_id in chosen_items:
                     for item in h_state["items"]:
@@ -1448,36 +1647,37 @@ class GameRoom:
                             self.add_log(f"{hero_name} discarded {item['name']} to block the attack.")
                             break
             else:
-                self.terror_level = min(7, self.terror_level + 1)
-                self.add_log(f"{hero_name} was DEFEATED by the attack!")
-                self.check_terror()
+                self._apply_direct_hit(hero_name)
 
-                h_state["location"] = "Reviving Throne"
-                self.add_log(f"{hero_name} respawns at Reviving Throne.")
-                if "Cthulhu" in self.active_monsters:
-                    self.monster_states["Cthulhu"]["player_tracks"][hero_name] = -1
+        if powers > 0:
+            self.frenzy_marker = monster
+            self.add_log(f"Power rolled! The Frenzy marker moves to {monster} and its Power activates.")
+            await self.trigger_monster_power(monster, broadcast_fn)
 
         if broadcast_fn:
             await broadcast_fn()
 
-    async def perform_attack_citizen(self, monster: str, citizen_name: str, dice: int):
+    async def perform_attack_citizen(self, monster: str, citizen_name: str, dice: int, broadcast_fn=None):
         self.add_log(f"{monster} is attacking {citizen_name}!")
 
         hits = 0
+        powers = 0
         for _ in range(dice):
-            roll = random.choice(["Hit", "Hit", "Frenzy", "Blank", "Blank", "Blank"])
+            roll = random.choice(["Hit", "Hit", "Power", "Blank", "Blank", "Blank"])
             if roll == "Hit":
                 hits += 1
+            elif roll == "Power":
+                powers += 1
 
         if hits > 0:
-            self.citizens[citizen_name]["active"] = False
-            self.citizens[citizen_name]["location"] = "Defeated"
-            self.add_log(f"Citizen {citizen_name} was DEFEATED by the attack!")
-
-            self.terror_level = min(7, self.terror_level + 1)
-            self.check_terror()
+            self._defeat_citizen(citizen_name)
         else:
             self.add_log(f"The attack on {citizen_name} missed!")
+
+        if powers > 0:
+            self.frenzy_marker = monster
+            self.add_log(f"Power rolled! The Frenzy marker moves to {monster} and its Power activates.")
+            await self.trigger_monster_power(monster, broadcast_fn)
 
 # ---------------------------------------------------------
 # MULTI-ROOM SOCKET MANAGER
@@ -1581,10 +1781,6 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
                 target = msg.get("target")
                 room.execute_guide(player_name, legend, target)
                 
-            elif action == "reveal_lair":
-                item_ids = msg.get("item_ids", [])
-                room.execute_reveal_lair(player_name, item_ids)
-                
             elif action == "pickup":
                 item_ids = msg.get("item_ids", [])
                 picked_items = room.execute_pickup(player_name, item_ids)
@@ -1609,7 +1805,8 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
                 
             elif action == "defeat":
                 monster = msg.get("monster")
-                room.execute_defeat(player_name, monster)
+                args = msg.get("args", {})
+                room.execute_defeat(player_name, monster, args)
                 
             elif action == "finish_dice_roll":
                 room.add_log(f"DEBUG: Server received finish_dice_roll from {player_name}")

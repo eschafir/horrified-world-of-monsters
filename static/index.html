@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Horrified: World of Monsters - Online</title>
-    <link rel="stylesheet" href="style.css?v=37">
+    <link rel="stylesheet" href="style.css?v=38">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,500&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -56,39 +56,51 @@
                             <div class="monster-cards-grid">
                                 <label class="monster-select-card monster-yeti">
                                     <input type="checkbox" id="mon-yeti" checked>
-                                    <div class="monster-select-portrait">
-                                        <img src="/Images/Monsters/Yeti.png" alt="The Yeti">
+                                    <div class="monster-select-portrait-wrap">
+                                        <div class="monster-select-portrait">
+                                            <img src="/Images/Monsters/Yeti.png" alt="The Yeti">
+                                        </div>
+                                        <button type="button" class="monster-select-info-btn" title="View Yeti details" onclick="event.preventDefault(); event.stopPropagation(); showMonsterInfoModal('Yeti')">i</button>
                                     </div>
                                     <div class="monster-select-name">The Yeti (Frenzy 1)</div>
                                     <div class="monster-select-diff diff-easy">Easy</div>
-                                    <div class="monster-select-desc">Reunite the children with the Yeti — but first reveal the true lair.</div>
+                                    <div class="monster-select-desc">Reveal the hidden Cave, guide the children home, then calm the Yeti with one of each item color.</div>
                                 </label>
                                 <label class="monster-select-card monster-jiangshi">
                                     <input type="checkbox" id="mon-jiangshi" checked>
-                                    <div class="monster-select-portrait">
-                                        <img src="/Images/Monsters/Jiangshi.png" alt="The Jiangshi">
+                                    <div class="monster-select-portrait-wrap">
+                                        <div class="monster-select-portrait">
+                                            <img src="/Images/Monsters/Jiangshi.png" alt="The Jiangshi">
+                                        </div>
+                                        <button type="button" class="monster-select-info-btn" title="View Jiangshi details" onclick="event.preventDefault(); event.stopPropagation(); showMonsterInfoModal('Jiangshi')">i</button>
                                     </div>
                                     <div class="monster-select-name">The Jiangshi (Frenzy 3)</div>
                                     <div class="monster-select-diff diff-medium">Medium</div>
-                                    <div class="monster-select-desc">Assemble the three-part Jade Sword and drive it home.</div>
+                                    <div class="monster-select-desc">Reveal the Moon Shrine, forge the Coin Sword, then dispossess it with 9+ Purple strength.</div>
                                 </label>
                                 <label class="monster-select-card monster-sphinx">
                                     <input type="checkbox" id="mon-sphinx">
-                                    <div class="monster-select-portrait">
-                                        <img src="/Images/Monsters/Sphinx.png" alt="The Sphinx">
+                                    <div class="monster-select-portrait-wrap">
+                                        <div class="monster-select-portrait">
+                                            <img src="/Images/Monsters/Sphinx.png" alt="The Sphinx">
+                                        </div>
+                                        <button type="button" class="monster-select-info-btn" title="View Sphinx details" onclick="event.preventDefault(); event.stopPropagation(); showMonsterInfoModal('Sphinx')">i</button>
                                     </div>
                                     <div class="monster-select-name">The Sphinx (Frenzy 2)</div>
                                     <div class="monster-select-diff diff-hard">Hard</div>
-                                    <div class="monster-select-desc">Deliver blue items that sum to exactly 9 to defeat the riddle-keeper.</div>
+                                    <div class="monster-select-desc">Solve the riddle grid so every row and column sums correctly, then outwit it with 6+ Green strength.</div>
                                 </label>
                                 <label class="monster-select-card monster-cthulhu">
                                     <input type="checkbox" id="mon-cthulhu">
-                                    <div class="monster-select-portrait">
-                                        <img src="/Images/Monsters/Cthulhu.png" alt="Cthulhu">
+                                    <div class="monster-select-portrait-wrap">
+                                        <div class="monster-select-portrait">
+                                            <img src="/Images/Monsters/Cthulhu.png" alt="Cthulhu">
+                                        </div>
+                                        <button type="button" class="monster-select-info-btn" title="View Cthulhu details" onclick="event.preventDefault(); event.stopPropagation(); showMonsterInfoModal('Cthulhu')">i</button>
                                     </div>
                                     <div class="monster-select-name">Cthulhu (Frenzy 4)</div>
                                     <div class="monster-select-diff diff-vhard">Very Hard</div>
-                                    <div class="monster-select-desc">Shatter 4 Elder Runes then cross Corpse City to banish the Ancient One.</div>
+                                    <div class="monster-select-desc">Align the runic dials to open the portal, then bind all four tentacles in R'lyeh to lock it away.</div>
                                 </label>
                             </div>
                         </div>
@@ -124,7 +136,6 @@
                             <button id="action-share" class="btn-action">Share</button>
                             <button id="action-advance" class="btn-action">Advance</button>
                             <button id="action-defeat" class="btn-action">Defeat</button>
-                            <button id="action-reveal" class="btn-action">Reveal Lair</button>
                             <button id="action-special" class="btn-action">Special Power</button>
                         </div>
                         <button id="action-end-turn" class="btn btn-danger end-turn-btn">End Turn</button>
@@ -321,6 +332,6 @@
         </div>
     </div>
 
-    <script src="game.js?v=106"></script>
+    <script src="game.js?v=108"></script>
 </body>
 </html>

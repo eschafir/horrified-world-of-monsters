@@ -557,6 +557,11 @@ body {
     background: linear-gradient(160deg, rgba(22,5,40,0.75) 0%, rgba(10,3,20,0.9) 100%);
 }
 
+.monster-select-portrait-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
 .monster-select-portrait {
     width: 54px;
     height: 54px;
@@ -565,6 +570,36 @@ body {
     border: 2px solid rgba(255, 255, 255, 0.08);
     flex-shrink: 0;
     transition: border-color 0.22s;
+}
+
+.monster-select-info-btn {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(10, 5, 20, 0.9);
+    border: 1.5px solid #ffd533;
+    color: #ffd533;
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 2;
+}
+
+.monster-select-info-btn:hover {
+    background: #ffd533;
+    color: #0a0514;
+    box-shadow: 0 0 8px rgba(255, 213, 51, 0.7);
 }
 .monster-yeti:has(input:checked)     .monster-select-portrait { border-color: rgba(51,204,255,0.5); }
 .monster-jiangshi:has(input:checked) .monster-select-portrait { border-color: rgba(255,51,102,0.5); }

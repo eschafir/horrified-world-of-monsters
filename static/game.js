@@ -504,6 +504,65 @@ window.showHeroCardModal = (heroName) => {
     elModalContainer.classList.remove("hidden");
 };
 
+window.showMonsterInfoModal = (monsterName) => {
+    const modalContentEl = elModalContainer.querySelector(".modal-content");
+    if (modalContentEl) modalContentEl.classList.remove("modal-wide");
+
+    const catalog = (gameState && gameState.monster_catalog) || {};
+    const entry = catalog[monsterName];
+    if (!entry) {
+        elModalBody.innerHTML = `<h2>${monsterName}</h2><p style="color:#a491c3;">No data available.</p>`;
+        elModalContainer.classList.remove("hidden");
+        return;
+    }
+
+    const symbolChips = (symbols) => (symbols || []).map(s =>
+        `<span style="display:inline-block; margin:2px 4px 2px 0; padding:2px 8px; border-radius:10px; font-size:0.68rem; font-weight:700; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:#f0e8ff;">${s.symbol} <span style="color:#a491c3;">(${s.color})</span></span>`
+    ).join("");
+
+    let html = `<div style="text-align:center;">`;
+    html += `<h2 style="margin:0 0 4px 0;">${entry.name}</h2>`;
+    html += `<div style="margin-bottom:10px;">
+        <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; padding:2px 8px; border-radius:8px; background:rgba(255,255,255,0.06); color:#a491c3;">${entry.complexity} complexity</span>
+        ${entry.hasLair ? `<span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; padding:2px 8px; border-radius:8px; background:rgba(255,255,255,0.06); color:#a491c3; margin-left:6px;">Hidden Lair</span>` : ""}
+    </div>`;
+    html += `<p style="color:#e5d9c8; font-size:0.85rem; line-height:1.5; text-align:left;">${entry.objective}</p>`;
+
+    (entry.phases || []).forEach(phase => {
+        const symbols = phase.frenzySymbols || entry.frenzySymbols;
+        html += `<hr style="border-color: rgba(255,255,255,0.08); margin: 14px 0;">`;
+        if ((entry.phases || []).length > 1) {
+            html += `<h4 style="margin:0 0 6px 0; color:#ffd533;">${phase.name}</h4>`;
+        }
+        if (symbols && symbols.length) {
+            html += `<div style="text-align:left; margin-bottom:10px;"><strong style="font-size:0.75rem; color:#a491c3;">Reacts to:</strong> ${symbolChips(symbols)}</div>`;
+        }
+        (phase.powers || []).forEach(power => {
+            html += `<div style="text-align:left; margin-bottom:10px; padding:8px 10px; border-radius:8px; background:rgba(255,51,102,0.08); border:1px solid rgba(255,51,102,0.25);">
+                <div style="font-weight:700; color:#ff8899; font-size:0.8rem;">Power: ${power.name}</div>
+                <div style="font-size:0.75rem; color:#e5d9c8; margin-top:2px;">${power.description}</div>
+            </div>`;
+        });
+        (phase.steps || []).forEach(step => {
+            html += `<div style="text-align:left; margin-bottom:8px;">
+                <div style="font-weight:700; font-size:0.8rem; color:#f0e8ff;">${step.number}. ${step.title} <span style="font-size:0.65rem; font-weight:700; text-transform:uppercase; color:#a491c3;">(${step.type})</span></div>
+                <div style="font-size:0.75rem; color:#c9b8e0; margin-top:2px;">${step.description}</div>
+            </div>`;
+        });
+        if (phase.notes && phase.notes.length) {
+            html += `<ul style="text-align:left; font-size:0.7rem; color:#a491c3; margin:8px 0 0; padding-left:18px;">`;
+            phase.notes.forEach(note => { html += `<li>${note}</li>`; });
+            html += `</ul>`;
+        }
+    });
+
+    html += `<p style="text-align: center; color: #a491c3; font-size: 0.85rem; margin-top: 16px;">Close this window to continue.</p>`;
+    html += `</div>`;
+
+    elModalBody.innerHTML = html;
+    elModalContainer.classList.remove("hidden");
+};
+
 // ---------------------------------------------------------
 // GAME UI SYNC AND RENDER ENGINE
 // ---------------------------------------------------------
@@ -668,7 +727,7 @@ function updateGameUI() {
                                     die.classList.add("rolled");
                                     if (result === "Hit") {
                                         die.textContent = "❗";
-                                    } else if (result === "Frenzy") {
+                                    } else if (result === "Power") {
                                         die.textContent = "💥";
                                     } else {
                                         die.textContent = "—";
@@ -839,6 +898,79 @@ function getItemColorHex(color) {
     const map = { purple: "#a64dff", blue: "#33ccff", green: "#33ff66" };
     return map[(color || "").toLowerCase()] || "rgba(255, 255, 255, 0.3)";
 }
+
+// Generic multi-select item-card modal used for monster puzzle/defeat item costs
+// (Yeti's one-of-each-color, Sphinx/Jiangshi's combined-strength thresholds, single-item
+// picks for slots/dials, etc). validateFn(selectedItems) -> {valid, message}.
+window.openItemPicker = ({ title, description, items, validateFn, onConfirm, confirmLabel }) => {
+    let html = `<div style="text-align:center;">`;
+    html += `<h3 style="margin-top:0;">${title}</h3>`;
+    if (description) html += `<p style="font-size:0.8rem; color:#b0a0cf;">${description}</p>`;
+    html += `<hr style="border-color:rgba(255,255,255,0.05); margin: 10px 0;">`;
+    html += `<div id="item-picker-summary" style="font-size:0.78rem; color:#ffd533; min-height:1.2em; margin-bottom:6px;"></div>`;
+
+    if (!items || items.length === 0) {
+        html += `<p style="color:#a491c3; font-style:italic;">No eligible items.</p>`;
+    } else {
+        html += `<div id="item-picker-list" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px;">`;
+        items.forEach(item => {
+            const imgSrc = item.artwork ? `/assets/items/${item.artwork}` : "";
+            const colorHex = getItemColorHex(item.color);
+            html += `
+                <label class="pickup-item-card" style="width:84px; text-align:center; cursor:pointer;">
+                    <input type="checkbox" class="item-picker-checkbox" value="${item.id}" style="display:none;">
+                    <div class="pickup-item-thumb" style="width:64px; height:64px; margin:0 auto 6px; border-radius:8px; overflow:hidden; background:rgba(255,255,255,0.05); border:3px solid ${colorHex}; display:flex; align-items:center; justify-content:center; transition: box-shadow 0.15s ease;">
+                        ${imgSrc ? `<img src="${imgSrc}" alt="${item.name}" style="width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.style.visibility='hidden'">` : ''}
+                    </div>
+                    <div style="font-size:0.68rem; color:#e5d9c8; line-height:1.2;">${item.name}</div>
+                    <div style="font-size:0.65rem; color:#a491c3;"><strong>${item.strength}</strong></div>
+                </label>
+            `;
+        });
+        html += `</div>`;
+    }
+
+    html += `
+        <hr style="border-color:rgba(255,255,255,0.05); margin: 15px 0 10px 0;">
+        <div style="display:flex; justify-content:center; gap:10px;">
+            <button class="btn btn-secondary btn-small" onclick="elModalContainer.classList.add('hidden')">Cancel</button>
+            <button class="btn btn-primary btn-small" id="item-picker-confirm" disabled>${confirmLabel || "Confirm"}</button>
+        </div>
+    `;
+    html += `</div>`;
+
+    elModalBody.innerHTML = html;
+    elModalContainer.classList.remove("hidden");
+
+    const checkboxes = Array.from(document.querySelectorAll(".item-picker-checkbox"));
+    const confirmBtn = document.getElementById("item-picker-confirm");
+    const summaryEl = document.getElementById("item-picker-summary");
+
+    const updateCardHighlight = (cb) => {
+        const thumb = cb.nextElementSibling;
+        thumb.style.boxShadow = cb.checked ? "0 0 10px 2px rgba(255, 213, 51, 0.8)" : "none";
+    };
+
+    const refresh = () => {
+        const selectedIds = checkboxes.filter(cb => cb.checked).map(cb => cb.value);
+        const selectedItems = items.filter(i => selectedIds.includes(i.id));
+        const result = validateFn ? validateFn(selectedItems) : { valid: selectedItems.length > 0 };
+        summaryEl.textContent = result.message || "";
+        confirmBtn.disabled = !result.valid;
+        confirmBtn.onclick = () => {
+            elModalContainer.classList.add("hidden");
+            onConfirm(selectedIds);
+        };
+    };
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener("change", () => {
+            updateCardHighlight(cb);
+            refresh();
+        });
+    });
+    refresh();
+};
 
 function buildItemChipsHtml(items, options = {}) {
     const { selectable = false, selectedIds = [] } = options;
@@ -1164,12 +1296,13 @@ function renderApCounterBar() {
 }
 
 function buildCardHTML(card, alreadyFlipped) {
-    const activationLines = Object.entries(card.activations)
-        .map(([name, info]) => {
-            const moves = Array.isArray(info) ? info[0] : info;
-            const dice  = Array.isArray(info) ? info[1] : info;
-            return `<span class="mp-activation">${name}: ${moves} move${moves !== 1 ? "s" : ""}, ${dice} die</span>`;
-        }).join("");
+    const attack = card.monster_attack || {};
+    const whoActs = [];
+    if (attack.frenzy) whoActs.push("Frenzy marker holder");
+    if (attack.symbol) whoActs.push(`${attack.symbol} symbol`);
+    const activationLines = whoActs.length
+        ? `<span class="mp-activation">${whoActs.join(" + ")} acts: ${attack.steps} move${attack.steps !== 1 ? "s" : ""}, ${attack.dice} die</span>`
+        : `<span class="mp-activation">No monster acts this card</span>`;
     return `
         <div class="mp-flip-container">
             <div class="mp-card-inner${alreadyFlipped ? " flipped" : ""}" id="mp-card-inner">
@@ -1431,77 +1564,102 @@ function renderMonstersStatusPanel() {
     if (m === "Yeti") {
         const y_state = gameState.monster_states["Yeti"];
         const kids_left = y_state.children.filter(c => !c.rescued).length;
-        const found_lair = y_state.lairs.find(l => l.is_true && l.flipped);
-        
+        const found_cave = y_state.cave_candidates.find(c => c.is_cave && c.revealed);
+
         details += `
             <p style="font-size: 0.8rem; color: #b0a0cf;">Children Lost: <strong>${kids_left}</strong></p>
-            <p style="font-size: 0.8rem; color: #b0a0cf;">True Lair: <strong>${found_lair ? found_lair.location : "Hidden"}</strong></p>
+            <p style="font-size: 0.8rem; color: #b0a0cf;">True Cave: <strong>${found_cave ? found_cave.location : "Hidden"}</strong></p>
+            <p style="font-size: 0.72rem; color: #a491c3;">Defeat: discard one Purple, one Green, and one Blue item at the Yeti's location.</p>
             <div class="monster-puzzle-grid">
         `;
-        y_state.lairs.forEach((lair, i) => {
+        y_state.cave_candidates.forEach((cand, i) => {
             details += `
-                <div class="puzzle-slot ${lair.flipped ? 'filled' : ''}" style="font-size: 0.7rem;">
-                    ${lair.flipped ? (lair.is_true ? 'TRUE' : 'DECOY') : `Lair ${i+1}`}
+                <div class="puzzle-slot ${cand.revealed ? 'filled' : ''}" style="font-size: 0.7rem;">
+                    ${cand.revealed ? (cand.is_cave ? 'TRUE CAVE' : 'FALSE TRAIL') : `Candidate ${i+1}`}
                 </div>
             `;
         });
         details += `</div>`;
-        
+
     } else if (m === "Jiangshi") {
         const js_state = gameState.monster_states["Jiangshi"];
+        const found_shrine = js_state.shrine_candidates.find(c => c.is_shrine && c.revealed);
         details += `
-            <p style="font-size: 0.8rem; color: #b0a0cf;">Complete the 3-part sword puzzle to seal Jiangshi.</p>
+            <p style="font-size: 0.8rem; color: #b0a0cf;">Moon Shrine: <strong>${found_shrine ? found_shrine.location : "Hidden"}</strong></p>
+            <p style="font-size: 0.72rem; color: #a491c3;">At the Shrine, discard an item matching a slot's strength. Defeat: discard 9+ combined Purple strength at Jiangshi's location.</p>
             <div class="monster-puzzle-grid">
         `;
-        js_state.slots.forEach(slot => {
-            const reqClass = `req-${slot.color.toLowerCase()}`;
+        js_state.sword_slots.forEach(slot => {
             details += `
-                <div class="puzzle-slot ${reqClass} ${slot.filled ? 'filled' : ''}" onclick="advanceJiangshi(${slot.id})">
-                    ${slot.filled ? `Sealed (${slot.item.strength})` : `${slot.color} ${slot.req_strength}+`}
+                <div class="puzzle-slot ${slot.filled ? 'filled' : ''}" ${slot.filled ? '' : `onclick="advanceJiangshi(${slot.id})"`}>
+                    ${slot.filled ? `Sealed (${slot.item.strength})` : `Needs ${slot.target_strength}`}
                 </div>
             `;
         });
         details += `</div>`;
-        
+        if (!found_shrine) {
+            details += `<p style="font-size: 0.68rem; color: #a491c3; margin-top:6px;">Use Advance at an unexplored location to search for the Shrine.</p>`;
+        }
+
     } else if (m === "Sphinx") {
         const sp_state = gameState.monster_states["Sphinx"];
-        const current_sum = sp_state.slots.reduce((acc, slot) => acc + (slot.filled ? slot.item.strength : 0), 0);
         details += `
-            <p style="font-size: 0.8rem; color: #b0a0cf;">Fill slots with Blue items to sum exactly ${sp_state.target_sum} (Current: <strong>${current_sum}</strong>)</p>
-            <div class="monster-puzzle-grid">
+            <p style="font-size: 0.8rem; color: #b0a0cf;">${sp_state.solved ? '<strong style="color:#ffd533;">Riddle solved!</strong>' : 'Fill the grid so rows/columns match the targets shown.'}</p>
+            <p style="font-size: 0.72rem; color: #a491c3;">Defeat: discard 6+ combined Green strength at the Sphinx's location.</p>
+            <div style="display:grid; grid-template-columns: repeat(3, 44px); grid-auto-rows: 44px; gap:4px; justify-content:center; align-items:center; margin: 10px auto;">
+                <div></div>
+                <div style="text-align:center; font-size:0.7rem; color:#ffd533; font-weight:700;">${sp_state.col_targets[0]}</div>
+                <div style="text-align:center; font-size:0.7rem; color:#ffd533; font-weight:700;">${sp_state.col_targets[1]}</div>
         `;
-        sp_state.slots.forEach(slot => {
-            details += `
-                <div class="puzzle-slot req-blue ${slot.filled ? 'filled' : ''}" onclick="advanceSphinx(${slot.id})">
-                    ${slot.filled ? `${slot.item.strength}` : `Empty`}
-                </div>
-            `;
+        [0, 1].forEach(row => {
+            details += `<div style="text-align:center; font-size:0.7rem; color:#ffd533; font-weight:700;">${sp_state.row_targets[row]}</div>`;
+            [0, 1].forEach(col => {
+                const cell = sp_state.grid[row * 2 + col];
+                const clickAttr = cell.filled
+                    ? (cell.locked ? '' : `onclick="clearSphinxCell(${cell.id})"`)
+                    : `onclick="advanceSphinx(${cell.id})"`;
+                details += `
+                    <div class="puzzle-slot req-blue ${cell.filled ? 'filled' : ''}" style="width:44px; height:44px;" ${clickAttr}>
+                        ${cell.filled ? cell.item.strength : ''}
+                    </div>
+                `;
+            });
         });
         details += `</div>`;
-        
+
     } else if (m === "Cthulhu") {
         const cth_state = gameState.monster_states["Cthulhu"];
         if (cth_state.phase === 1) {
             details += `
-                <p style="font-size: 0.8rem; color: #b0a0cf;">Phase 1: Break 4 runes at The Void.</p>
+                <p style="font-size: 0.8rem; color: #b0a0cf;">Rotate all 3 dials to their targets at The Void.</p>
                 <div class="monster-puzzle-grid">
             `;
-            cth_state.runes.forEach(rune => {
-                const reqClass = rune.color !== "Any" ? `req-${rune.color.toLowerCase()}` : '';
+            cth_state.dials.forEach(dial => {
+                const reqClass = `req-${dial.color.toLowerCase()}`;
+                const matched = dial.progress >= dial.target;
                 details += `
-                    <div class="puzzle-slot ${reqClass} ${rune.broken ? 'filled' : ''}" onclick="advanceCthulhuRune(${rune.id})">
-                        ${rune.broken ? 'Broken' : `${rune.color} ${rune.req_strength}+`}
+                    <div class="puzzle-slot ${reqClass} ${matched ? 'filled' : ''}" ${matched ? '' : `onclick="advanceCthulhuDial('${dial.color}')"`}>
+                        ${dial.color}<br>${dial.progress}/${dial.target}
                     </div>
                 `;
             });
             details += `</div>`;
+            if (cth_state.portal_open) {
+                details += `<button class="btn btn-secondary btn-small" onclick="lureCthulhu()" style="width:100%; margin-top:8px; font-size:0.75rem;">Lure Cthulhu to the Void</button>`;
+            }
         } else {
             const trackPos = cth_state.player_tracks[playerName] ?? -1;
-            const nextStepName = cth_state.corpse_city_track[trackPos + 1] ?? "Heart reached!";
+            const currentItem = cth_state.current_item;
             details += `
-                <p style="font-size: 0.8rem; color: #ffd533;">Phase 2: Traverse Corpse City!</p>
+                <p style="font-size: 0.8rem; color: #ffd533;">Phase 2: R'lyeh — ${cth_state.manacles_placed}/4 tentacles manacled.</p>
                 <p style="font-size: 0.8rem; color: #b0a0cf;">My step: <strong>${trackPos === -1 ? "Main Board" : cth_state.corpse_city_track[trackPos]}</strong></p>
-                ${trackPos < 3 ? `<button class="btn btn-secondary btn-small" onclick="advanceCthulhuTrack()" style="width:100%; margin-top:5px; font-size:0.75rem;">Advance to ${nextStepName}</button>` : ''}
+                ${currentItem ? `<p style="font-size: 0.72rem; color: #a491c3;">Cthulhu controls: <strong>${currentItem.name}</strong> (${currentItem.color} ${currentItem.strength})</p>` : ''}
+                <div style="display:flex; gap:6px; margin-top:6px;">
+                    <button class="btn btn-secondary btn-small" style="flex:1; font-size:0.7rem;" onclick="bindCthulhuTentacle('Blue')">Bind Blue</button>
+                    <button class="btn btn-secondary btn-small" style="flex:1; font-size:0.7rem;" onclick="bindCthulhuTentacle('Green')">Bind Green</button>
+                    <button class="btn btn-secondary btn-small" style="flex:1; font-size:0.7rem;" onclick="bindCthulhuTentacle('Purple')">Bind Purple</button>
+                </div>
+                <p style="font-size: 0.68rem; color: #a491c3; margin-top:6px;">Defeat: once all manacled and everyone's in R'lyeh, gather items from each other hero via Share, then Defeat.</p>
             `;
         }
     }
@@ -2319,7 +2477,7 @@ function detectAndAnimateSpawns() {
             gameState.heroes_state[name].items.forEach(item => window.knownItemIds.add(item.id));
         }
         if (gameState.active_monsters.includes("Yeti")) {
-            gameState.monster_states["Yeti"].lairs.forEach(l => window.knownLairs.add(l.location));
+            gameState.monster_states["Yeti"].cave_candidates.forEach(l => window.knownLairs.add(l.location));
         }
         return;
     }
@@ -2348,7 +2506,7 @@ function detectAndAnimateSpawns() {
     });
     
     if (gameState.active_monsters.includes("Yeti")) {
-        const lairs = gameState.monster_states["Yeti"].lairs;
+        const lairs = gameState.monster_states["Yeti"].cave_candidates;
         let lIdx = 0;
         lairs.forEach(l => {
             if (!window.knownLairs.has(l.location)) {
@@ -2832,9 +2990,19 @@ function renderSVGMap() {
                     characters.push({ type: "citizen", name: `Yeti Child ${child.id}`, label: `K${child.id}` });
                 }
             });
-            y_state.lairs.forEach((lair, i) => {
-                if (lair.location === locName) {
-                    characters.push({ type: "lair", lair_type: lair.type, name: `Yeti Lair ${i}`, is_true: lair.is_true, flipped: lair.flipped });
+            y_state.cave_candidates.forEach((cand, i) => {
+                if (cand.location === locName) {
+                    characters.push({ type: "lair", lair_type: cand.is_cave ? "yeti" : "blank", name: `Yeti Cave Candidate ${i}`, is_true: cand.is_cave, flipped: cand.revealed });
+                }
+            });
+        }
+
+        // Jiangshi Moon Shrine candidates
+        if (gameState.active_monsters.includes("Jiangshi")) {
+            const js_state = gameState.monster_states["Jiangshi"];
+            js_state.shrine_candidates.forEach((cand, i) => {
+                if (cand.location === locName) {
+                    characters.push({ type: "lair", lair_type: cand.is_shrine ? "jiangshi" : "blank", name: `Moon Shrine Candidate ${i}`, is_true: cand.is_shrine, flipped: cand.revealed });
                 }
             });
         }
@@ -3524,29 +3692,34 @@ window.confirmShare = (partner) => {
 document.getElementById("action-advance").addEventListener("click", () => {
     const myState = gameState.heroes_state[playerName];
     const loc = myState.location;
-    
-    // Check if Yeti lair can be flipped at this location
+
+    // Free reveal: an unrevealed Yeti Cave or Moon Shrine candidate at this location.
     if (gameState.active_monsters.includes("Yeti")) {
         const yeti_state = gameState.monster_states["Yeti"];
-        const lairHere = yeti_state.lairs.find(l => l.location === loc && !l.flipped);
-        if (lairHere) {
-            sendMsg({
-                action: "advance",
-                monster: "Yeti",
-                args: { type: "reveal_lair" }
-            });
+        const candHere = yeti_state.cave_candidates.find(c => c.location === loc && !c.revealed);
+        if (candHere) {
+            sendMsg({ action: "advance", monster: "Yeti", args: { type: "reveal_cave" } });
             return;
         }
     }
-    
-    alert("No advance challenge available at your current location.");
+
+    if (gameState.active_monsters.includes("Jiangshi")) {
+        const js_state = gameState.monster_states["Jiangshi"];
+        const candHere = js_state.shrine_candidates.find(c => c.location === loc && !c.revealed);
+        if (candHere) {
+            sendMsg({ action: "advance", monster: "Jiangshi", args: { type: "reveal_shrine" } });
+            return;
+        }
+    }
+
+    alert("No advance challenge available at your current location. (Puzzle slots and dials are worked by clicking them directly in the Monsters panel.)");
 });
 
 // Defeat action
 document.getElementById("action-defeat").addEventListener("click", () => {
     const myState = gameState.heroes_state[playerName];
     const loc = myState.location;
-    
+
     // Check which monster is at my location
     let targetMonster = null;
     for (const monster in gameState.monster_locations) {
@@ -3555,58 +3728,73 @@ document.getElementById("action-defeat").addEventListener("click", () => {
             break;
         }
     }
-    
-    
-    // Special check for Cthulhu Phase 2: player at Corpse City heart index 3 can defeat Cthulhu
+
+    // Special check for Cthulhu Phase 2: all tentacles manacled and every hero in R'lyeh
     if (gameState.active_monsters.includes("Cthulhu")) {
         const cth_state = gameState.monster_states["Cthulhu"];
-        if (cth_state.phase === 2 && cth_state.player_tracks[playerName] === 3) {
+        if (cth_state.phase === 2 && cth_state.manacles_placed >= 4 && Object.values(cth_state.player_tracks).every(v => v !== -1)) {
             targetMonster = "Cthulhu";
         }
     }
 
     if (!targetMonster) {
-        alert("You must be at the same location as a monster to Defeat them!");
+        alert("You must be at the same location as a monster (and meet its requirements) to Defeat them!");
         return;
     }
 
-    sendMsg({
-        action: "defeat",
-        monster: targetMonster
-    });
-});
+    if (targetMonster === "Yeti") {
+        openItemPicker({
+            title: "Calm the Yeti",
+            description: "Discard exactly one Purple, one Green, and one Blue item.",
+            items: myState.items.filter(i => ["Purple", "Green", "Blue"].includes(i.color)),
+            validateFn: (sel) => {
+                const colors = sel.map(i => i.color).sort();
+                const valid = sel.length === 3 && JSON.stringify(colors) === JSON.stringify(["Blue", "Green", "Purple"]);
+                return { valid, message: `Selected: ${colors.join(", ") || "none"}` };
+            },
+            onConfirm: (ids) => sendMsg({ action: "defeat", monster: "Yeti", args: { item_ids: ids } })
+        });
+        return;
+    }
 
-// Reveal Lair action
-document.getElementById("action-reveal").addEventListener("click", () => {
-    const myState = gameState.heroes_state[playerName];
-    if (!myState) return;
-    
-    let hasLair = false;
-    if (gameState.active_monsters.includes("Yeti") && gameState.monster_states["Yeti"]) {
-        const lairs = gameState.monster_states["Yeti"].lairs;
-        hasLair = lairs.some(l => l.location === myState.location && !l.flipped);
-    }
-    
-    if (!hasLair) {
-        alert("There is no unrevealed Yeti lair token at your current location.");
+    if (targetMonster === "Jiangshi") {
+        openItemPicker({
+            title: "Dispossess the Jiangshi",
+            description: "Discard Purple items totaling 9+ strength.",
+            items: myState.items.filter(i => i.color === "Purple"),
+            validateFn: (sel) => {
+                const total = sel.reduce((a, i) => a + i.strength, 0);
+                return { valid: sel.length > 0 && total >= 9, message: `Total strength: ${total} / 9` };
+            },
+            onConfirm: (ids) => sendMsg({ action: "defeat", monster: "Jiangshi", args: { item_ids: ids } })
+        });
         return;
     }
-    
-    let totalStr = 0;
-    selectedItemsForAction.forEach(id => {
-        const item = myState.items.find(i => i.id === id);
-        if (item) totalStr += (item.strength || 1);
-    });
-    
-    if (totalStr < 3) {
-        alert("Select items from your inventory with a total strength of 3 or more to reveal a lair.");
+
+    if (targetMonster === "Sphinx") {
+        openItemPicker({
+            title: "Outwit the Sphinx",
+            description: "Discard Green items totaling 6+ strength.",
+            items: myState.items.filter(i => i.color === "Green"),
+            validateFn: (sel) => {
+                const total = sel.reduce((a, i) => a + i.strength, 0);
+                return { valid: sel.length > 0 && total >= 6, message: `Total strength: ${total} / 6` };
+            },
+            onConfirm: (ids) => sendMsg({ action: "defeat", monster: "Sphinx", args: { item_ids: ids } })
+        });
         return;
     }
-    
-    if (confirm(`Spend 1 AP and selected items (strength ${totalStr}) to reveal the lair token at ${myState.location}?`)) {
-        sendMsg({ action: "reveal_lair", item_ids: selectedItemsForAction });
-        selectedItemsForAction = [];
-        updateGameUI();
+
+    if (targetMonster === "Cthulhu") {
+        const needed = Math.max(0, Object.keys(gameState.heroes_state).length - 1);
+        openItemPicker({
+            title: "Seal Cthulhu Away",
+            description: `Discard at least ${needed} item(s) gathered from other heroes (via Share).`,
+            items: myState.items,
+            validateFn: (sel) => ({ valid: sel.length >= needed, message: `Selected: ${sel.length} / ${needed}` }),
+            onConfirm: (ids) => sendMsg({ action: "defeat", monster: "Cthulhu", args: { item_ids: ids } })
+        });
+        return;
     }
 });
 
@@ -3781,123 +3969,77 @@ window.playPerkCard = (perkId, perkName) => {
 
 window.advanceJiangshi = (slotId) => {
     const myState = gameState.heroes_state[playerName];
-    if (myState.items.length === 0) {
-        alert("You need items in inventory to Advance Jiangshi's seal.");
-        return;
-    }
+    const js_state = gameState.monster_states["Jiangshi"];
+    const slot = js_state.sword_slots.find(s => s.id === slotId);
+    const matching = myState.items.filter(i => i.strength === slot.target_strength);
 
-    let html = `<h3>Advance Jiangshi (Slot ${slotId})</h3><p>Choose an item to discard to fill this slot</p><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">`;
-    myState.items.forEach(item => {
-        html += `
-            <div style="margin: 8px 0; display:flex; justify-content:space-between; align-items:center;">
-                <span>${item.name} (${item.color} ${item.strength})</span>
-                <button class="btn btn-primary btn-small" onclick="confirmAdvanceJiangshi(${slotId}, '${item.id}')">Use Item</button>
-            </div>
-        `;
+    openItemPicker({
+        title: `Coin Sword Slot ${slotId + 1}`,
+        description: `Discard an item with strength exactly ${slot.target_strength} to fill this slot.`,
+        items: matching,
+        validateFn: (sel) => ({ valid: sel.length === 1, message: sel.length ? "" : "Select one item." }),
+        onConfirm: (ids) => sendMsg({ action: "advance", monster: "Jiangshi", args: { slot_id: slotId, item_id: ids[0] } })
     });
-
-    elModalBody.innerHTML = html;
-    elModalContainer.classList.remove("hidden");
 };
 
-window.confirmAdvanceJiangshi = (slotId, itemId) => {
-    sendMsg({
-        action: "advance",
-        monster: "Jiangshi",
-        args: { slot_id: slotId, item_id: itemId }
-    });
-    elModalContainer.classList.add("hidden");
-};
-
-window.advanceSphinx = (slotId) => {
+window.advanceSphinx = (cellId) => {
     const myState = gameState.heroes_state[playerName];
-    const blueItems = myState.items.filter(i => i.color === "Blue");
-    if (blueItems.length === 0) {
-        alert("Sphinx riddles require Blue items.");
-        return;
-    }
-
-    let html = `<h3>Advance Sphinx (Slot ${slotId})</h3><p>Choose a Blue item to insert</p><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">`;
-    blueItems.forEach(item => {
-        html += `
-            <div style="margin: 8px 0; display:flex; justify-content:space-between; align-items:center;">
-                <span>${item.name} (Blue ${item.strength})</span>
-                <button class="btn btn-primary btn-small" onclick="confirmAdvanceSphinx(${slotId}, '${item.id}')">Use Item</button>
-            </div>
-        `;
+    openItemPicker({
+        title: `Riddle Grid Cell ${cellId + 1}`,
+        description: "Place any item into this cell (kept, not discarded).",
+        items: myState.items,
+        validateFn: (sel) => ({ valid: sel.length === 1, message: sel.length ? "" : "Select one item." }),
+        onConfirm: (ids) => sendMsg({ action: "advance", monster: "Sphinx", args: { type: "place", cell_id: cellId, item_id: ids[0] } })
     });
-
-    elModalBody.innerHTML = html;
-    elModalContainer.classList.remove("hidden");
 };
 
-window.confirmAdvanceSphinx = (slotId, itemId) => {
-    sendMsg({
-        action: "advance",
-        monster: "Sphinx",
-        args: { slot_id: slotId, item_id: itemId }
-    });
-    elModalContainer.classList.add("hidden");
-};
-
-window.advanceCthulhuRune = (runeId) => {
+window.clearSphinxCell = (cellId) => {
     const myState = gameState.heroes_state[playerName];
-    if (myState.items.length === 0) {
-        alert("You need items in inventory to shatter a rune.");
-        return;
-    }
-
-    let html = `<h3>Break Cthulhu Rune</h3><p>Select item to break Rune ${runeId}</p><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">`;
-    myState.items.forEach(item => {
-        html += `
-            <div style="margin: 8px 0; display:flex; justify-content:space-between; align-items:center;">
-                <span>${item.name} (${item.color} ${item.strength})</span>
-                <button class="btn btn-primary btn-small" onclick="confirmCthulhuRune(${runeId}, '${item.id}')">Break</button>
-            </div>
-        `;
+    openItemPicker({
+        title: "Rearrange the Riddle Grid",
+        description: "Discard one of your own items as a cost to remove this cell's item.",
+        items: myState.items,
+        validateFn: (sel) => ({ valid: sel.length === 1, message: sel.length ? "" : "Select one item to discard." }),
+        onConfirm: (ids) => sendMsg({ action: "advance", monster: "Sphinx", args: { type: "clear", cell_id: cellId, cost_item_id: ids[0] } })
     });
-
-    elModalBody.innerHTML = html;
-    elModalContainer.classList.remove("hidden");
 };
 
-window.confirmCthulhuRune = (runeId, itemId) => {
-    sendMsg({
-        action: "advance",
-        monster: "Cthulhu",
-        args: { rune_id: runeId, item_id: itemId }
-    });
-    elModalContainer.classList.add("hidden");
-};
-
-window.advanceCthulhuTrack = () => {
+window.advanceCthulhuDial = (color) => {
     const myState = gameState.heroes_state[playerName];
-    if (myState.items.length === 0) {
-        alert("You need items in inventory to traverse Corpse City.");
-        return;
-    }
+    const cth_state = gameState.monster_states["Cthulhu"];
+    const dial = cth_state.dials.find(d => d.color === color);
+    const remaining = dial.target - dial.progress;
+    const matching = myState.items.filter(i => i.color === color && i.strength <= remaining);
 
-    let html = `<h3>Traverse Corpse City</h3><p>Choose item to discard and move to the next step</p><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">`;
-    myState.items.forEach(item => {
-        html += `
-            <div style="margin: 8px 0; display:flex; justify-content:space-between; align-items:center;">
-                <span>${item.name} (${item.color} ${item.strength})</span>
-                <button class="btn btn-primary btn-small" onclick="confirmCthulhuTrack('${item.id}')">Use Item</button>
-            </div>
-        `;
+    openItemPicker({
+        title: `Rotate the ${color} Dial`,
+        description: `Progress ${dial.progress}/${dial.target}. Discard a ${color} item (strength up to ${remaining}) to rotate it.`,
+        items: matching,
+        validateFn: (sel) => ({ valid: sel.length === 1, message: sel.length ? "" : "Select one item." }),
+        onConfirm: (ids) => sendMsg({ action: "advance", monster: "Cthulhu", args: { type: "dial", color: color, item_id: ids[0] } })
     });
-
-    elModalBody.innerHTML = html;
-    elModalContainer.classList.remove("hidden");
 };
 
-window.confirmCthulhuTrack = (itemId) => {
-    sendMsg({
-        action: "advance",
-        monster: "Cthulhu",
-        args: { item_id: itemId }
+window.lureCthulhu = () => {
+    const myState = gameState.heroes_state[playerName];
+    openItemPicker({
+        title: "Lure Cthulhu to the Void",
+        description: "Discard a Green item to move Cthulhu towards the Void, up to that item's strength in steps.",
+        items: myState.items.filter(i => i.color === "Green"),
+        validateFn: (sel) => ({ valid: sel.length === 1, message: sel.length ? "" : "Select one Green item." }),
+        onConfirm: (ids) => sendMsg({ action: "advance", monster: "Cthulhu", args: { type: "lure", item_id: ids[0] } })
     });
-    elModalContainer.classList.add("hidden");
+};
+
+window.bindCthulhuTentacle = (color) => {
+    const myState = gameState.heroes_state[playerName];
+    openItemPicker({
+        title: `Bind Towards ${color}`,
+        description: "Discard a matching-color item to progress this tentacle binding.",
+        items: myState.items.filter(i => i.color === color),
+        validateFn: (sel) => ({ valid: sel.length === 1, message: sel.length ? "" : "Select one item." }),
+        onConfirm: (ids) => sendMsg({ action: "advance", monster: "Cthulhu", args: { color: color, item_id: ids[0] } })
+    });
 };
 
 // Press 'D' to toggle hitbox debug mode (drag location nodes or terror-slot
