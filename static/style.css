@@ -523,6 +523,29 @@ body {
     transform: translateY(-2px);
 }
 
+/* Non-host viewers can see the host's monster picks and open the info modal, but can't
+   toggle the checkboxes - swap the pointer cursor for a "not-allowed" one and drop the
+   hover lift so the cards read as read-only, while the "i" info button stays interactive. */
+#host-settings.read-only .monster-select-card {
+    cursor: not-allowed;
+}
+
+#host-settings.read-only .monster-select-card:hover {
+    opacity: 0.5;
+    transform: none;
+}
+
+#host-settings.read-only .monster-select-card.monster-yeti:has(input:checked),
+#host-settings.read-only .monster-select-card.monster-jiangshi:has(input:checked),
+#host-settings.read-only .monster-select-card.monster-sphinx:has(input:checked),
+#host-settings.read-only .monster-select-card.monster-cthulhu:has(input:checked) {
+    opacity: 1;
+}
+
+#host-settings.read-only .monster-select-info-btn {
+    cursor: pointer;
+}
+
 .monster-select-card input[type="checkbox"] {
     position: absolute;
     opacity: 0;
@@ -1753,6 +1776,22 @@ body {
 @keyframes defeatGlowPulse {
     0%, 100% { text-shadow: 0 0 20px rgba(255, 51, 102, 0.8), 0 0 40px rgba(255, 51, 102, 0.4); }
     50%      { text-shadow: 0 0 32px rgba(255, 51, 102, 1), 0 0 60px rgba(255, 51, 102, 0.7); }
+}
+
+/* Victory variant: same layout, gold/triumphant palette instead of crimson/defeat */
+.game-over-banner.victory {
+    border-color: rgba(255, 213, 51, 0.6);
+    box-shadow: 0 0 70px rgba(255, 213, 51, 0.45), 0 25px 60px rgba(0, 0, 0, 0.85);
+}
+
+.game-over-banner.victory h2 {
+    color: #ffd533;
+    animation: victoryGlowPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes victoryGlowPulse {
+    0%, 100% { text-shadow: 0 0 20px rgba(255, 213, 51, 0.8), 0 0 40px rgba(255, 213, 51, 0.4); }
+    50%      { text-shadow: 0 0 32px rgba(255, 213, 51, 1), 0 0 60px rgba(255, 213, 51, 0.7); }
 }
 
 /* Audio Control Slider styling */

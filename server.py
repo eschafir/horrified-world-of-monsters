@@ -314,6 +314,7 @@ class GameRoom:
         self.perk_deck: List[Dict] = []
         self.active_monsters: List[str] = []
         self.defeated_monsters: List[str] = []
+        self.selected_monsters: List[str] = ["Yeti", "Jiangshi"]  # lobby pick, host-controlled, visible to all
         self.pending_dice_roll = None
         self.roll_event = None
         
@@ -323,7 +324,8 @@ class GameRoom:
         self.citizens: Dict[str, Dict] = {}
         self.monster_locations: Dict[str, str] = {}
         self.monster_states: Dict[str, Dict] = {}
-        
+        self.lair_tokens: List[Dict] = []
+
         self.turn_player_idx = 0
         self.game_phase = "Lobby"
         self.current_card: Optional[Dict] = None
@@ -405,6 +407,29 @@ class GameRoom:
             "Raimi": {"name": "Raimi", "location": "Board", "start": "Stilt Town", "safe": "Specter Trail Caravan", "active": False, "portrait": "Raimi.jpg"}
         }
 
+        # Lair Tokens: a single shared pool of 4 fixed board locations. Exactly one hides
+        # the true Yeti Cave (if Yeti is active), one hides the true Jiangshi Moon Shrine
+        # (if Jiangshi is active), and the rest are blank decoys - matching the physical
+        # Lair Token art (yeti/jiangshi/blank backs). Only ever 4 tokens total, regardless
+        # of which of those two monsters are in play.
+        self.lair_tokens = []
+        if "Yeti" in self.active_monsters or "Jiangshi" in self.active_monsters:
+            lair_locs = ["Spindlewood Institute", "Garden of the Risen", "Thornvine Woods", "Door of the World"]
+            random.shuffle(lair_locs)
+            lair_types = []
+            if "Yeti" in self.active_monsters:
+                lair_types.append("yeti")
+            if "Jiangshi" in self.active_monsters:
+                lair_types.append("jiangshi")
+            while len(lair_types) < 4:
+                lair_types.append("blank")
+            random.shuffle(lair_types)
+            self.lair_tokens = [
+                {"location": lair_locs[i], "type": lair_types[i], "revealed": False}
+                for i in range(4)
+            ]
+            print(f"DEBUG - Lair Tokens: {[(t['location'], t['type']) for t in self.lair_tokens]}")
+
         # Initialize monster states
         self.monster_locations = {}
         self.monster_states = {}
@@ -418,18 +443,9 @@ class GameRoom:
             else:
                 self.monster_locations[monster] = "The Roaming Wolf"
             if monster == "Yeti":
-                # Yeti's Cave: one hidden true location among 4 candidates, revealed via Advance.
-                cave_locs = ["Spindlewood Institute", "Garden of the Risen", "Thornvine Woods", "Door of the World"]
-                random.shuffle(cave_locs)
-                cave_candidates = [
-                    {"location": loc, "is_cave": (i == 0), "revealed": False}
-                    for i, loc in enumerate(cave_locs)
-                ]
-                print(f"DEBUG - Yeti Cave Location: {[c['location'] for c in cave_candidates if c['is_cave']][0]}")
                 child_locs = ["House of Dusk", "Thornvine Woods", "Stewards Spire"]
                 random.shuffle(child_locs)
                 self.monster_states["Yeti"] = {
-                    "cave_candidates": cave_candidates,
                     "children": [
                         {"id": 1, "location": child_locs[0], "rescued": False, "rescued_order": None},
                         {"id": 2, "location": child_locs[1], "rescued": False, "rescued_order": None},
@@ -437,18 +453,9 @@ class GameRoom:
                     ]
                 }
             elif monster == "Jiangshi":
-                # Moon Shrine: one hidden location among 4 candidates, revealed via Advance.
-                shrine_locs = ["Mary's Mill", "Weir's Observatory", "The Fool's Journey", "Stilt Town"]
-                random.shuffle(shrine_locs)
-                shrine_candidates = [
-                    {"location": loc, "is_shrine": (i == 0), "revealed": False}
-                    for i, loc in enumerate(shrine_locs)
-                ]
-                print(f"DEBUG - Jiangshi Moon Shrine Location: {[c['location'] for c in shrine_candidates if c['is_shrine']][0]}")
                 # The Coin Sword pattern: 3 slots, each filled by discarding an item whose
                 # strength exactly matches that slot's target.
                 self.monster_states["Jiangshi"] = {
-                    "shrine_candidates": shrine_candidates,
                     "sword_slots": [
                         {"id": 0, "target_strength": 2, "filled": False, "item": None},
                         {"id": 1, "target_strength": 3, "filled": False, "item": None},
@@ -456,16 +463,17 @@ class GameRoom:
                     ]
                 }
             elif monster == "Sphinx":
-                # 2x2 riddle grid: row/column sums must match the printed targets exactly.
-                # Cell 0 is auto-filled and locked at setup, per the Sphinx's rules.
+                # 2x3 riddle grid (2 rows, 3 columns): row/column sums must match the
+                # printed targets exactly. Cell 0 is auto-filled and locked at setup, per
+                # the Sphinx's rules.
                 starter_item = self._draw_bagged_item()
-                grid = [{"id": i, "filled": False, "item": None, "locked": False} for i in range(4)]
+                grid = [{"id": i, "filled": False, "item": None, "locked": False} for i in range(6)]
                 if starter_item:
                     grid[0] = {"id": 0, "filled": True, "item": starter_item, "locked": True}
                 self.monster_states["Sphinx"] = {
                     "grid": grid,
-                    "row_targets": [5, 7],
-                    "col_targets": [6, 6],
+                    "row_targets": [11, 10],
+                    "col_targets": [7, 5, 9],
                     "solved": False
                 }
             elif monster == "Cthulhu":
@@ -512,6 +520,11 @@ class GameRoom:
         item["id"] = str(uuid.uuid4())[:8]
         return item
 
+    def _get_true_lair_location(self, kind: str) -> Optional[str]:
+        """kind is 'yeti' or 'jiangshi'. Returns that Lair Token's location, if any."""
+        token = next((t for t in self.lair_tokens if t["type"] == kind), None)
+        return token["location"] if token else None
+
     def get_serializable_state(self) -> Dict:
         return {
             "room_code": self.room_code,
@@ -521,6 +534,7 @@ class GameRoom:
             "deck_count": len(self.deck),
             "active_monsters": self.active_monsters,
             "defeated_monsters": self.defeated_monsters,
+            "selected_monsters": self.selected_monsters,
             "frenzy_marker": self.frenzy_marker,
             "heroes_state": self.heroes_state,
             "items_on_board": self.items_on_board,
@@ -528,6 +542,7 @@ class GameRoom:
             "citizens": {k: v for k, v in self.citizens.items() if v["active"] or v["location"] != "Board"},
             "monster_locations": self.monster_locations,
             "monster_states": self.monster_states,
+            "lair_tokens": self.lair_tokens,
             "pending_dice_roll": self.pending_dice_roll,
             "turn_player_idx": self.turn_player_idx,
             "current_card": self.current_card,
@@ -661,17 +676,12 @@ class GameRoom:
             child["location"] = target
             state["ap"] -= 1
             self.add_log(f"{player_name} guided Yeti Child {child['id']} to {target}.")
-            
-            # Check true cave
-            true_cave_loc = next((c["location"] for c in y_state["cave_candidates"] if c["is_cave"]), None)
+
+            # Reaching the True Cave is not enough on its own - a separate Advance action
+            # places the child on the Yeti's mat (two distinct actions, per the rules).
+            true_cave_loc = self._get_true_lair_location("yeti")
             if target == true_cave_loc:
-                child["rescued"] = True
-                child["rescued_order"] = sum(1 for c in y_state["children"] if c["rescued_order"] is not None) + 1
-                self.add_log(f"Yeti Child {child['id']} has reached the True Lair!")
-                if self.perk_deck:
-                    perk = self.perk_deck.pop(0)
-                    state["perks"].append(perk)
-                    self.add_log(f"{player_name} received Perk Card: {perk['name']}.")
+                self.add_log(f"Yeti Child {child['id']} has reached the Yeti's Cave! Advance there to place it on the mat.")
             return True
             
         self.add_log(f"Legend {legend_name} not found or not active.")
@@ -750,13 +760,15 @@ class GameRoom:
         if not all(c["filled"] for c in grid):
             sp_state["solved"] = False
             return
+        num_cols = len(sp_state["col_targets"])
+        num_rows = len(sp_state["row_targets"])
         row_sums = [
-            grid[0]["item"]["strength"] + grid[1]["item"]["strength"],
-            grid[2]["item"]["strength"] + grid[3]["item"]["strength"]
+            sum(grid[r * num_cols + c]["item"]["strength"] for c in range(num_cols))
+            for r in range(num_rows)
         ]
         col_sums = [
-            grid[0]["item"]["strength"] + grid[2]["item"]["strength"],
-            grid[1]["item"]["strength"] + grid[3]["item"]["strength"]
+            sum(grid[r * num_cols + c]["item"]["strength"] for r in range(num_rows))
+            for c in range(num_cols)
         ]
         was_solved = sp_state["solved"]
         sp_state["solved"] = (row_sums == sp_state["row_targets"] and col_sums == sp_state["col_targets"])
@@ -779,48 +791,54 @@ class GameRoom:
 
         loc = h_state["location"]
 
+        # Lair Token reveal: shared across Yeti's Cave and Jiangshi's Moon Shrine (only 4
+        # tokens exist total, regardless of which of those two monsters are active).
+        if args.get("type") == "reveal_lair":
+            token = next((t for t in self.lair_tokens if t["location"] == loc and not t["revealed"]), None)
+            if not token:
+                return False
+            item_ids = args.get("item_ids", [])
+            items = [next((i for i in h_state["items"] if i["id"] == iid), None) for iid in item_ids]
+            if not items or any(i is None for i in items) or sum(i["strength"] for i in items) < 3:
+                self.add_log("Select items totaling strength 3+ to discard to reveal this Lair token.")
+                return False
+            for item in items:
+                h_state["items"].remove(item)
+                self.discarded_items.append(item)
+            token["revealed"] = True
+            h_state["ap"] -= 1
+            total = sum(i["strength"] for i in items)
+            names = ", ".join(i["name"] for i in items)
+            label = {"yeti": "the TRUE Yeti Cave!", "jiangshi": "the TRUE Moon Shrine!", "blank": "a false trail."}[token["type"]]
+            self.add_log(f"{player_name} discarded {names} (strength {total}) to reveal the Lair token at {loc}. It is {label}")
+            return True
+
         if monster == "Yeti":
-            action_type = args.get("type")
-            if action_type == "reveal_cave":
-                yeti_state = self.monster_states["Yeti"]
-                cand = next((c for c in yeti_state["cave_candidates"] if c["location"] == loc and not c["revealed"]), None)
-                if not cand:
-                    return False
-                item_id = args.get("item_id")
-                item = next((i for i in h_state["items"] if i["id"] == item_id), None)
-                if not item or item["strength"] < 3:
-                    self.add_log("Select an item of strength 3+ to discard to reveal this Lair token.")
-                    return False
-                h_state["items"].remove(item)
-                self.discarded_items.append(item)
-                cand["revealed"] = True
-                h_state["ap"] -= 1
-                self.add_log(f"{player_name} discarded {item['name']} (strength {item['strength']}) to reveal the Lair token at {loc}. It is {'the TRUE Yeti Cave!' if cand['is_cave'] else 'a false trail.'}")
-                return True
-            return False
+            # Placing a Yeti Child on the mat is a second, distinct action from guiding it
+            # to the True Cave: the child must already be standing there, unplaced.
+            yeti_state = self.monster_states["Yeti"]
+            true_cave_loc = self._get_true_lair_location("yeti")
+            if not true_cave_loc or loc != true_cave_loc:
+                self.add_log("Must be at the True Cave to place a Yeti Child on the mat.")
+                return False
 
-        elif monster == "Jiangshi":
+            child_id = args.get("child_id")
+            child = next((c for c in yeti_state["children"] if c["id"] == child_id), None)
+            if not child or child["rescued"] or child["location"] != true_cave_loc:
+                self.add_log("That Yeti Child isn't waiting at the Cave to be placed.")
+                return False
+
+            child["rescued"] = True
+            child["rescued_order"] = sum(1 for c in yeti_state["children"] if c["rescued_order"] is not None) + 1
+            h_state["ap"] -= 1
+            self.add_log(f"{player_name} placed Yeti Child {child['id']} on the Yeti's mat!")
+            return True
+
+        if monster == "Jiangshi":
             js_state = self.monster_states["Jiangshi"]
-            action_type = args.get("type")
 
-            if action_type == "reveal_shrine":
-                cand = next((c for c in js_state["shrine_candidates"] if c["location"] == loc and not c["revealed"]), None)
-                if not cand:
-                    return False
-                item_id = args.get("item_id")
-                item = next((i for i in h_state["items"] if i["id"] == item_id), None)
-                if not item or item["strength"] < 3:
-                    self.add_log("Select an item of strength 3+ to discard to reveal this Lair token.")
-                    return False
-                h_state["items"].remove(item)
-                self.discarded_items.append(item)
-                cand["revealed"] = True
-                h_state["ap"] -= 1
-                self.add_log(f"{player_name} discarded {item['name']} (strength {item['strength']}) to reveal the Lair token at {loc}. It is {'the TRUE Moon Shrine!' if cand['is_shrine'] else 'a false trail.'}")
-                return True
-
-            shrine_loc = next((c["location"] for c in js_state["shrine_candidates"] if c["is_shrine"] and c["revealed"]), None)
-            if loc != shrine_loc:
+            shrine_token = next((t for t in self.lair_tokens if t["type"] == "jiangshi" and t["revealed"]), None)
+            if not shrine_token or loc != shrine_token["location"]:
                 self.add_log("Must be at the revealed Moon Shrine to work the Coin Sword.")
                 return False
 
@@ -1010,12 +1028,11 @@ class GameRoom:
 
         if monster == "Yeti":
             y_state = self.monster_states["Yeti"]
-            true_cave_loc = next((c["location"] for c in y_state["cave_candidates"] if c["is_cave"]), None)
-            all_kids_here = bool(true_cave_loc) and all(k["location"] == true_cave_loc for k in y_state["children"])
+            all_kids_placed = all(k["rescued"] for k in y_state["children"])
             hero_with_yeti = (loc == self.monster_locations["Yeti"])
 
-            if not (all_kids_here and hero_with_yeti):
-                self.add_log("Defeat condition not met. All children must be at the True Cave, and the hero must be with the Yeti.")
+            if not (all_kids_placed and hero_with_yeti):
+                self.add_log("Defeat condition not met. All children must be placed on the mat, and the hero must be with the Yeti.")
                 return False
 
             item_ids = args.get("item_ids", [])
@@ -1837,9 +1854,16 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
                         player["hero"] = hero
                         room.add_log(f"{player_name} selected {hero}.")
                     
+            elif action == "select_monsters":
+                if player["is_host"] and not room.game_started:
+                    monsters = msg.get("monsters", [])
+                    if isinstance(monsters, list) and all(m in MONSTER_CATALOG for m in monsters):
+                        room.selected_monsters = monsters
+                        room.add_log(f"{player_name} set the monster line-up: {', '.join(monsters) if monsters else 'none'}.")
+
             elif action == "start_game":
                 if player["is_host"] and not room.game_started:
-                    monsters = msg.get("monsters", ["Yeti", "Sphinx"])
+                    monsters = room.selected_monsters
                     room.initialize_game(monsters)
                     
             elif action == "move":

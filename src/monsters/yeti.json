@@ -56,7 +56,7 @@
             "number": 1,
             "title": "Let's Go Home",
             "type": "Advance",
-            "description": "Reveal the Yeti's Cave. Escort the Yeti's Children there using Guide."
+            "description": "Reveal the Yeti's Cave, then use Guide to escort each Yeti Child there. Once a child has arrived, a separate Advance action places it on the Yeti's mat."
           },
           {
             "number": 2,
@@ -65,11 +65,12 @@
             "description": "In the Yeti's location, use one of each type of Item to defeat it."
           }
         ],
-  
+
         "notes": [
-          "Yeti's Children are not Citizens.",
+          "Yeti's Children are not Citizens - guiding one to the True Cave grants no Perk Card.",
           "Yeti's Children cannot be attacked.",
-          "Yeti's Children cannot be moved by Monster or Perk cards."
+          "Yeti's Children cannot be moved by Monster or Perk cards.",
+          "Reaching the True Cave (Guide) and being placed on the mat (Advance) are two separate actions."
         ]
       }
     ]

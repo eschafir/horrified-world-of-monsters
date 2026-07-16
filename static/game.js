@@ -23,6 +23,7 @@ let lastPendingDiceRollId = "";
 let intentionalDisconnect = false;
 let lastTerrorLevel = null;
 let pendingTerrorTransitionFrom = null; // consumed once by renderSVGMap to slide the neon ring from its old slot
+let knownDefeatedMonsters = null; // Set of monster names already seen in defeated_monsters, to trigger a defeat sound only once
 
 // Map Zoom & Pan State
 let zoomLevel = 1.0;
@@ -83,21 +84,27 @@ elBtnJoin.addEventListener("click", () => {
 });
 
 elBtnStart.addEventListener("click", () => {
-    // Collect chosen monsters
-    const monsters = [];
-    if (document.getElementById("mon-yeti").checked) monsters.push("Yeti");
-    if (document.getElementById("mon-jiangshi").checked) monsters.push("Jiangshi");
-    if (document.getElementById("mon-sphinx").checked) monsters.push("Sphinx");
-    if (document.getElementById("mon-cthulhu").checked) monsters.push("Cthulhu");
-    
-    if (monsters.length === 0) {
+    if (!gameState || !gameState.selected_monsters || gameState.selected_monsters.length === 0) {
         alert("Please select at least one monster to face!");
         return;
     }
-    
-    sendMsg({
-        action: "start_game",
-        monsters: monsters
+    sendMsg({ action: "start_game" });
+});
+
+// Only the host can change the monster line-up; every client's checkboxes are kept in
+// sync with gameState.selected_monsters (see updateGameUI), so this just relays the
+// host's own change back to the server to broadcast to everyone else.
+const MONSTER_CHECKBOX_IDS = { "mon-yeti": "Yeti", "mon-jiangshi": "Jiangshi", "mon-sphinx": "Sphinx", "mon-cthulhu": "Cthulhu" };
+Object.keys(MONSTER_CHECKBOX_IDS).forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("change", () => {
+        const me = gameState && gameState.players && gameState.players.find(p => p.name === playerName);
+        if (!me || !me.is_host) return;
+        const monsters = Object.entries(MONSTER_CHECKBOX_IDS)
+            .filter(([cbId]) => document.getElementById(cbId).checked)
+            .map(([, name]) => name);
+        sendMsg({ action: "select_monsters", monsters: monsters });
     });
 });
 
@@ -516,39 +523,81 @@ window.showMonsterInfoModal = (monsterName) => {
         return;
     }
 
-    const symbolChips = (symbols) => (symbols || []).map(s =>
-        `<span style="display:inline-block; margin:2px 4px 2px 0; padding:2px 8px; border-radius:10px; font-size:0.68rem; font-weight:700; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:#f0e8ff;">${s.symbol} <span style="color:#a491c3;">(${s.color})</span></span>`
-    ).join("");
+    const portrait = MONSTER_PORTRAIT_MAP[monsterName] || "";
+    const accent = MONSTER_ACCENT_MAP[monsterName] || { border: "rgba(255,51,102,0.6)", glow: "rgba(255,51,102,0.3)" };
+
+    const symbolRow = (symbols) => {
+        if (!symbols || !symbols.length) return "";
+        const chips = symbols.map(s => {
+            const hex = getSymbolColorHex(s.color);
+            return `
+                <div style="display:flex; align-items:center; gap:6px; padding:5px 10px; border-radius:16px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12);">
+                    <span style="width:14px; height:14px; border-radius:50%; background:${hex}; box-shadow:0 0 6px ${hex}; border:1.5px solid rgba(0,0,0,0.4); flex-shrink:0;"></span>
+                    <span style="font-size:0.72rem; font-weight:600; color:#f0e8ff;">${s.symbol}</span>
+                </div>`;
+        }).join("");
+        return `
+            <div style="margin-bottom:12px;">
+                <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#a491c3; margin-bottom:6px;">Reacts to</div>
+                <div style="display:flex; flex-wrap:wrap; gap:8px;">${chips}</div>
+            </div>`;
+    };
 
     let html = `<div style="text-align:center;">`;
-    html += `<h2 style="margin:0 0 4px 0;">${entry.name}</h2>`;
-    html += `<div style="margin-bottom:10px;">
-        <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; padding:2px 8px; border-radius:8px; background:rgba(255,255,255,0.06); color:#a491c3;">${entry.complexity} complexity</span>
-        ${entry.hasLair ? `<span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; padding:2px 8px; border-radius:8px; background:rgba(255,255,255,0.06); color:#a491c3; margin-left:6px;">Hidden Lair</span>` : ""}
-    </div>`;
-    html += `<p style="color:#e5d9c8; font-size:0.85rem; line-height:1.5; text-align:left;">${entry.objective}</p>`;
+
+    // Header: portrait + name/tags side by side
+    html += `
+        <div style="display:flex; align-items:center; gap:16px; margin-bottom:14px; text-align:left;">
+            <div style="width:90px; height:90px; border-radius:50%; flex-shrink:0; overflow:hidden; border:3px solid ${accent.border}; box-shadow:0 0 18px ${accent.glow}; background:rgba(255,255,255,0.04);">
+                ${portrait ? `<img src="${portrait}" alt="${entry.name}" style="width:100%; height:100%; object-fit:cover;">` : ""}
+            </div>
+            <div>
+                <h2 style="margin:0 0 6px 0;">${entry.name}</h2>
+                <div>
+                    <span style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; padding:2px 8px; border-radius:8px; background:rgba(255,255,255,0.06); color:#a491c3;">${entry.complexity} complexity</span>
+                    ${entry.hasLair ? `<span style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; padding:2px 8px; border-radius:8px; background:rgba(255,255,255,0.06); color:#a491c3; margin-left:6px;">Hidden Lair</span>` : ""}
+                </div>
+            </div>
+        </div>`;
+
+    // Objective
+    html += `
+        <div style="text-align:left; padding:10px 12px; border-radius:8px; background:rgba(255,255,255,0.03); border-left:3px solid ${accent.border}; margin-bottom:14px;">
+            <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#a491c3; margin-bottom:4px;">Objective</div>
+            <p style="color:#e5d9c8; font-size:0.83rem; line-height:1.5; margin:0;">${entry.objective}</p>
+        </div>`;
 
     (entry.phases || []).forEach(phase => {
         const symbols = phase.frenzySymbols || entry.frenzySymbols;
         html += `<hr style="border-color: rgba(255,255,255,0.08); margin: 14px 0;">`;
         if ((entry.phases || []).length > 1) {
-            html += `<h4 style="margin:0 0 6px 0; color:#ffd533;">${phase.name}</h4>`;
+            html += `<h4 style="margin:0 0 10px 0; color:#ffd533; text-align:left;">${phase.name}</h4>`;
         }
-        if (symbols && symbols.length) {
-            html += `<div style="text-align:left; margin-bottom:10px;"><strong style="font-size:0.75rem; color:#a491c3;">Reacts to:</strong> ${symbolChips(symbols)}</div>`;
-        }
+
+        html += symbolRow(symbols);
+
         (phase.powers || []).forEach(power => {
             html += `<div style="text-align:left; margin-bottom:10px; padding:8px 10px; border-radius:8px; background:rgba(255,51,102,0.08); border:1px solid rgba(255,51,102,0.25);">
                 <div style="font-weight:700; color:#ff8899; font-size:0.8rem;">Power: ${power.name}</div>
                 <div style="font-size:0.75rem; color:#e5d9c8; margin-top:2px;">${power.description}</div>
             </div>`;
         });
-        (phase.steps || []).forEach(step => {
-            html += `<div style="text-align:left; margin-bottom:8px;">
-                <div style="font-weight:700; font-size:0.8rem; color:#f0e8ff;">${step.number}. ${step.title} <span style="font-size:0.65rem; font-weight:700; text-transform:uppercase; color:#a491c3;">(${step.type})</span></div>
-                <div style="font-size:0.75rem; color:#c9b8e0; margin-top:2px;">${step.description}</div>
-            </div>`;
-        });
+
+        if (phase.steps && phase.steps.length) {
+            html += `<div style="text-align:left; margin-bottom:6px; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#a491c3;">Steps</div>`;
+            phase.steps.forEach(step => {
+                const typeColor = step.type === "Defeat" ? "#ff3366" : "#33ccff";
+                html += `
+                    <div style="text-align:left; display:flex; gap:10px; margin-bottom:10px;">
+                        <div style="width:22px; height:22px; border-radius:50%; background:rgba(255,255,255,0.06); border:1.5px solid ${accent.border}; display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:700; color:#f0e8ff; flex-shrink:0;">${step.number}</div>
+                        <div>
+                            <div style="font-weight:700; font-size:0.8rem; color:#f0e8ff;">${step.title} <span style="font-size:0.62rem; font-weight:700; text-transform:uppercase; color:${typeColor};">(${step.type})</span></div>
+                            <div style="font-size:0.75rem; color:#c9b8e0; margin-top:2px;">${step.description}</div>
+                        </div>
+                    </div>`;
+            });
+        }
+
         if (phase.notes && phase.notes.length) {
             html += `<ul style="text-align:left; font-size:0.7rem; color:#a491c3; margin:8px 0 0; padding-left:18px;">`;
             phase.notes.forEach(note => { html += `<li>${note}</li>`; });
@@ -597,15 +646,22 @@ function updateGameUI() {
             elConnectedPlayers.appendChild(li);
         });
 
-        // Toggle host setting view
+        // "Choose Monsters" is always visible so remote players can see the host's picks
+        // and read each monster's info - only the checkboxes themselves are host-only.
+        // "Begin Adventure" stays host-only.
+        elHostSettings.classList.remove("hidden");
         const me = gameState.players.find(p => p.name === playerName);
-        if (me && me.is_host) {
-            elHostSettings.classList.remove("hidden");
-            elHostStartWrap.classList.remove("hidden");
-        } else {
-            elHostSettings.classList.add("hidden");
-            elHostStartWrap.classList.add("hidden");
-        }
+        const isHost = !!(me && me.is_host);
+        elHostStartWrap.classList.toggle("hidden", !isHost);
+        elHostSettings.classList.toggle("read-only", !isHost);
+
+        const selected = new Set(gameState.selected_monsters || []);
+        Object.entries(MONSTER_CHECKBOX_IDS).forEach(([id, name]) => {
+            const cb = document.getElementById(id);
+            if (!cb) return;
+            cb.checked = selected.has(name);
+            cb.disabled = !isHost;
+        });
     } else {
         // The game has started!
         elLobbyScreen.classList.add("hidden");
@@ -670,13 +726,26 @@ function updateGameUI() {
             }
         }
 
-        // Game Over banner (Defeat)
+        // Per-monster defeat sound (fires once per monster, the moment it newly appears
+        // in defeated_monsters)
+        detectAndPlayMonsterDefeatSounds();
+
+        // Game Over banner (Defeat or Victory)
         if (elGameOverOverlay) {
+            const elGameOverBanner = document.querySelector(".game-over-banner");
             if (gameState.game_phase === "GameOverLose") {
                 if (lastGamePhaseSeen !== "GameOverLose") {
                     playGameLostSound();
                 }
+                if (elGameOverBanner) elGameOverBanner.classList.remove("victory");
                 document.getElementById("game-over-message").textContent = "Heroes failed to save the world.";
+                elGameOverOverlay.classList.remove("hidden");
+            } else if (gameState.game_phase === "GameOverWin") {
+                if (lastGamePhaseSeen !== "GameOverWin") {
+                    playGameWonSound();
+                }
+                if (elGameOverBanner) elGameOverBanner.classList.add("victory");
+                document.getElementById("game-over-message").textContent = "Victory! All monsters have been defeated.";
                 elGameOverOverlay.classList.remove("hidden");
             } else {
                 elGameOverOverlay.classList.add("hidden");
@@ -925,6 +994,20 @@ function getMonsterSymbols(name) {
 const SYMBOL_TO_COLOR = {
     Dagger: "Orange", Ghost: "Yellow", Tincture: "Green", Hand: "Red",
     Jewel: "Teal", Eye: "Purple", Gear: "Brown", Wrench: "Blue"
+};
+
+const MONSTER_PORTRAIT_MAP = {
+    "Yeti":     "/Images/Monsters/Yeti.png",
+    "Sphinx":   "/Images/Monsters/Sphinx.png",
+    "Jiangshi": "/Images/Monsters/Jiangshi.png",
+    "Cthulhu":  "/Images/Monsters/Cthulhu.png"
+};
+
+const MONSTER_ACCENT_MAP = {
+    "Yeti":     { border: "rgba(51,204,255,0.6)",  glow: "rgba(51,204,255,0.3)"  },
+    "Sphinx":   { border: "rgba(255,204,0,0.6)",   glow: "rgba(255,204,0,0.3)"   },
+    "Jiangshi": { border: "rgba(255,51,102,0.6)",  glow: "rgba(255,51,102,0.3)"  },
+    "Cthulhu":  { border: "rgba(153,51,255,0.6)",  glow: "rgba(153,51,255,0.3)"  }
 };
 
 // Generic multi-select item-card modal used for monster puzzle/defeat item costs
@@ -1567,18 +1650,8 @@ function renderMonstersStatusPanel() {
     card.className = `monster-status-card ${isDefeated ? "defeated" : ""}`;
 
     const loc = (gameState.monster_locations && gameState.monster_locations[m]) || "Unknown";
-    const portrait = {
-        "Yeti":     "/Images/Monsters/Yeti.png",
-        "Sphinx":   "/Images/Monsters/Sphinx.png",
-        "Jiangshi": "/Images/Monsters/Jiangshi.png",
-        "Cthulhu":  "/Images/Monsters/Cthulhu.png"
-    }[m] || "";
-    const accent = {
-        "Yeti":     { border: "rgba(51,204,255,0.6)",  glow: "rgba(51,204,255,0.3)"  },
-        "Sphinx":   { border: "rgba(255,204,0,0.6)",   glow: "rgba(255,204,0,0.3)"   },
-        "Jiangshi": { border: "rgba(255,51,102,0.6)",  glow: "rgba(255,51,102,0.3)"  },
-        "Cthulhu":  { border: "rgba(153,51,255,0.6)",  glow: "rgba(153,51,255,0.3)"  }
-    }[m] || { border: "rgba(255,51,102,0.6)", glow: "rgba(255,51,102,0.3)" };
+    const portrait = MONSTER_PORTRAIT_MAP[m] || "";
+    const accent = MONSTER_ACCENT_MAP[m] || { border: "rgba(255,51,102,0.6)", glow: "rgba(255,51,102,0.3)" };
 
     const frenzyValues = {
         "Yeti": 1,
@@ -1614,7 +1687,7 @@ function renderMonstersStatusPanel() {
     if (m === "Yeti") {
         const y_state = gameState.monster_states["Yeti"];
         const kids_left = y_state.children.filter(c => !c.rescued).length;
-        const found_cave = y_state.cave_candidates.find(c => c.is_cave && c.revealed);
+        const found_cave = (gameState.lair_tokens || []).find(t => t.type === "yeti" && t.revealed);
         const orderedChildren = [...y_state.children].sort((a, b) => (a.rescued_order || 99) - (b.rescued_order || 99));
 
         details += `
@@ -1637,9 +1710,19 @@ function renderMonstersStatusPanel() {
         }
         details += `</div>`;
 
+        const waitingAtCave = found_cave ? y_state.children.filter(c => !c.rescued && c.location === found_cave.location) : [];
+        if (waitingAtCave.length) {
+            details += `<div style="display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap;">
+                <span style="font-size:0.68rem; color:#a491c3;">Waiting to be placed:</span>
+                ${waitingAtCave.map(c => `
+                    <button class="btn btn-secondary btn-small" style="font-size:0.65rem; padding:3px 8px;" onclick="placeYetiChild(${c.id})">Place Child ${c.id}</button>
+                `).join("")}
+            </div>`;
+        }
+
     } else if (m === "Jiangshi") {
         const js_state = gameState.monster_states["Jiangshi"];
-        const found_shrine = js_state.shrine_candidates.find(c => c.is_shrine && c.revealed);
+        const found_shrine = (gameState.lair_tokens || []).find(t => t.type === "jiangshi" && t.revealed);
         details += `
             <p style="font-size: 0.8rem; color: #b0a0cf;">Moon Shrine: <strong>${found_shrine ? found_shrine.location : "Hidden"}</strong></p>
             <p style="font-size: 0.72rem; color: #a491c3;">At the Shrine, discard an item matching a slot's strength. Defeat: discard 9+ combined Purple strength at Jiangshi's location.</p>
@@ -1659,28 +1742,31 @@ function renderMonstersStatusPanel() {
 
     } else if (m === "Sphinx") {
         const sp_state = gameState.monster_states["Sphinx"];
+        const numRows = sp_state.row_targets.length;
+        const numCols = sp_state.col_targets.length;
         details += `
             <p style="font-size: 0.8rem; color: #b0a0cf;">${sp_state.solved ? '<strong style="color:#ffd533;">Riddle solved!</strong>' : 'Fill the grid so rows/columns match the targets shown.'}</p>
             <p style="font-size: 0.72rem; color: #a491c3;">Defeat: discard 6+ combined Green strength at the Sphinx's location.</p>
-            <div style="display:grid; grid-template-columns: repeat(3, 44px); grid-auto-rows: 44px; gap:4px; justify-content:center; align-items:center; margin: 10px auto;">
+            <div style="display:grid; grid-template-columns: repeat(${numCols + 1}, 40px); grid-auto-rows: 40px; gap:4px; justify-content:center; align-items:center; margin: 10px auto;">
                 <div></div>
-                <div style="text-align:center; font-size:0.7rem; color:#ffd533; font-weight:700;">${sp_state.col_targets[0]}</div>
-                <div style="text-align:center; font-size:0.7rem; color:#ffd533; font-weight:700;">${sp_state.col_targets[1]}</div>
         `;
-        [0, 1].forEach(row => {
-            details += `<div style="text-align:center; font-size:0.7rem; color:#ffd533; font-weight:700;">${sp_state.row_targets[row]}</div>`;
-            [0, 1].forEach(col => {
-                const cell = sp_state.grid[row * 2 + col];
+        for (let col = 0; col < numCols; col++) {
+            details += `<div style="text-align:center; font-size:0.68rem; color:#ffd533; font-weight:700;">${sp_state.col_targets[col]}</div>`;
+        }
+        for (let row = 0; row < numRows; row++) {
+            details += `<div style="text-align:center; font-size:0.68rem; color:#ffd533; font-weight:700;">${sp_state.row_targets[row]}</div>`;
+            for (let col = 0; col < numCols; col++) {
+                const cell = sp_state.grid[row * numCols + col];
                 const clickAttr = cell.filled
                     ? (cell.locked ? '' : `onclick="clearSphinxCell(${cell.id})"`)
                     : `onclick="advanceSphinx(${cell.id})"`;
                 details += `
-                    <div class="puzzle-slot req-blue ${cell.filled ? 'filled' : ''}" style="width:44px; height:44px;" ${clickAttr}>
+                    <div class="puzzle-slot req-blue ${cell.filled ? 'filled' : ''}" style="width:40px; height:40px;" ${clickAttr}>
                         ${cell.filled ? cell.item.strength : ''}
                     </div>
                 `;
-            });
-        });
+            }
+        }
         details += `</div>`;
 
     } else if (m === "Cthulhu") {
@@ -2507,6 +2593,49 @@ function playGameLostSound() {
     }
 }
 
+function playGameWonSound() {
+    try {
+        const sfx = new Audio("/Music/Victory%20sound.wav");
+        sfx.volume = 0.6;
+        sfx.play().catch(e => console.warn("Victory sound playback failed:", e));
+    } catch (e) {
+        console.warn("Error playing victory sound:", e);
+    }
+}
+
+// Per-monster defeat sound files, keyed by monster name.
+const MONSTER_DEFEAT_SOUNDS = {
+    "Yeti": "/Music/Yeti%20dies.wav"
+};
+
+function playMonsterDefeatSound(monsterName) {
+    const src = MONSTER_DEFEAT_SOUNDS[monsterName];
+    if (!src) return;
+    try {
+        const sfx = new Audio(src);
+        sfx.volume = 0.6;
+        sfx.play().catch(e => console.warn(`${monsterName} defeat sound playback failed:`, e));
+    } catch (e) {
+        console.warn(`Error playing ${monsterName} defeat sound:`, e);
+    }
+}
+
+// Diff-detects newly-defeated monsters against the previous snapshot and plays each
+// one's defeat sound exactly once, the moment it appears in defeated_monsters.
+function detectAndPlayMonsterDefeatSounds() {
+    const defeated = (gameState && gameState.defeated_monsters) || [];
+    if (!knownDefeatedMonsters) {
+        knownDefeatedMonsters = new Set(defeated);
+        return;
+    }
+    defeated.forEach(name => {
+        if (!knownDefeatedMonsters.has(name)) {
+            knownDefeatedMonsters.add(name);
+            playMonsterDefeatSound(name);
+        }
+    });
+}
+
 // Sound effect played whenever the Terror Level increases
 function playTerrorIncreaseSound() {
     try {
@@ -2532,9 +2661,7 @@ function detectAndAnimateSpawns() {
         for (const name in gameState.heroes_state) {
             gameState.heroes_state[name].items.forEach(item => window.knownItemIds.add(item.id));
         }
-        if (gameState.active_monsters.includes("Yeti")) {
-            gameState.monster_states["Yeti"].cave_candidates.forEach(l => window.knownLairs.add(l.location));
-        }
+        (gameState.lair_tokens || []).forEach(l => window.knownLairs.add(l.location));
         return;
     }
     
@@ -2561,17 +2688,15 @@ function detectAndAnimateSpawns() {
         }, idx * 350);
     });
     
-    if (gameState.active_monsters.includes("Yeti")) {
-        const lairs = gameState.monster_states["Yeti"].cave_candidates;
-        let lIdx = 0;
-        lairs.forEach(l => {
-            if (!window.knownLairs.has(l.location)) {
-                window.knownLairs.add(l.location);
-                setTimeout(() => { animateLairSpawn(l.location); }, (newSpawns.length + lIdx) * 350);
-                lIdx++;
-            }
-        });
-    }
+    const lairs = gameState.lair_tokens || [];
+    let lIdx = 0;
+    lairs.forEach(l => {
+        if (!window.knownLairs.has(l.location)) {
+            window.knownLairs.add(l.location);
+            setTimeout(() => { animateLairSpawn(l.location); }, (newSpawns.length + lIdx) * 350);
+            lIdx++;
+        }
+    });
 }
 
 function renderSVGMap() {
@@ -3046,22 +3171,14 @@ function renderSVGMap() {
                     characters.push({ type: "citizen", name: `Yeti Child ${child.id}`, label: `K${child.id}` });
                 }
             });
-            y_state.cave_candidates.forEach((cand, i) => {
-                if (cand.location === locName) {
-                    characters.push({ type: "lair", lair_type: cand.is_cave ? "yeti" : "blank", name: `Yeti Cave Candidate ${i}`, is_true: cand.is_cave, flipped: cand.revealed });
-                }
-            });
         }
 
-        // Jiangshi Moon Shrine candidates
-        if (gameState.active_monsters.includes("Jiangshi")) {
-            const js_state = gameState.monster_states["Jiangshi"];
-            js_state.shrine_candidates.forEach((cand, i) => {
-                if (cand.location === locName) {
-                    characters.push({ type: "lair", lair_type: cand.is_shrine ? "jiangshi" : "blank", name: `Moon Shrine Candidate ${i}`, is_true: cand.is_shrine, flipped: cand.revealed });
-                }
-            });
-        }
+        // Lair Tokens: a single shared pool of 4 (Yeti's Cave / Jiangshi's Moon Shrine / decoys)
+        (gameState.lair_tokens || []).forEach((token, i) => {
+            if (token.location === locName) {
+                characters.push({ type: "lair", lair_type: token.type, name: `Lair Token ${i}`, is_true: token.type !== "blank", flipped: token.revealed });
+            }
+        });
 
         characters.forEach((char, index) => {
             const isYeti = (char.name === "Yeti");
@@ -3777,40 +3894,36 @@ window.confirmShare = (partner) => {
     elModalContainer.classList.add("hidden");
 };
 
-// Yeti advance
+// Lair Token reveal (shared pool of 4: Yeti's Cave / Jiangshi's Moon Shrine / decoys)
 document.getElementById("action-advance").addEventListener("click", () => {
     const myState = gameState.heroes_state[playerName];
     const loc = myState.location;
 
-    // Reveal an unrevealed Lair token (Yeti Cave or Moon Shrine candidate) at this location
-    // by discarding a chosen item.
-    if (gameState.active_monsters.includes("Yeti")) {
-        const yeti_state = gameState.monster_states["Yeti"];
-        const candHere = yeti_state.cave_candidates.find(c => c.location === loc && !c.revealed);
-        if (candHere) {
-            openItemPicker({
-                title: "Reveal Lair Token",
-                description: "Discard an item of strength 3+ to reveal this Lair token.",
-                items: myState.items.filter(i => i.strength >= 3),
-                validateFn: (sel) => ({ valid: sel.length === 1, message: sel.length ? "" : "Select one item (strength 3+)." }),
-                onConfirm: (ids) => sendMsg({ action: "advance", monster: "Yeti", args: { type: "reveal_cave", item_id: ids[0] } })
-            });
-            return;
-        }
+    const tokenHere = (gameState.lair_tokens || []).find(t => t.location === loc && !t.revealed);
+    if (tokenHere) {
+        openItemPicker({
+            title: "Reveal Lair Token",
+            description: "Discard items totaling strength 3+ to reveal this Lair token.",
+            items: myState.items,
+            validateFn: (sel) => {
+                const total = sel.reduce((a, i) => a + i.strength, 0);
+                return { valid: sel.length > 0 && total >= 3, message: `Total strength: ${total} / 3` };
+            },
+            onConfirm: (ids) => sendMsg({ action: "advance", monster: "Lair", args: { type: "reveal_lair", item_ids: ids } })
+        });
+        return;
     }
 
-    if (gameState.active_monsters.includes("Jiangshi")) {
-        const js_state = gameState.monster_states["Jiangshi"];
-        const candHere = js_state.shrine_candidates.find(c => c.location === loc && !c.revealed);
-        if (candHere) {
-            openItemPicker({
-                title: "Reveal Lair Token",
-                description: "Discard an item of strength 3+ to reveal this Lair token.",
-                items: myState.items.filter(i => i.strength >= 3),
-                validateFn: (sel) => ({ valid: sel.length === 1, message: sel.length ? "" : "Select one item (strength 3+)." }),
-                onConfirm: (ids) => sendMsg({ action: "advance", monster: "Jiangshi", args: { type: "reveal_shrine", item_id: ids[0] } })
-            });
-            return;
+    // Place a Yeti Child waiting at the (already revealed) True Cave onto the mat.
+    if (gameState.active_monsters.includes("Yeti")) {
+        const y_state = gameState.monster_states["Yeti"];
+        const trueCave = (gameState.lair_tokens || []).find(t => t.type === "yeti" && t.revealed);
+        if (trueCave && loc === trueCave.location) {
+            const waitingChild = y_state.children.find(c => !c.rescued && c.location === loc);
+            if (waitingChild) {
+                placeYetiChild(waitingChild.id);
+                return;
+            }
         }
     }
 
@@ -4068,6 +4181,12 @@ window.playPerkCard = (perkId, perkName) => {
 // ---------------------------------------------------------
 // MONSTER INTERACTIVE CHALLENGE ADVANCEMENTS
 // ---------------------------------------------------------
+
+// Guiding a Yeti Child to the True Cave and placing it on the mat are two separate
+// actions - this is the second one (Advance), no items involved.
+window.placeYetiChild = (childId) => {
+    sendMsg({ action: "advance", monster: "Yeti", args: { type: "place_child", child_id: childId } });
+};
 
 window.advanceJiangshi = (slotId) => {
     const myState = gameState.heroes_state[playerName];
