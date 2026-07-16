@@ -2972,7 +2972,7 @@ function renderSVGMap() {
     bgImage.setAttribute("height", "1206");
     elGameMap.appendChild(bgImage);
 
-    // --- START INJECT FALLBACK COORDINATES ---
+
     let fallbackX = 60;
     let fallbackY = 60;
     const checkLoc = (loc) => {
@@ -2993,7 +2993,7 @@ function renderSVGMap() {
     if (gameState.monster_states && gameState.monster_states["Jiangshi"]) {
         gameState.monster_states["Jiangshi"].shrine_candidates.forEach(c => checkLoc(c.location));
     }
-    // --- END INJECT FALLBACK COORDINATES ---
+
 
     // 1. Draw paths (lines)
     const coordinates = gameState.node_coordinates;

@@ -466,6 +466,7 @@ class GameRoom:
             else:
                 self.monster_locations[monster] = self.get_safe_loc("The Roaming Wolf")
             if monster == "Yeti":
+
                 child_locs = [self.get_safe_loc("House of Dusk"), self.get_safe_loc("Thornvine Woods"), self.get_safe_loc("Stewards Spire")]
                 random.shuffle(child_locs)
                 self.monster_states["Yeti"] = {
@@ -476,6 +477,7 @@ class GameRoom:
                     ]
                 }
             elif monster == "Jiangshi":
+
                 # The Coin Sword pattern: 3 slots, each filled by discarding an item whose
                 # strength exactly matches that slot's target.
                 self.monster_states["Jiangshi"] = {
