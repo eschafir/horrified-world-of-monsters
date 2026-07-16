@@ -1,6 +1,7 @@
 import json
 import os
 import random
+import time
 import uuid
 import asyncio
 from typing import Dict, List, Set, Optional, Tuple
@@ -143,6 +144,11 @@ HERO_CLASSES = {
 # Mundane=Blue.
 CATEGORY_COLOR_MAP = {"Weapon": "Purple", "Arcane": "Green", "Mundane": "Blue"}
 
+# Fixed Frenzy order (lowest acts "first"/holds the marker by default): Yeti < Sphinx <
+# Jiangshi < Cthulhu. Used both to seed active_monsters at game start and to hand the
+# Frenzy marker off to the next-lowest active monster whenever its current holder is defeated.
+FRENZY_ORDER = {"Yeti": 1, "Sphinx": 2, "Jiangshi": 3, "Cthulhu": 4}
+
 
 def _load_items_pool() -> List[Dict]:
     data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "data")
@@ -244,19 +250,22 @@ PERK_CARDS = [
 # PATHFINDING HELPER (BFS)
 # ---------------------------------------------------------
 
-def find_shortest_path(start: str, targets: Set[str]) -> Optional[str]:
+def find_shortest_path(start: str, targets: Set[str], adjacency: Dict = None) -> Optional[str]:
     """Returns the next location on the shortest path towards any of the target nodes."""
     if not targets or start in targets:
         return start
-    
+
+    if adjacency is None:
+        adjacency = ADJACENCY_LIST
+
     paths = {start: [[start]]}
     queue = [start]
-    
+
     while queue:
         node = queue.pop(0)
         curr_len = len(paths[node][0])
-        
-        for neighbor in self.adjacency_list.get(node, []):
+
+        for neighbor in adjacency.get(node, []):
             if neighbor not in paths:
                 paths[neighbor] = [p + [neighbor] for p in paths[node]]
                 queue.append(neighbor)
@@ -280,26 +289,29 @@ def find_shortest_path(start: str, targets: Set[str]) -> Optional[str]:
         return target_paths[0][1]
     return start
 
-def get_best_monster_move(start: str, hero_targets: Set[str], citizen_targets: Set[str]) -> Optional[str]:
+def get_best_monster_move(start: str, hero_targets: Set[str], citizen_targets: Set[str], adjacency: Dict = None) -> Optional[str]:
     """Finds best move, preferring heroes if equidistant."""
     if start in hero_targets or start in citizen_targets:
         return start
-        
+
+    if adjacency is None:
+        adjacency = ADJACENCY_LIST
+
     paths = {start: [[start]]}
     queue = [start]
-    
+
     while queue:
         node = queue.pop(0)
         curr_len = len(paths[node][0])
-        
-        for neighbor in self.adjacency_list.get(node, []):
+
+        for neighbor in adjacency.get(node, []):
             if neighbor not in paths:
                 paths[neighbor] = [p + [neighbor] for p in paths[node]]
                 queue.append(neighbor)
             elif len(paths[neighbor][0]) == curr_len + 1:
                 for p in paths[node]:
                     paths[neighbor].append(p + [neighbor])
-                    
+
     hero_dists = {t: len(paths[t][0]) for t in hero_targets if t in paths}
     cit_dists = {t: len(paths[t][0]) for t in citizen_targets if t in paths}
     
@@ -360,6 +372,8 @@ class GameRoom:
         self.current_card: Optional[Dict] = None
         self.combat_rolls: List[str] = []
         self.log: List[str] = []
+        self.game_start_time: Optional[float] = None  # Unix timestamp, set once the game actually starts
+        self.game_end_time: Optional[float] = None  # set once GameOverWin/GameOverLose is reached, freezes the timer
         self.active_perks_limit = {} # prevents double-use
         self.frenzy_marker = "" # which monster has frenzy token
 
@@ -369,13 +383,7 @@ class GameRoom:
             self.log.pop(0)
 
     def initialize_game(self, chosen_monsters: List[str]):
-        frenzy_order = {
-            "Yeti": 1,
-            "Sphinx": 2,
-            "Jiangshi": 3,
-            "Cthulhu": 4
-        }
-        self.active_monsters = sorted(chosen_monsters, key=lambda m: frenzy_order.get(m, 99))
+        self.active_monsters = sorted(chosen_monsters, key=lambda m: FRENZY_ORDER.get(m, 99))
         self.terror_level = 0
         self.defeated_monsters = []
         self.game_phase = "HeroPhase"
@@ -545,8 +553,10 @@ class GameRoom:
 
         if self.active_monsters:
             self.frenzy_marker = self.active_monsters[0]
-            
+
         self.game_started = True
+        self.game_start_time = time.time()
+        self.game_end_time = None
         self.add_log("The game has begun! Protect the town and defeat the monsters.")
 
     def spawn_item(self):
@@ -620,6 +630,8 @@ class GameRoom:
             "selected_map": self.selected_map,
             "game_started": self.game_started,
             "game_phase": self.game_phase,
+            "game_start_time": self.game_start_time,
+            "game_end_time": self.game_end_time,
             "terror_level": self.terror_level,
             "deck_count": len(self.deck),
             "active_monsters": self.active_monsters,
@@ -1041,7 +1053,7 @@ class GameRoom:
                     remaining = item["strength"]
                     cur = self.monster_locations["Cthulhu"]
                     while remaining > 0 and cur != "The Void":
-                        nxt = find_shortest_path(cur, {"The Void"})
+                        nxt = find_shortest_path(cur, {"The Void"}, self.adjacency_list)
                         if not nxt or nxt == cur:
                             break
                         cur = nxt
@@ -1149,6 +1161,7 @@ class GameRoom:
                 self.discarded_items.append(item)
             self.active_monsters.remove("Yeti")
             self.defeated_monsters.append("Yeti")
+            self._reassign_frenzy_if_needed()
             h_state["ap"] -= 1
             self.add_log("THE YETI HAS BEEN CALMED! The children are safe and happy!")
             self.check_victory()
@@ -1178,6 +1191,7 @@ class GameRoom:
                 self.discarded_items.append(item)
             self.active_monsters.remove("Jiangshi")
             self.defeated_monsters.append("Jiangshi")
+            self._reassign_frenzy_if_needed()
             h_state["ap"] -= 1
             self.add_log("THE JIANGSHI IS DISPOSSESSED! The hopping vampire is sealed.")
             self.check_victory()
@@ -1206,6 +1220,7 @@ class GameRoom:
                 self.discarded_items.append(item)
             self.active_monsters.remove("Sphinx")
             self.defeated_monsters.append("Sphinx")
+            self._reassign_frenzy_if_needed()
             h_state["ap"] -= 1
             self.add_log("THE SPHINX IS OUTWITTED! The riddle-keeper vanishes.")
             self.check_victory()
@@ -1237,6 +1252,7 @@ class GameRoom:
                 self.discarded_items.append(item)
             self.active_monsters.remove("Cthulhu")
             self.defeated_monsters.append("Cthulhu")
+            self._reassign_frenzy_if_needed()
             h_state["ap"] -= 1
             self.add_log("CTHULHU IS LOCKED AWAY IN R'LYEH... for now.")
             self.check_victory()
@@ -1415,13 +1431,27 @@ class GameRoom:
             return True
         return False
 
+    def _reassign_frenzy_if_needed(self):
+        """If the monster currently holding the Frenzy marker is no longer active (e.g.
+        it was just defeated), hand the marker to the next-lowest monster in Frenzy
+        order (Yeti < Sphinx < Jiangshi < Cthulhu) that's still active."""
+        if self.frenzy_marker in self.active_monsters:
+            return
+        if self.active_monsters:
+            self.frenzy_marker = min(self.active_monsters, key=lambda m: FRENZY_ORDER.get(m, 99))
+            self.add_log(f"The Frenzy marker moves to {self.frenzy_marker}.")
+        else:
+            self.frenzy_marker = ""
+
     def check_victory(self):
         if not self.active_monsters:
             self.game_phase = "GameOverWin"
+            self.game_end_time = time.time()
             self.add_log("VICTORY! All monsters have been defeated. The town is safe!")
 
     def check_defeat(self, reason: str):
         self.game_phase = "GameOverLose"
+        self.game_end_time = time.time()
         self.add_log(f"DEFEAT! {reason}")
 
     # ---------------------------------------------------------
@@ -1527,7 +1557,7 @@ class GameRoom:
                 child_locs = {c["location"] for c in y_state["children"] if not c["rescued"]}
                 if child_locs:
                     for _ in range(2):
-                        step = find_shortest_path(yeti_loc, child_locs)
+                        step = find_shortest_path(yeti_loc, child_locs, self.adjacency_list)
                         if step and step != yeti_loc:
                             yeti_loc = step
                             self.monster_locations["Yeti"] = yeti_loc
@@ -1648,7 +1678,7 @@ class GameRoom:
             if current_loc in hero_targets or current_loc in citizen_targets:
                 break
                 
-            next_step = get_best_monster_move(current_loc, hero_targets, citizen_targets)
+            next_step = get_best_monster_move(current_loc, hero_targets, citizen_targets, self.adjacency_list)
             if next_step and next_step != current_loc:
                 self.monster_locations[name] = next_step
                 self.add_log(f"{name} moved to {next_step}.")

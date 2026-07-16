@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Horrified: World of Monsters - Online</title>
-    <link rel="stylesheet" href="style.css?v=42">
+    <link rel="stylesheet" href="style.css?v=46">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,500&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -203,6 +203,17 @@
                             Heroes
                         </button>
 
+                        <!-- Game Timer (centered in the remaining space of this bar) -->
+                        <div class="game-timer-topbar-wrap">
+                            <div class="game-timer-pill">
+                                <svg class="gtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="9"/>
+                                    <path d="M12 7v5l3 3"/>
+                                </svg>
+                                <span id="game-timer-display" class="game-timer-display">00:00</span>
+                            </div>
+                        </div>
+
                         <!-- Floating Map HUD -->
                         <div class="map-hud-top">
                             <div class="hud-item">
@@ -358,6 +369,6 @@
         </div>
     </div>
 
-    <script src="game.js?v=124"></script>
+    <script src="game.js?v=129"></script>
 </body>
 </html>

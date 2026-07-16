@@ -149,6 +149,31 @@ Object.keys(MONSTER_CHECKBOX_IDS).forEach(id => {
     });
 });
 
+// Game duration timer (bottom-left sidebar, under Monster Phase). Ticks every second off
+// the server-tracked game_start_time/game_end_time so it stays correct across reconnects
+// and freezes once the game ends, rather than drifting as a purely local stopwatch.
+function updateGameTimerDisplay() {
+    const el = document.getElementById("game-timer-display");
+    if (!el) return;
+
+    if (!gameState || !gameState.game_started || !gameState.game_start_time) {
+        el.textContent = "00:00";
+        return;
+    }
+
+    const endTime = gameState.game_end_time || (Date.now() / 1000);
+    const elapsed = Math.max(0, Math.floor(endTime - gameState.game_start_time));
+    const hours = Math.floor(elapsed / 3600);
+    const minutes = Math.floor((elapsed % 3600) / 60);
+    const seconds = elapsed % 60;
+    const pad = (n) => String(n).padStart(2, "0");
+
+    el.textContent = hours > 0
+        ? `${hours}:${pad(minutes)}:${pad(seconds)}`
+        : `${pad(minutes)}:${pad(seconds)}`;
+}
+setInterval(updateGameTimerDisplay, 1000);
+
 elBtnChatSend.addEventListener("click", sendChatMessage);
 elChatInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") sendChatMessage();
@@ -2543,73 +2568,79 @@ function detectAndAnimatePerkCardDraws(newState) {
     }
 }
 
+// Same fly + flip-reveal mechanic as the Monster Card draw (see animateCardFly /
+// buildCardHTML), aimed at the left side of the map - the deck morphs from its card-back
+// into that spot, flips to reveal the perk's name/text for a moment, then shrinks away.
 function animatePerkCardDraw(perkName, perkText) {
     const deckEl = document.querySelector(".perks-stack");
-    const invEl = document.getElementById("gtab-btn-my-hero") || document.getElementById("gtab-btn-hero") || document.getElementById("player-inventory");
-    if (!invEl) return;
-    
+    const mapEl = document.getElementById("game-map");
+    if (!mapEl) return;
+
     const deckRect = deckEl ? deckEl.getBoundingClientRect() : {
         left: window.innerWidth / 2 - 65,
         top: window.innerHeight / 2 - 90,
         width: 130,
         height: 180
     };
-    const invRect = invEl.getBoundingClientRect();
-    
-    const fly = document.createElement("div");
-    fly.className = "flying-perk-card";
-    fly.style.cssText = `
-        position: fixed;
-        left: ${deckRect.left + (deckRect.width || 0) / 2 - 65}px;
-        top: ${deckRect.top + (deckRect.height || 0) / 2 - 90}px;
-        width: 130px;
-        height: 180px;
-        background: url('/Images/Perk_Card.png') center/contain no-repeat;
-        border-radius: 8px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.8), 0 0 15px rgba(153, 51, 255, 0.4);
-        z-index: 100000;
-        pointer-events: none;
-        opacity: 0;
-        transform: scale(0.3) rotate(-20deg);
-        transition: left 1.4s cubic-bezier(0.25, 1, 0.3, 1),
-                    top 1.4s cubic-bezier(0.25, 1, 0.3, 1),
-                    transform 1.4s cubic-bezier(0.25, 1, 0.3, 1),
-                    opacity 0.8s ease;
-    `;
-    
-    fly.innerHTML = "";
-    
-    document.body.appendChild(fly);
-    
-    // Animate fly & reveal
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-        fly.style.left = `${invRect.left + invRect.width / 2 - 65}px`;
-        fly.style.top = `${invRect.top + invRect.height / 2 - 90}px`;
-        fly.style.transform = "scale(0.45) rotate(5deg)";
-        fly.style.opacity = "1";
-    }));
-    
-    // Staged shrink as it gets very close
-    setTimeout(() => {
-        fly.style.transform = "scale(0.1) rotate(0deg)";
-        fly.style.opacity = "0";
-    }, 1100);
-    
-    fly.addEventListener("transitionend", () => {
-        fly.remove();
-        
-        // Add a temporary landing ripple/glow in player inventory/tab button
-        invEl.style.transition = "box-shadow 0.3s, background-color 0.3s";
-        invEl.style.boxShadow = "0 0 25px rgba(153, 51, 255, 0.8)";
-        invEl.style.backgroundColor = "rgba(153, 51, 255, 0.25)";
-        
-        // Play simple synthesized perk sound
-        playSynthPerkSound();
+    const mapRect = mapEl.getBoundingClientRect();
 
+    const destW = 160;
+    const destH = 248;
+    const destLeft = mapRect.left + 24;
+    const destTop = mapRect.top + (mapRect.height - destH) / 2;
+
+    const fly = document.createElement("div");
+    fly.className = "perk-fly-overlay";
+    fly.style.left = `${deckRect.left}px`;
+    fly.style.top = `${deckRect.top}px`;
+    fly.style.width = `${deckRect.width || 130}px`;
+    fly.style.height = `${deckRect.height || 180}px`;
+    fly.innerHTML = `
+        <div class="perk-fly-flip-container">
+            <div class="perk-fly-inner">
+                <div class="perk-fly-back"><img src="/Images/Perk_Card.png" alt="Perk Card"></div>
+                <div class="perk-fly-face">
+                    <div class="perk-fly-name"></div>
+                    <div class="perk-fly-text"></div>
+                </div>
+            </div>
+        </div>
+    `;
+    fly.querySelector(".perk-fly-name").textContent = perkName;
+    fly.querySelector(".perk-fly-text").textContent = perkText;
+    document.body.appendChild(fly);
+
+    playSynthPerkSound();
+
+    // Fly & morph from the deck towards the left side of the map
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        fly.style.left = `${destLeft}px`;
+        fly.style.top = `${destTop}px`;
+        fly.style.width = `${destW}px`;
+        fly.style.height = `${destH}px`;
+    }));
+
+    fly.addEventListener("transitionend", () => {
+        // Flip in place to reveal the perk's name/text, matching the Monster Card reveal
+        const inner = fly.querySelector(".perk-fly-inner");
+        if (inner) inner.classList.add("flipped");
+
+        // Let the revealed card linger long enough to read, then fly towards the "My
+        // Hero" tab while shrinking away - this points the player at where the perk
+        // actually landed instead of just vanishing in place.
         setTimeout(() => {
-            invEl.style.boxShadow = "";
-            invEl.style.backgroundColor = "";
-        }, 600);
+            const heroTabEl = document.getElementById("gtab-btn-my-hero");
+            const heroTabRect = heroTabEl ? heroTabEl.getBoundingClientRect() : null;
+
+            fly.style.transition = "left 0.6s cubic-bezier(0.4,0,0.2,1), top 0.6s cubic-bezier(0.4,0,0.2,1), opacity 0.6s ease, transform 0.6s cubic-bezier(0.4,0,0.2,1)";
+            if (heroTabRect) {
+                fly.style.left = `${heroTabRect.left + heroTabRect.width / 2 - destW / 2}px`;
+                fly.style.top = `${heroTabRect.top + heroTabRect.height / 2 - destH / 2}px`;
+            }
+            fly.style.opacity = "0";
+            fly.style.transform = "scale(0.15)";
+            setTimeout(() => fly.remove(), 620);
+        }, 1800);
     }, { once: true });
 }
 
@@ -3011,11 +3042,10 @@ function renderSVGMap() {
     if (gameState.monster_locations) Object.values(gameState.monster_locations).forEach(checkLoc);
     if (gameState.citizens) Object.values(gameState.citizens).forEach(c => checkLoc(c.location));
     if (gameState.monster_states && gameState.monster_states["Yeti"]) {
-        gameState.monster_states["Yeti"].cave_candidates.forEach(l => checkLoc(l.location));
         gameState.monster_states["Yeti"].children.forEach(c => checkLoc(c.location));
     }
-    if (gameState.monster_states && gameState.monster_states["Jiangshi"]) {
-        gameState.monster_states["Jiangshi"].shrine_candidates.forEach(c => checkLoc(c.location));
+    if (gameState.lair_tokens) {
+        gameState.lair_tokens.forEach(t => checkLoc(t.location));
     }
 
 
