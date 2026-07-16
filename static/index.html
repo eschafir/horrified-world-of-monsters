@@ -13,7 +13,7 @@
         <div id="lobby-screen" class="screen">
             <header class="lobby-header">
                 <h1 class="glow-text">HORRIFIED</h1>
-                <p class="subtitle">WORLD OF MONSTERS</p>
+                <p id="game-subtitle" class="subtitle">WORLD OF MONSTERS</p>
             </header>
 
             <div class="lobby-card glass">
@@ -36,19 +36,19 @@
 
                 <div id="map-select-view" class="hidden">
                     <h2>Select a Map</h2>
-                    <div class="map-options-grid" style="display: flex; gap: 20px; justify-content: center; margin-bottom: 20px;">
-                        <label class="map-select-card" style="cursor: pointer; text-align: center; padding: 10px; border: 2px solid #555; border-radius: 8px;">
-                            <img src="/Images/Map.png" alt="Standard Map" style="width: 200px; border-radius: 8px; margin-bottom: 10px;">
-                            <div>
-                                <input type="radio" name="map-choice" value="Map.png" checked style="margin-right: 5px; cursor: pointer;">
-                                Standard Map
+                    <div class="map-options-grid" style="display: flex; gap: 30px; justify-content: center; margin-bottom: 25px;">
+                        <label class="map-select-card" style="cursor: pointer; text-align: center; padding: 15px; border: 2px solid #555; border-radius: 8px; transition: transform 0.2s; background: rgba(0,0,0,0.3);">
+                            <img src="/Images/Map.png" alt="World of Monsters Map" style="width: 350px; height: 350px; object-fit: contain; border-radius: 8px; margin-bottom: 12px; display: block;">
+                            <div style="font-size: 18px; font-weight: bold;">
+                                <input type="radio" name="map-choice" value="Map.png" checked style="margin-right: 8px; cursor: pointer; transform: scale(1.2);">
+                                World of Monsters Map
                             </div>
                         </label>
-                        <label class="map-select-card" style="cursor: pointer; text-align: center; padding: 10px; border: 2px solid #555; border-radius: 8px;">
-                            <img src="/Images/map-greek.png" alt="Greek Map" style="width: 200px; border-radius: 8px; margin-bottom: 10px;">
-                            <div>
-                                <input type="radio" name="map-choice" value="map-greek.png" style="margin-right: 5px; cursor: pointer;">
-                                Greek Map
+                        <label class="map-select-card" style="cursor: pointer; text-align: center; padding: 15px; border: 2px solid #555; border-radius: 8px; transition: transform 0.2s; background: rgba(0,0,0,0.3);">
+                            <img src="/Images/map-greek.png" alt="Greek Monsters Map" style="width: 350px; height: 350px; object-fit: contain; border-radius: 8px; margin-bottom: 12px; display: block;">
+                            <div style="font-size: 18px; font-weight: bold;">
+                                <input type="radio" name="map-choice" value="map-greek.png" style="margin-right: 8px; cursor: pointer; transform: scale(1.2);">
+                                Greek Monsters Map
                             </div>
                         </label>
                     </div>

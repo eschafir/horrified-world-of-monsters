@@ -78,6 +78,25 @@ const elApDisplay = document.getElementById("action-points-left");
 const elMapSelectView = document.getElementById("map-select-view");
 const elBtnConfirmMap = document.getElementById("btn-confirm-map");
 
+// Helper to toggle Greek theme
+function applyThemeForMap(mapName) {
+    const subtitle = document.getElementById("game-subtitle");
+    if (mapName === "map-greek.png") {
+        document.body.classList.add("greek-theme");
+        if (subtitle) subtitle.innerText = "GREEK MONSTERS";
+    } else {
+        document.body.classList.remove("greek-theme");
+        if (subtitle) subtitle.innerText = "WORLD OF MONSTERS";
+    }
+}
+
+// Attach listeners to radio buttons immediately
+document.querySelectorAll('input[name="map-choice"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+        applyThemeForMap(e.target.value);
+    });
+});
+
 elBtnCreate.addEventListener("click", () => {
     playerName = elPlayerNameInput.value.trim();
     if (!playerName) {
@@ -86,6 +105,9 @@ elBtnCreate.addEventListener("click", () => {
     }
     elSetupView.classList.add("hidden");
     elMapSelectView.classList.remove("hidden");
+    // Ensure theme matches default selected radio
+    const chosenMap = document.querySelector('input[name="map-choice"]:checked').value;
+    applyThemeForMap(chosenMap);
 });
 
 elBtnConfirmMap.addEventListener("click", () => {
@@ -641,6 +663,7 @@ function updateGameUI() {
     if (!gameState) return;
 
     if (gameState.selected_map) {
+        applyThemeForMap(gameState.selected_map);
         const mapImage = document.getElementById("game-map-image");
         if (mapImage) {
             mapImage.setAttribute("href", `/Images/${gameState.selected_map}?v=2`);

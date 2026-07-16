@@ -2428,3 +2428,51 @@ body {
     stroke-width: 4 !important;
     stroke-dasharray: none !important;
 }
+
+/* GREEK THEME OVERRIDES */
+body.greek-theme {
+    background: linear-gradient(135deg, #0a1128 0%, #1c2541 50%, #0b132b 100%);
+}
+body.greek-theme #lobby-screen::before {
+    background: url('/Images/Horrified%20GM%20Cover.png') center/cover no-repeat;
+    opacity: 0.3;
+}
+body.greek-theme .glass-panel, body.greek-theme .glass-panel-heavy {
+    background: rgba(11, 19, 43, 0.75);
+    border: 1px solid rgba(42, 111, 151, 0.25);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7), inset 0 0 15px rgba(42, 111, 151, 0.05);
+}
+body.greek-theme .main-title {
+    background: linear-gradient(to right, #61a5c2, #2a6f97, #014f86);
+    -webkit-background-clip: text;
+}
+body.greek-theme .btn-primary {
+    background: linear-gradient(135deg, #2a6f97 0%, #014f86 100%);
+    color: #fff;
+    font-weight: bold;
+}
+body.greek-theme .btn-primary:hover {
+    box-shadow: 0 0 15px rgba(42, 111, 151, 0.7);
+    color: #fff;
+}
+body.greek-theme .btn-secondary {
+    background: linear-gradient(135deg, #1c2541 0%, #0b132b 100%);
+    border-color: #468faf;
+    color: #fff;
+}
+body.greek-theme .player-dot {
+    background: #468faf;
+    box-shadow: 0 0 8px #468faf;
+}
+body.greek-theme .hero-card.selected {
+    border-color: #468faf;
+    background: linear-gradient(160deg, rgba(42,111,151,0.5) 0%, rgba(11,19,43,0.8) 100%);
+    box-shadow: 0 0 15px rgba(42, 111, 151, 0.4);
+}
+body.greek-theme .map-select-card {
+    border-color: #2a6f97;
+}
+body.greek-theme .input-group input:focus {
+    border-color: #468faf;
+    box-shadow: 0 0 10px rgba(42, 111, 151, 0.3);
+}
