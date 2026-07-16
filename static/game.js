@@ -899,9 +899,9 @@ function updateGameUI() {
                                     die.classList.remove("die-rolling");
                                     die.classList.add("rolled");
                                     if (result === "Hit") {
-                                        die.textContent = "❗";
-                                    } else if (result === "Power") {
                                         die.textContent = "💥";
+                                    } else if (result === "Power") {
+                                        die.textContent = "❗";
                                     } else {
                                         die.textContent = "—";
                                     }
@@ -951,7 +951,7 @@ function updateGameUI() {
             const descEl = document.getElementById("dice-modal-desc");
             const btnFinishDice = document.getElementById("btn-finish-dice");
             
-            descEl.textContent = `You took ${hits} damage (!)! Select items with total strength >= ${hits} to block it, or take the damage.`;
+            descEl.textContent = `You took ${hits} hit${hits !== 1 ? "s" : ""}! Select ${hits} item${hits !== 1 ? "s" : ""} to discard and block it, or take the damage.`;
             container.innerHTML = "";
             
             const myState = gameState.heroes_state[playerName];
@@ -965,24 +965,33 @@ function updateGameUI() {
                 itemsDiv.style.gap = "10px";
                 itemsDiv.style.flexWrap = "wrap";
                 itemsDiv.style.justifyContent = "center";
-                
+
+                // Image + color-coded border, matching the item cards used everywhere
+                // else (Pick Up modal, puzzle item pickers) so items are recognizable
+                // at a glance instead of a plain colored square + text row.
                 myState.items.forEach(item => {
+                    const imgSrc = item.artwork ? `/assets/items/${item.artwork}` : "";
+                    const colorHex = getItemColorHex(item.color);
+
                     const itemEl = document.createElement("div");
                     itemEl.className = "inventory-item";
-                    itemEl.style.cursor = "pointer";
-                    itemEl.style.padding = "10px";
-                    itemEl.style.border = "2px solid transparent";
-                    itemEl.style.borderRadius = "8px";
-                    itemEl.innerHTML = `<div class="item-color-box ${item.color.toLowerCase()}"></div> 
-                                        <span class="item-strength">${item.strength}</span> ${item.name}`;
-                                        
+                    itemEl.style.cssText = "width:84px; text-align:center; cursor:pointer;";
+                    itemEl.innerHTML = `
+                        <div class="pickup-item-thumb" style="width:64px; height:64px; margin:0 auto 6px; border-radius:8px; overflow:hidden; background:rgba(255,255,255,0.05); border:3px solid ${colorHex}; display:flex; align-items:center; justify-content:center; transition: box-shadow 0.15s ease;">
+                            ${imgSrc ? `<img src="${imgSrc}" alt="${item.name}" style="width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.style.visibility='hidden'">` : ''}
+                        </div>
+                        <div style="font-size:0.68rem; color:#e5d9c8; line-height:1.2;">${item.name}</div>
+                        <div style="font-size:0.65rem; color:#a491c3;"><strong>${item.strength}</strong></div>
+                    `;
+                    const thumb = itemEl.querySelector(".pickup-item-thumb");
+
                     itemEl.onclick = () => {
                         if (selectedIds.has(item.id)) {
                             selectedIds.delete(item.id);
-                            itemEl.style.borderColor = "transparent";
+                            thumb.style.boxShadow = "none";
                         } else {
                             selectedIds.add(item.id);
-                            itemEl.style.borderColor = "#ffcc00";
+                            thumb.style.boxShadow = "0 0 10px 2px rgba(255, 213, 51, 0.8)";
                         }
                         updateDamageButtons();
                     };
@@ -1019,12 +1028,8 @@ function updateGameUI() {
             btnFinishDice.parentNode.appendChild(btnBlock);
             
             function updateDamageButtons() {
-                let totalStr = 0;
-                myState.items.forEach(i => {
-                    if (selectedIds.has(i.id)) totalStr += i.strength;
-                });
-                
-                if (totalStr >= hits) {
+                // One item per Hit rolled - strength no longer matters for blocking.
+                if (selectedIds.size >= hits) {
                     btnBlock.classList.remove("hidden");
                     btnBlock.onclick = () => {
                         btnBlock.disabled = true;
@@ -1090,6 +1095,21 @@ function getMonsterSymbols(name) {
     if (entry.frenzySymbols && entry.frenzySymbols.length) return entry.frenzySymbols;
     const phase = (entry.phases || [])[0];
     return (phase && phase.frenzySymbols) || [];
+}
+
+// The monster's currently-relevant Power (name + description), so it can be read
+// straight from its in-game status card. Cthulhu has a different Power per phase
+// (Touch of Madness in Phase 1, Tentacles of Insanity in Phase 2); every other monster
+// only has one phase.
+function getMonsterCurrentPower(name) {
+    const entry = gameState.monster_catalog && gameState.monster_catalog[name];
+    if (!entry || !entry.phases || !entry.phases.length) return null;
+    let phase = entry.phases[0];
+    if (name === "Cthulhu") {
+        const cthPhase = gameState.monster_states && gameState.monster_states["Cthulhu"] && gameState.monster_states["Cthulhu"].phase;
+        phase = entry.phases.find(p => p.id === cthPhase) || phase;
+    }
+    return (phase.powers && phase.powers[0]) || null;
 }
 
 // Fixed Perception Die symbol -> color mapping (each symbol always has the same color
@@ -1768,6 +1788,7 @@ function renderMonstersStatusPanel() {
     const symbolDots = getMonsterSymbols(m).map(s =>
         `<span title="${s.symbol} (${s.color})" style="display:inline-block; width:12px; height:12px; border-radius:50%; background:${getSymbolColorHex(s.color)}; border:1.5px solid rgba(0,0,0,0.4); box-shadow:0 0 4px ${getSymbolColorHex(s.color)}99;"></span>`
     ).join("");
+    const currentPower = getMonsterCurrentPower(m);
 
     let details = `
         <div class="monster-card-header" style="display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom:8px; margin-bottom:8px;">
@@ -1787,7 +1808,16 @@ function renderMonstersStatusPanel() {
             </div>
         </div>
     `;
-    
+
+    if (currentPower) {
+        details += `
+            <div style="text-align:left; margin-bottom:10px; padding:8px 10px; border-radius:8px; background:rgba(255,51,102,0.08); border:1px solid rgba(255,51,102,0.25);">
+                <div style="font-weight:700; color:#ff8899; font-size:0.75rem;">Power: ${currentPower.name}</div>
+                <div style="font-size:0.7rem; color:#e5d9c8; margin-top:2px;">${currentPower.description}</div>
+            </div>
+        `;
+    }
+
     if (m === "Yeti") {
         const y_state = gameState.monster_states["Yeti"];
         const kids_left = y_state.children.filter(c => !c.rescued).length;

@@ -1858,15 +1858,23 @@ class GameRoom:
         if hits > 0:
             h_state = self.heroes_state[hero_name]
 
+            # One item per Hit rolled blocks the attack entirely - strength doesn't
+            # matter, only having enough items to discard.
+            matched_items = []
             if chosen_items is not None:
                 for i_id in chosen_items:
-                    for item in h_state["items"]:
-                        if item["id"] == i_id:
-                            h_state["items"].remove(item)
-                            self.discarded_items.append(item)
-                            self.add_log(f"{hero_name} discarded {item['name']} to block the attack.")
-                            break
+                    item = next((i for i in h_state["items"] if i["id"] == i_id), None)
+                    if item and item not in matched_items:
+                        matched_items.append(item)
+
+            if chosen_items is not None and len(matched_items) >= hits:
+                for item in matched_items:
+                    h_state["items"].remove(item)
+                    self.discarded_items.append(item)
+                    self.add_log(f"{hero_name} discarded {item['name']} to block the attack.")
             else:
+                if chosen_items is not None:
+                    self.add_log(f"Not enough items selected to block {hits} hit(s) - the attack lands.")
                 self._apply_direct_hit(hero_name)
 
         if powers > 0:

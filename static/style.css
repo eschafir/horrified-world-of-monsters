@@ -161,6 +161,21 @@ body {
     width: 320px;
 }
 
+/* Select-a-Map lobby screen: the map grid is much wider than the title/Continue button,
+   so those need explicit centering (a block/flex box doesn't self-center just because
+   its containing view is centered on the page). */
+#map-select-view {
+    text-align: center;
+}
+
+#map-select-view h2 {
+    margin-bottom: 28px;
+}
+
+#map-select-view .button-row {
+    margin: 0 auto;
+}
+
 /* BUTTONS */
 .btn {
     flex: 1;
