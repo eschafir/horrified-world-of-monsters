@@ -2660,3 +2660,74 @@ body.greek-theme .input-group input:focus {
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
+
+/* Monster Power toast: pops in when a monster's Power resolves (e.g. Sphinx's Lethal
+   Conundrum), so a Terror bump or a missing item has a visible, explained cause. */
+#monster-power-toast-host {
+    position: fixed;
+    top: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    pointer-events: none;
+}
+
+.monster-power-toast {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 18px 10px 10px;
+    border-radius: 14px;
+    border: 1.5px solid rgba(255, 51, 102, 0.5);
+    background: rgba(12, 6, 20, 0.92);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    max-width: 380px;
+    opacity: 0;
+    transform: translateY(-16px) scale(0.95);
+    transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.25, 1, 0.3, 1);
+}
+
+.monster-power-toast.shown {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.monster-power-toast.hiding {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+}
+
+.monster-power-toast-portrait {
+    width: 46px;
+    height: 46px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid rgba(255, 51, 102, 0.6);
+}
+
+.monster-power-toast-portrait img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.monster-power-toast-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #ff8899;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 2px;
+}
+
+.monster-power-toast-text {
+    font-size: 0.75rem;
+    color: #e5d9c8;
+    line-height: 1.35;
+}

@@ -47,7 +47,7 @@
         "powers": [
           {
             "name": "Snow Blast",
-            "description": "Hero or Citizen not in the Yeti's location takes 1 hit. This has no effect if everyone is in the Yeti's location."
+            "description": "The closest Hero or Citizen not in the Yeti's location takes 1 hit. This has no effect if everyone is in the Yeti's location."
           }
         ],
   

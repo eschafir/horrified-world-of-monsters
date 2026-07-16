@@ -358,7 +358,9 @@ class GameRoom:
         self.selected_monsters: List[str] = ["Yeti", "Jiangshi"]  # lobby pick, host-controlled, visible to all
         self.pending_dice_roll = None
         self.roll_event = None
-        
+        self.pending_block_choice = None  # non-dice attack sources (e.g. a monster Power) that target one hero directly
+        self.block_choice_event = None
+
         # Board entities
         self.heroes_state: Dict[str, Dict] = {} # player_name -> state
         self.items_on_board: Dict[str, List[Dict]] = {loc: [] for loc in self.adjacency_list.keys()}
@@ -376,11 +378,37 @@ class GameRoom:
         self.game_end_time: Optional[float] = None  # set once GameOverWin/GameOverLose is reached, freezes the timer
         self.active_perks_limit = {} # prevents double-use
         self.frenzy_marker = "" # which monster has frenzy token
+        self.power_events: List[Dict] = []  # rolling feed of resolved monster Powers, for client-side toast notifications
+        self.citizen_events: List[Dict] = []  # rolling feed of citizen spawns, for client-side toast notifications
 
     def add_log(self, msg: str):
         self.log.append(msg)
         if len(self.log) > 50:
             self.log.pop(0)
+
+    def add_power_event(self, monster: str, power_name: str, message: str):
+        """Records a resolved monster Power so the client can show a toast, instead of
+        players just noticing missing items or a Terror bump with no visible cause."""
+        self.power_events.append({
+            "id": str(uuid.uuid4())[:8],
+            "monster": monster,
+            "power_name": power_name,
+            "message": message
+        })
+        if len(self.power_events) > 20:
+            self.power_events.pop(0)
+
+    def add_citizen_event(self, citizen_name: str, message: str):
+        """Records a citizen spawn so the client can show a toast with its portrait."""
+        portrait = self.citizens.get(citizen_name, {}).get("portrait", f"{citizen_name}.png")
+        self.citizen_events.append({
+            "id": str(uuid.uuid4())[:8],
+            "citizen": citizen_name,
+            "portrait": portrait,
+            "message": message
+        })
+        if len(self.citizen_events) > 20:
+            self.citizen_events.pop(0)
 
     def initialize_game(self, chosen_monsters: List[str]):
         self.active_monsters = sorted(chosen_monsters, key=lambda m: FRENZY_ORDER.get(m, 99))
@@ -624,6 +652,18 @@ class GameRoom:
         token = next((t for t in self.lair_tokens if t["type"] == kind), None)
         return token["location"] if token else None
 
+    def _bfs_distances(self, start: str) -> Dict[str, int]:
+        """Shortest-path distance (in steps) from start to every reachable location."""
+        distances = {start: 0}
+        queue = [start]
+        while queue:
+            node = queue.pop(0)
+            for neighbor in self.adjacency_list.get(node, []):
+                if neighbor not in distances:
+                    distances[neighbor] = distances[node] + 1
+                    queue.append(neighbor)
+        return distances
+
     def get_serializable_state(self) -> Dict:
         return {
             "room_code": self.room_code,
@@ -638,6 +678,8 @@ class GameRoom:
             "defeated_monsters": self.defeated_monsters,
             "selected_monsters": self.selected_monsters,
             "frenzy_marker": self.frenzy_marker,
+            "power_events": self.power_events,
+            "citizen_events": self.citizen_events,
             "heroes_state": self.heroes_state,
             "items_on_board": self.items_on_board,
             "discarded_items": self.discarded_items,
@@ -646,6 +688,7 @@ class GameRoom:
             "monster_states": self.monster_states,
             "lair_tokens": self.lair_tokens,
             "pending_dice_roll": self.pending_dice_roll,
+            "pending_block_choice": self.pending_block_choice,
             "turn_player_idx": self.turn_player_idx,
             "current_card": self.current_card,
             "combat_rolls": self.combat_rolls,
@@ -1572,52 +1615,72 @@ class GameRoom:
         elif ev == "spawn_delilah":
             self.citizens["Morgan"]["active"] = True
             self.citizens["Morgan"]["location"] = self.citizens["Morgan"]["start"]
-            self.add_log("Citizen Morgan has arrived at The Scuttled Siren.")
+            msg = "Citizen Morgan has arrived at The Scuttled Siren."
+            self.add_log(msg)
+            self.add_citizen_event("Morgan", msg)
 
         elif ev == "spawn_mayor":
             self.citizens["Mari"]["active"] = True
             self.citizens["Mari"]["location"] = self.citizens["Mari"]["start"]
-            self.add_log("Citizen Mari has arrived at North Station.")
+            msg = "Citizen Mari has arrived at North Station."
+            self.add_log(msg)
+            self.add_citizen_event("Mari", msg)
 
         elif ev == "spawn_higgins":
             self.citizens["Howard"]["active"] = True
             self.citizens["Howard"]["location"] = self.citizens["Howard"]["start"]
-            self.add_log("Citizen Howard has arrived at Spindlewood Institute.")
+            msg = "Citizen Howard has arrived at Spindlewood Institute."
+            self.add_log(msg)
+            self.add_citizen_event("Howard", msg)
 
         elif ev == "spawn_spindlewood":
             self.citizens["Ms. Spindlewood"]["active"] = True
             self.citizens["Ms. Spindlewood"]["location"] = self.citizens["Ms. Spindlewood"]["start"]
-            self.add_log("Ms. Spindlewood has arrived at Spindlewood Institute.")
+            msg = "Ms. Spindlewood has arrived at Spindlewood Institute."
+            self.add_log(msg)
+            self.add_citizen_event("Ms. Spindlewood", msg)
 
         elif ev == "spawn_weir":
             self.citizens["Dr. Weir"]["active"] = True
             self.citizens["Dr. Weir"]["location"] = self.citizens["Dr. Weir"]["start"]
-            self.add_log("Dr. Weir has arrived at Arcane Forge.")
+            msg = "Dr. Weir has arrived at Arcane Forge."
+            self.add_log(msg)
+            self.add_citizen_event("Dr. Weir", msg)
 
         elif ev == "spawn_shinya":
             self.citizens["Shinya"]["active"] = True
             self.citizens["Shinya"]["location"] = self.citizens["Shinya"]["start"]
-            self.add_log("Citizen Shinya has arrived at The Roaming Wolf.")
+            msg = "Citizen Shinya has arrived at The Roaming Wolf."
+            self.add_log(msg)
+            self.add_citizen_event("Shinya", msg)
 
         elif ev == "spawn_james_betty":
             self.citizens["James & Betty"]["active"] = True
             self.citizens["James & Betty"]["location"] = self.citizens["James & Betty"]["start"]
-            self.add_log("James & Betty have arrived at Specter Trail Caravan.")
+            msg = "James & Betty have arrived at Specter Trail Caravan."
+            self.add_log(msg)
+            self.add_citizen_event("James & Betty", msg)
 
         elif ev == "spawn_vaughn":
             self.citizens["Vaughn"]["active"] = True
             self.citizens["Vaughn"]["location"] = self.citizens["Vaughn"]["start"]
-            self.add_log("Citizen Vaughn has arrived at North Station.")
+            msg = "Citizen Vaughn has arrived at North Station."
+            self.add_log(msg)
+            self.add_citizen_event("Vaughn", msg)
 
         elif ev == "spawn_jennifer":
             self.citizens["Jennifer"]["active"] = True
             self.citizens["Jennifer"]["location"] = self.citizens["Jennifer"]["start"]
-            self.add_log("Citizen Jennifer has arrived at Arcane Forge.")
+            msg = "Citizen Jennifer has arrived at Arcane Forge."
+            self.add_log(msg)
+            self.add_citizen_event("Jennifer", msg)
 
         elif ev == "spawn_raimi":
             self.citizens["Raimi"]["active"] = True
             self.citizens["Raimi"]["location"] = self.citizens["Raimi"]["start"]
-            self.add_log("Citizen Raimi has arrived at Stilt Town.")
+            msg = "Citizen Raimi has arrived at Stilt Town."
+            self.add_log(msg)
+            self.add_citizen_event("Raimi", msg)
 
         elif ev == "void_eruption":
             if "Cthulhu" in self.active_monsters:
@@ -1730,26 +1793,90 @@ class GameRoom:
         if "Cthulhu" in self.active_monsters:
             self.monster_states["Cthulhu"]["player_tracks"][hero_name] = -1
 
-    def _defeat_citizen(self, citizen_name: str):
+    def _defeat_citizen(self, citizen_name: str, monster: str = None):
         self.citizens[citizen_name]["active"] = False
         self.citizens[citizen_name]["location"] = "Defeated"
         self.add_log(f"Citizen {citizen_name} was DEFEATED by the attack!")
         self.terror_level = min(7, self.terror_level + 1)
         self.check_terror()
+        if monster:
+            self.add_power_event(monster, "Citizen Defeated", f"{citizen_name} was defeated by the {monster}!")
+
+    async def request_block_choice(self, hero_name: str, hits: int, reason: str, broadcast_fn=None) -> bool:
+        """Pauses to let hero_name pick item(s) to block `hits` hit(s) from a non-dice
+        attack source (e.g. a monster Power). Returns True if the hit was blocked."""
+        if self.active_perks_limit.get("block_all_hits", False):
+            return True
+
+        import uuid
+        self.pending_block_choice = {
+            "id": str(uuid.uuid4()),
+            "hero": hero_name,
+            "hits": hits,
+            "reason": reason,
+        }
+        if self.block_choice_event is None:
+            self.block_choice_event = asyncio.Event()
+        self.block_choice_event.clear()
+
+        if broadcast_fn:
+            await broadcast_fn()
+
+        # Block this async task until the player sends finish_block_choice
+        await self.block_choice_event.wait()
+
+        chosen_items = self.pending_block_choice.get("chosen_items")
+        self.pending_block_choice = None
+
+        h_state = self.heroes_state[hero_name]
+        matched_items = []
+        if chosen_items is not None:
+            for i_id in chosen_items:
+                item = next((i for i in h_state["items"] if i["id"] == i_id), None)
+                if item and item not in matched_items:
+                    matched_items.append(item)
+
+        if chosen_items is not None and len(matched_items) >= hits:
+            for item in matched_items:
+                h_state["items"].remove(item)
+                self.discarded_items.append(item)
+                self.add_log(f"{hero_name} discarded {item['name']} to block the {reason}.")
+            return True
+        return False
 
     async def trigger_monster_power(self, monster: str, broadcast_fn=None):
         if monster == "Yeti":
             yeti_loc = self.monster_locations["Yeti"]
-            hit_someone = False
+            distances = self._bfs_distances(yeti_loc)
+
+            candidates = []  # (distance, name, kind) - only the single closest target is struck
             for hero_name, h_state in self.heroes_state.items():
                 if h_state["location"] != yeti_loc:
-                    self._apply_direct_hit(hero_name)
-                    hit_someone = True
+                    candidates.append((distances.get(h_state["location"], 999), hero_name, "hero"))
             for cit_name, cit in self.citizens.items():
                 if cit["active"] and cit["location"] not in ("Board", "Rescued", "Defeated") and cit["location"] != yeti_loc:
-                    self._defeat_citizen(cit_name)
-                    hit_someone = True
-            self.add_log("Snow Blast! Everyone away from the Yeti is struck by freezing wind." if hit_someone else "Snow Blast has no effect — everyone is with the Yeti.")
+                    candidates.append((distances.get(cit["location"], 999), cit_name, "citizen"))
+
+            if candidates:
+                # Nearest first; ties (same location) prefer Heroes over Citizens, then alphabetical
+                candidates.sort(key=lambda c: (c[0], 0 if c[2] == "hero" else 1, c[1]))
+                _, target_name, kind = candidates[0]
+                if kind == "hero":
+                    blocked = False
+                    if self.heroes_state[target_name]["items"]:
+                        blocked = await self.request_block_choice(target_name, 1, "Snow Blast", broadcast_fn)
+                    if blocked:
+                        msg = f"Snow Blast! {target_name} blocked the freezing wind by discarding an item."
+                    else:
+                        self._apply_direct_hit(target_name)
+                        msg = f"Snow Blast! {target_name} (closest to the Yeti) is struck by freezing wind."
+                else:
+                    self._defeat_citizen(target_name)
+                    msg = f"Snow Blast! {target_name} (closest to the Yeti) is struck by freezing wind."
+            else:
+                msg = "Snow Blast has no effect — everyone is with the Yeti."
+            self.add_log(msg)
+            self.add_power_event("Yeti", "Snow Blast", msg)
 
         elif monster == "Sphinx":
             all_items = [(h_name, item) for h_name, h_state in self.heroes_state.items() for item in h_state["items"]]
@@ -1763,11 +1890,15 @@ class GameRoom:
                 for h_name, item in pair:
                     self.heroes_state[h_name]["items"].remove(item)
                     self.discarded_items.append(item)
-                self.add_log(f"Lethal Conundrum! {pair[0][0]} and {pair[1][0]} discard matching strength-{pair[0][1]['strength']} items.")
+                msg = f"Lethal Conundrum! {pair[0][0]} and {pair[1][0]} discard matching strength-{pair[0][1]['strength']} items."
+                self.add_log(msg)
+                self.add_power_event("Sphinx", "Lethal Conundrum", msg)
             else:
                 self.terror_level = min(7, self.terror_level + 1)
                 self.check_terror()
-                self.add_log("Lethal Conundrum! No matching items to sacrifice — Terror Level increases by 1.")
+                msg = "Lethal Conundrum! No matching items to sacrifice — Terror Level increases by 1."
+                self.add_log(msg)
+                self.add_power_event("Sphinx", "Lethal Conundrum", msg)
 
         elif monster == "Jiangshi" and self.players:
             next_idx = (self.turn_player_idx + 1) % len(self.players)
@@ -1898,7 +2029,7 @@ class GameRoom:
                 powers += 1
 
         if hits > 0:
-            self._defeat_citizen(citizen_name)
+            self._defeat_citizen(citizen_name, monster=monster)
         else:
             self.add_log(f"The attack on {citizen_name} missed!")
 
@@ -2064,19 +2195,18 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
                 room.execute_defeat(player_name, monster, args)
                 
             elif action == "finish_dice_roll":
-                room.add_log(f"DEBUG: Server received finish_dice_roll from {player_name}")
                 if room.pending_dice_roll and room.pending_dice_roll["hero"] == player_name:
                     room.pending_dice_roll["chosen_items"] = msg.get("item_ids")
                     if room.roll_event:
-                        room.add_log(f"DEBUG: Unblocking roll_event for {player_name}!")
                         room.roll_event.set()
-                    else:
-                        room.add_log("DEBUG: roll_event was None!")
-                else:
-                    room.add_log(f"DEBUG: Invalid finish_dice_roll: pending_hero={(room.pending_dice_roll['hero'] if room.pending_dice_roll else 'None')}")
-                # Broadcast immediately to see these debug logs!
-                asyncio.create_task(room_manager.broadcast_state(room_code))
-                
+
+            elif action == "finish_block_choice":
+                if room.pending_block_choice and room.pending_block_choice["hero"] == player_name:
+                    room.pending_block_choice["chosen_items"] = msg.get("item_ids")
+                    if room.block_choice_event:
+                        room.block_choice_event.set()
+
+
             elif action == "special":
                 args = msg.get("args", {})
                 room.execute_special(player_name, args)

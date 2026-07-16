@@ -20,10 +20,13 @@ let dragType = null;
 let dragLocName = null;
 let lastGamePhaseSeen = null;
 let lastPendingDiceRollId = "";
+let lastBlockChoiceId = ""; // pending_block_choice.id already shown, so the modal isn't re-triggered every broadcast
 let intentionalDisconnect = false;
 let lastTerrorLevel = null;
 let pendingTerrorTransitionFrom = null; // consumed once by renderSVGMap to slide the neon ring from its old slot
 let knownDefeatedMonsters = null; // Set of monster names already seen in defeated_monsters, to trigger a defeat sound only once
+let knownPowerEventIds = null; // Set of power_event ids already shown as a toast, to fire each one only once
+let knownCitizenEventIds = null; // Set of citizen_event ids already shown as a toast, to fire each one only once
 
 // Map Zoom & Pan State
 let zoomLevel = 1.0;
@@ -834,6 +837,14 @@ function updateGameUI() {
         // in defeated_monsters)
         detectAndPlayMonsterDefeatSounds();
 
+        // Monster Power toast (e.g. Sphinx's Lethal Conundrum) so a sudden Terror bump
+        // or missing item doesn't look like it came from nowhere.
+        detectAndShowPowerEvents();
+
+        // Citizen spawn toast, with the citizen's portrait, so their arrival is visible
+        // beyond the map marker appearing.
+        detectAndShowCitizenEvents();
+
         // Game Over banner (Defeat or Victory)
         if (elGameOverOverlay) {
             const elGameOverBanner = document.querySelector(".game-over-banner");
@@ -935,9 +946,35 @@ function updateGameUI() {
                 }
                 
                 elDiceOverlay.classList.remove("hidden");
+            } else if (gameState.pending_block_choice) {
+                // A monster Power targeting a single hero directly (e.g. the Yeti's Snow
+                // Blast) reuses this same overlay's item-selection step, just with no
+                // dice to roll first.
+                lastPendingDiceRollId = "";
+                const pending = gameState.pending_block_choice;
+                const titleEl = document.getElementById("dice-modal-title");
+                const descEl = document.getElementById("dice-modal-desc");
+
+                if (pending.hero === playerName) {
+                    if (lastBlockChoiceId !== pending.id) {
+                        lastBlockChoiceId = pending.id;
+                        if (titleEl) titleEl.textContent = `${pending.reason}!`;
+                        showDamageSelection(pending.hits, "finish_block_choice", `The ${pending.reason} targets you!`);
+                    }
+                } else {
+                    lastBlockChoiceId = "";
+                    if (titleEl) titleEl.textContent = `${pending.reason}!`;
+                    if (descEl) descEl.textContent = `${pending.hero} is defending against the ${pending.reason}...`;
+                    document.getElementById("dice-container").innerHTML = "";
+                    btnFinishDice.classList.add("hidden");
+                    const existingBlockBtn = document.getElementById("btn-block-damage");
+                    if (existingBlockBtn) existingBlockBtn.remove();
+                }
+                elDiceOverlay.classList.remove("hidden");
             } else {
                 elDiceOverlay.classList.add("hidden");
                 lastPendingDiceRollId = "";
+                lastBlockChoiceId = "";
                 const existing = document.getElementById("btn-block-damage");
                 if (existing) existing.remove();
             }
@@ -946,12 +983,17 @@ function updateGameUI() {
         // Render Sidebar lists (Inventory)
         renderPlayerPanel();
         
-        function showDamageSelection(hits) {
+        // finishAction lets this be reused for both a dice-roll's hits and a monster
+        // Power that targets a single hero directly (e.g. the Yeti's Snow Blast) -
+        // either way it's "select N items to block, or take the damage".
+        function showDamageSelection(hits, finishAction = "finish_dice_roll", promptPrefix = null) {
             const container = document.getElementById("dice-container");
             const descEl = document.getElementById("dice-modal-desc");
             const btnFinishDice = document.getElementById("btn-finish-dice");
-            
-            descEl.textContent = `You took ${hits} hit${hits !== 1 ? "s" : ""}! Select ${hits} item${hits !== 1 ? "s" : ""} to discard and block it, or take the damage.`;
+
+            descEl.textContent = promptPrefix
+                ? `${promptPrefix} Select ${hits} item${hits !== 1 ? "s" : ""} to discard and block it, or take the damage.`
+                : `You took ${hits} hit${hits !== 1 ? "s" : ""}! Select ${hits} item${hits !== 1 ? "s" : ""} to discard and block it, or take the damage.`;
             container.innerHTML = "";
             
             const myState = gameState.heroes_state[playerName];
@@ -1009,8 +1051,7 @@ function updateGameUI() {
                 if (existingBlockBtn) existingBlockBtn.disabled = true;
                 const overlay = document.getElementById("dice-modal-overlay");
                 if (overlay) overlay.classList.add("hidden");
-                console.log("SENDING FINISH DICE ROLL TO SERVER NOW");
-                socket.send(JSON.stringify({ action: "finish_dice_roll" }));
+                socket.send(JSON.stringify({ action: finishAction }));
             };
             
             const existing = document.getElementById("btn-block-damage");
@@ -1037,7 +1078,7 @@ function updateGameUI() {
                         btnFinishDice.disabled = true;
                         const overlay = document.getElementById("dice-modal-overlay");
                         if (overlay) overlay.classList.add("hidden");
-                        socket.send(JSON.stringify({ action: "finish_dice_roll", item_ids: Array.from(selectedIds) }));
+                        socket.send(JSON.stringify({ action: finishAction, item_ids: Array.from(selectedIds) }));
                     };
                 } else {
                     btnBlock.classList.add("hidden");
@@ -2776,6 +2817,98 @@ function detectAndPlayMonsterDefeatSounds() {
             playMonsterDefeatSound(name);
         }
     });
+}
+
+// Diff-detects newly-resolved monster Power events (server-side power_events feed) and
+// pops a toast for each new one, so a Terror bump or a missing item has a visible cause
+// instead of just quietly happening off-screen.
+function detectAndShowPowerEvents() {
+    const events = (gameState && gameState.power_events) || [];
+    if (!knownPowerEventIds) {
+        knownPowerEventIds = new Set(events.map(e => e.id));
+        return;
+    }
+    events.forEach(evt => {
+        if (!knownPowerEventIds.has(evt.id)) {
+            knownPowerEventIds.add(evt.id);
+            showMonsterPowerToast(evt);
+        }
+    });
+}
+
+function showMonsterPowerToast(evt) {
+    const accent = MONSTER_ACCENT_MAP[evt.monster] || { border: "rgba(255,51,102,0.6)", glow: "rgba(255,51,102,0.3)" };
+    const portrait = MONSTER_PORTRAIT_MAP[evt.monster] || "";
+    showEventToast({
+        portraitSrc: portrait,
+        alt: evt.monster,
+        borderColor: accent.border,
+        glowColor: accent.glow,
+        title: `${evt.monster} &mdash; ${evt.power_name}`,
+        text: evt.message,
+    });
+}
+
+// Diff-detects newly-spawned citizens (server-side citizen_events feed) and pops a
+// toast with the citizen's portrait so their arrival isn't easy to miss on the map.
+function detectAndShowCitizenEvents() {
+    const events = (gameState && gameState.citizen_events) || [];
+    if (!knownCitizenEventIds) {
+        knownCitizenEventIds = new Set(events.map(e => e.id));
+        return;
+    }
+    events.forEach(evt => {
+        if (!knownCitizenEventIds.has(evt.id)) {
+            knownCitizenEventIds.add(evt.id);
+            showCitizenSpawnToast(evt);
+        }
+    });
+}
+
+function showCitizenSpawnToast(evt) {
+    const accent = { border: "rgba(90, 200, 140, 0.6)", glow: "rgba(90, 200, 140, 0.3)" };
+    showEventToast({
+        portraitSrc: evt.portrait ? `/Images/Citizens/${evt.portrait}` : "",
+        alt: evt.citizen,
+        borderColor: accent.border,
+        glowColor: accent.glow,
+        title: `${evt.citizen} &mdash; Citizen Spawned`,
+        text: evt.message,
+    });
+}
+
+function showEventToast({ portraitSrc, alt, borderColor, glowColor, title, text }) {
+    const toast = document.createElement("div");
+    toast.className = "monster-power-toast";
+    toast.style.borderColor = borderColor;
+    toast.style.boxShadow = `0 10px 30px rgba(0,0,0,0.6), 0 0 20px ${glowColor}`;
+    toast.innerHTML = `
+        <div class="monster-power-toast-portrait" style="border-color:${borderColor};">
+            ${portraitSrc ? `<img src="${portraitSrc}" alt="${alt}">` : ""}
+        </div>
+        <div class="monster-power-toast-body">
+            <div class="monster-power-toast-title">${title}</div>
+            <div class="monster-power-toast-text">${text}</div>
+        </div>
+    `;
+
+    let host = document.getElementById("monster-power-toast-host");
+    if (!host) {
+        host = document.createElement("div");
+        host.id = "monster-power-toast-host";
+        document.body.appendChild(host);
+    }
+    host.appendChild(toast);
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        toast.classList.add("shown");
+    }));
+
+    setTimeout(() => {
+        toast.classList.remove("shown");
+        toast.classList.add("hiding");
+        setTimeout(() => toast.remove(), 400);
+    }, 4500);
 }
 
 // Sound effect played whenever the Terror Level increases
