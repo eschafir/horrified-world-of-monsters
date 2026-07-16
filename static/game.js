@@ -36,7 +36,7 @@ const baseHeight = 1206;
 let currentHeroTabIndex = 0;
 let currentMonsterTabIndex = 0;
 
-const HEROES_LIST = ["The Guardian", "The Investigator", "The Buccaneer", "The Fortune Teller", "The Parapsychologist"];
+const HEROES_LIST = ["The Guardian", "The Investigator", "The Buccaneer", "The Fortune Teller", "The Parapsychologist", "Actor", "Hoplite", "Mariner", "Musician", "Ranger", "Shepherd", "Traveler"];
 
 // ---------------------------------------------------------
 // ELEMENT SELECTORS
@@ -447,11 +447,18 @@ function renderHeroSelectOptions() {
     elHeroOptions.innerHTML = "";
 
     const heroData = {
-        "The Guardian":         { ap: 5, start: "Arcane Forge",        ability: "Guide a hero at your location to an adjacent space — no AP cost." },
-        "The Investigator":     { ap: 4, start: "South Station",       ability: "Discard 2 items to retrieve any 1 item from the discard pile." },
-        "The Buccaneer":        { ap: 3, start: "The Scuttled Siren",  ability: "Discard 1 item at turn start to gain +4 AP this turn." },
-        "The Fortune Teller":   { ap: 4, start: "The Fool's Journey",  ability: "Peek at the top Monster Card for free, once per turn." },
-        "The Parapsychologist": { ap: 4, start: "Weir's Observatory",  ability: "Send any item from your hand to any player anywhere on the board." }
+        "The Guardian":         { ap: 5, start: "Arcane Forge",        ability: "Guide a hero at your location to an adjacent space — no AP cost.", origin_map: "Map.png" },
+        "The Investigator":     { ap: 4, start: "South Station",       ability: "Discard 2 items to retrieve any 1 item from the discard pile.", origin_map: "Map.png" },
+        "The Buccaneer":        { ap: 3, start: "The Scuttled Siren",  ability: "Discard 1 item at turn start to gain +4 AP this turn.", origin_map: "Map.png" },
+        "The Fortune Teller":   { ap: 4, start: "The Fool's Journey",  ability: "Peek at the top Monster Card for free, once per turn.", origin_map: "Map.png" },
+        "The Parapsychologist": { ap: 4, start: "Weir's Observatory",  ability: "Send any item from your hand to any player anywhere on the board.", origin_map: "Map.png" },
+        "Actor":                { ap: 4, start: "Agora",               ability: "Discard two Items to pick one Item from the discard pile and keep it.", origin_map: "map-greek.png" },
+        "Hoplite":              { ap: 4, start: "Battlefield",         ability: "Place your Hero in a space with a Lair.", origin_map: "map-greek.png" },
+        "Mariner":              { ap: 4, start: "Port",                ability: "Give any number of Items you have to another player.", origin_map: "map-greek.png" },
+        "Musician":             { ap: 4, start: "Odeon",               ability: "Place your Hero in a space with a Legend.", origin_map: "map-greek.png" },
+        "Ranger":               { ap: 4, start: "Forest of the Dryads",ability: "When the Terror Level increases, draw a Perk card. Ability is always in effect and does not take an action.", origin_map: "map-greek.png" },
+        "Shepherd":             { ap: 4, start: "Vineyard",            ability: "Look at the top Monster card.", origin_map: "map-greek.png" },
+        "Traveler":             { ap: 5, start: "Stables",             ability: "None", origin_map: "map-greek.png" }
     };
 
     // Heroes already claimed by other connected players can't be picked
@@ -464,20 +471,28 @@ function renderHeroSelectOptions() {
         });
     }
 
-    HEROES_LIST.forEach(hero => {
+    const currentMap = gameState ? gameState.selected_map : "Map.png";
+
+    const localHeroes = HEROES_LIST.filter(hero => heroData[hero].origin_map === currentMap);
+    const guestHeroes = HEROES_LIST.filter(hero => heroData[hero].origin_map !== currentMap);
+
+    const renderHeroCard = (hero, isLocal) => {
         const data = heroData[hero];
         const takenByName = takenBy[hero];
         const card = document.createElement("div");
         card.className = `hero-card ${chosenHero === hero ? "selected" : ""} ${takenByName ? "taken" : ""}`;
 
+        const heroBadge = isLocal ? `<span class="hero-local-badge">Local Hero</span>` : `<span class="hero-guest-badge">Guest Hero</span>`;
+
         card.innerHTML = `
             <div class="hero-card-portrait-wrap">
                 <div class="hero-card-portrait">
-                    <img src="/Images/Heroes/${hero} Image.png" alt="${hero}">
+                    <img src="/Images/Heroes/${hero} Image.png" alt="${hero}" onerror="this.src='/Images/Heroes/placeholder.png';">
                 </div>
                 <button type="button" class="hero-card-info-btn" title="View ${hero} card" onclick="event.stopPropagation(); showHeroCardModal('${hero}')">i</button>
             </div>
             <div class="hero-card-name">${hero}</div>
+            <div class="hero-card-badges">${heroBadge}</div>
             <div class="hero-card-ap">${data.ap} AP</div>
             <div class="hero-card-loc">&#128205; ${data.start}</div>
             <div class="hero-card-ability">${data.ability}</div>
@@ -495,7 +510,17 @@ function renderHeroSelectOptions() {
             });
         }
         elHeroOptions.appendChild(card);
-    });
+    };
+
+    localHeroes.forEach(hero => renderHeroCard(hero, true));
+
+    if (guestHeroes.length > 0) {
+        const divider = document.createElement("div");
+        divider.className = "hero-category-divider";
+        divider.innerHTML = `<span>Guest Heroes</span>`;
+        elHeroOptions.appendChild(divider);
+        guestHeroes.forEach(hero => renderHeroCard(hero, false));
+    }
 }
 
 // In-world lore excerpts shown alongside a hero's Card image, sourced from found
@@ -2913,8 +2938,7 @@ function renderSVGMap() {
     });
 
     // Create image patterns for heroes
-    const heroClasses = ["The Guardian", "The Investigator", "The Buccaneer", "The Fortune Teller", "The Parapsychologist"];
-    heroClasses.forEach(heroClass => {
+    HEROES_LIST.forEach(heroClass => {
         const patHero = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
         patHero.setAttribute("id", `pattern-hero-${heroClass.replaceAll(" ", "_")}`);
         patHero.setAttribute("x", "0");

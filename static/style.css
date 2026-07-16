@@ -2476,3 +2476,48 @@ body.greek-theme .input-group input:focus {
     border-color: #468faf;
     box-shadow: 0 0 10px rgba(42, 111, 151, 0.3);
 }
+
+.hero-card-badges {
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.hero-local-badge {
+    background-color: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+    border: 1px solid #2ecc71;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.hero-guest-badge {
+    background-color: rgba(241, 196, 15, 0.2);
+    color: #f1c40f;
+    border: 1px solid #f1c40f;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.hero-category-divider {
+    grid-column: 1 / -1;
+    width: 100%;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    line-height: 0.1em;
+    margin: 20px 0 15px 0;
+}
+
+.hero-category-divider span {
+    background: #0d0614;
+    padding: 0 10px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}

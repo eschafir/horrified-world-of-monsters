@@ -121,11 +121,18 @@ def save_map_coordinates(map_name, nodes, terror, adjacency):
         pass
 
 HERO_CLASSES = {
-    "The Guardian": {"name": "The Guardian", "ap": 5, "start": "Arcane Forge", "ability": "You may use a Guide action on a Hero, with their permission. This does not take an action."},
-    "The Investigator": {"name": "The Investigator", "ap": 4, "start": "South Station", "ability": "Discard two items to pick one item from the discard pile and keep it."},
-    "The Buccaneer": {"name": "The Buccaneer", "ap": 3, "start": "The Scuttled Siren", "ability": "At the start of your turn, discard one item to gain +4 actions this turn (use only once per turn)."},
-    "The Fortune Teller": {"name": "The Fortune Teller", "ap": 4, "start": "The Fool's Journey", "ability": "You may look at the top Monster card on your turn. This does not take an action."},
-    "The Parapsychologist": {"name": "The Parapsychologist", "ap": 4, "start": "Weir's Observatory", "ability": "You may distribute any items you have to other players."}
+    "The Guardian": {"name": "The Guardian", "ap": 5, "start": "Arcane Forge", "ability": "You may use a Guide action on a Hero, with their permission. This does not take an action.", "origin_map": "Map.png"},
+    "The Investigator": {"name": "The Investigator", "ap": 4, "start": "South Station", "ability": "Discard two items to pick one item from the discard pile and keep it.", "origin_map": "Map.png"},
+    "The Buccaneer": {"name": "The Buccaneer", "ap": 3, "start": "The Scuttled Siren", "ability": "At the start of your turn, discard one item to gain +4 actions this turn (use only once per turn).", "origin_map": "Map.png"},
+    "The Fortune Teller": {"name": "The Fortune Teller", "ap": 4, "start": "The Fool's Journey", "ability": "You may look at the top Monster card on your turn. This does not take an action.", "origin_map": "Map.png"},
+    "The Parapsychologist": {"name": "The Parapsychologist", "ap": 4, "start": "Weir's Observatory", "ability": "You may distribute any items you have to other players.", "origin_map": "Map.png"},
+    "Actor": {"name": "Actor", "ap": 4, "start": "Agora", "ability": "Discard two Items to pick one Item from the discard pile and keep it.", "origin_map": "map-greek.png"},
+    "Hoplite": {"name": "Hoplite", "ap": 4, "start": "Battlefield", "ability": "Place your Hero in a space with a Lair.", "origin_map": "map-greek.png"},
+    "Mariner": {"name": "Mariner", "ap": 4, "start": "Port", "ability": "Give any number of Items you have to another player.", "origin_map": "map-greek.png"},
+    "Musician": {"name": "Musician", "ap": 4, "start": "Odeon", "ability": "Place your Hero in a space with a Legend.", "origin_map": "map-greek.png"},
+    "Ranger": {"name": "Ranger", "ap": 4, "start": "Forest of the Dryads", "ability": "When the Terror Level increases, draw a Perk card. Ability is always in effect and does not take an action.", "origin_map": "map-greek.png"},
+    "Shepherd": {"name": "Shepherd", "ap": 4, "start": "Vineyard", "ability": "Look at the top Monster card.", "origin_map": "map-greek.png"},
+    "Traveler": {"name": "Traveler", "ap": 5, "start": "Stables", "ability": "None", "origin_map": "map-greek.png"}
 }
 
 # Item catalog + physical token pool are now data-driven, loaded from
@@ -399,14 +406,28 @@ class GameRoom:
             
         # Initialize heroes
         self.heroes_state = {}
+        
+        # Determine local heroes not in use
+        used_heroes = [p["hero"] for p in self.players]
+        unused_local_heroes = [h for h, cfg in HERO_CLASSES.items() if cfg.get("origin_map", "Map.png") == self.selected_map and h not in used_heroes]
+        unused_local_locations = [HERO_CLASSES[h]["start"] for h in unused_local_heroes]
+
         for p in self.players:
             hero_class = p["hero"]
             config = HERO_CLASSES[hero_class]
+            
+            is_guest = (config.get("origin_map", "Map.png") != self.selected_map)
+            if is_guest and unused_local_locations:
+                start_loc = random.choice(unused_local_locations)
+                unused_local_locations.remove(start_loc)
+            else:
+                start_loc = config["start"]
+                
             starting_perk = [self.perk_deck.pop(0)] if self.perk_deck else []
             self.heroes_state[p["name"]] = {
                 "name": p["name"],
                 "hero": hero_class,
-                "location": self.get_safe_loc(config["start"]),
+                "location": self.get_safe_loc(start_loc),
                 "items": [],
                 "perks": starting_perk,
                 "ap": config["ap"],
