@@ -103,7 +103,7 @@ document.querySelectorAll('input[name="map-choice"]').forEach(radio => {
 elBtnCreate.addEventListener("click", () => {
     playerName = elPlayerNameInput.value.trim();
     if (!playerName) {
-        alert("Please enter your name!");
+        showAlertToast("Please enter your name!");
         return;
     }
     elSetupView.classList.add("hidden");
@@ -121,7 +121,7 @@ elBtnConfirmMap.addEventListener("click", () => {
 elBtnJoin.addEventListener("click", () => {
     playerName = elPlayerNameInput.value.trim();
     if (!playerName) {
-        alert("Please enter your name!");
+        showAlertToast("Please enter your name!");
         return;
     }
     setupConnection(false);
@@ -129,7 +129,7 @@ elBtnJoin.addEventListener("click", () => {
 
 elBtnStart.addEventListener("click", () => {
     if (!gameState || !gameState.selected_monsters || gameState.selected_monsters.length === 0) {
-        alert("Please select at least one monster to face!");
+        showAlertToast("Please select at least one monster to face!");
         return;
     }
     sendMsg({ action: "start_game" });
@@ -252,7 +252,7 @@ function setupConnection(isHost) {
     } else {
         roomCode = elRoomCodeInput.value.trim().toUpperCase();
         if (roomCode.length !== 4) {
-            alert("Room Code must be 4 characters!");
+            showAlertToast("Room Code must be 4 characters!");
             return;
         }
     }
@@ -307,7 +307,7 @@ function setupConnection(isHost) {
             intentionalDisconnect = false;
             return;
         }
-        alert("Disconnected from server. Reconnecting...");
+        showAlertToast("Disconnected from server. Reconnecting...");
     };
 }
 
@@ -2879,17 +2879,20 @@ function showCitizenSpawnToast(evt) {
     });
 }
 
-function showEventToast({ portraitSrc, alt, borderColor, glowColor, title, text }) {
+function showEventToast({ portraitSrc, alt, borderColor, glowColor, title, text, icon }) {
     const toast = document.createElement("div");
     toast.className = "monster-power-toast";
     toast.style.borderColor = borderColor;
     toast.style.boxShadow = `0 10px 30px rgba(0,0,0,0.6), 0 0 20px ${glowColor}`;
+    const portraitInner = portraitSrc
+        ? `<img src="${portraitSrc}" alt="${alt}">`
+        : (icon ? `<span class="monster-power-toast-icon">${icon}</span>` : "");
     toast.innerHTML = `
         <div class="monster-power-toast-portrait" style="border-color:${borderColor};">
-            ${portraitSrc ? `<img src="${portraitSrc}" alt="${alt}">` : ""}
+            ${portraitInner}
         </div>
         <div class="monster-power-toast-body">
-            <div class="monster-power-toast-title">${title}</div>
+            ${title ? `<div class="monster-power-toast-title">${title}</div>` : ""}
             <div class="monster-power-toast-text">${text}</div>
         </div>
     `;
@@ -2911,6 +2914,20 @@ function showEventToast({ portraitSrc, alt, borderColor, glowColor, title, text 
         toast.classList.add("hiding");
         setTimeout(() => toast.remove(), 400);
     }, 4500);
+}
+
+// Generic replacement for browser alert() popups (invalid actions, missing requirements,
+// connection notices, etc.), so they match the same banner format as citizen/Power toasts
+// instead of blocking the page with a native dialog.
+function showAlertToast(message) {
+    showEventToast({
+        icon: "⚠️",
+        alt: "Notice",
+        borderColor: "rgba(255, 213, 51, 0.6)",
+        glowColor: "rgba(255, 213, 51, 0.3)",
+        title: "Notice",
+        text: message,
+    });
 }
 
 // Sound effect played whenever the Terror Level increases
@@ -3550,33 +3567,33 @@ function renderSVGMap() {
             if (isYeti) {
                 charShape.setAttribute("class", "yeti-token");
                 charShape.setAttribute("fill", "url(#pattern-yeti)");
-                charShape.setAttribute("stroke", "#ff3366"); // Bold neon crimson border
-                charShape.setAttribute("stroke-width", "2.5");
-                charShape.setAttribute("filter", "drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
+                charShape.setAttribute("stroke", "#ff3366"); // Red border marks it as an enemy
+                charShape.setAttribute("stroke-width", "4.5");
+                charShape.setAttribute("filter", "drop-shadow(0 0 10px rgba(255,51,102,0.9)) drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
             } else if (isSphinx) {
                 charShape.setAttribute("class", "sphinx-token");
                 charShape.setAttribute("fill", "url(#pattern-sphinx)");
-                charShape.setAttribute("stroke", "#ffcc00"); // Golden border
-                charShape.setAttribute("stroke-width", "2.5");
-                charShape.setAttribute("filter", "drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
+                charShape.setAttribute("stroke", "#ff3366"); // Red border marks it as an enemy
+                charShape.setAttribute("stroke-width", "4.5");
+                charShape.setAttribute("filter", "drop-shadow(0 0 10px rgba(255,51,102,0.9)) drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
             } else if (isJiangshi) {
                 charShape.setAttribute("class", "jiangshi-token");
                 charShape.setAttribute("fill", "url(#pattern-jiangshi)");
-                charShape.setAttribute("stroke", "#33ff99"); // Jade border, matching the Jade Sword theme
-                charShape.setAttribute("stroke-width", "2.5");
-                charShape.setAttribute("filter", "drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
+                charShape.setAttribute("stroke", "#ff3366"); // Red border marks it as an enemy
+                charShape.setAttribute("stroke-width", "4.5");
+                charShape.setAttribute("filter", "drop-shadow(0 0 10px rgba(255,51,102,0.9)) drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
             } else if (isCthulhu) {
                 charShape.setAttribute("class", "cthulhu-token");
                 charShape.setAttribute("fill", "url(#pattern-cthulhu)");
-                charShape.setAttribute("stroke", "#00e5cc"); // Abyssal teal border
-                charShape.setAttribute("stroke-width", "2.5");
-                charShape.setAttribute("filter", "drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
+                charShape.setAttribute("stroke", "#ff3366"); // Red border marks it as an enemy
+                charShape.setAttribute("stroke-width", "4.5");
+                charShape.setAttribute("filter", "drop-shadow(0 0 10px rgba(255,51,102,0.9)) drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
             } else if (isYetiChild) {
                 const isGuideSource = guideEligibleNames.includes(char.name);
                 const isGuideActive = guideSelectedLegend && guideSelectedLegend.name === char.name;
                 charShape.setAttribute("class", `yeti-child-token ${isGuideSource ? "guide-source-pulse" : ""}`);
                 charShape.setAttribute("fill", `url(#pattern-yeti-child-${childId})`);
-                charShape.setAttribute("stroke", isGuideActive ? "#ffd533" : "#33ccff"); // Ice blue border, gold while chosen for Guide
+                charShape.setAttribute("stroke", isGuideActive ? "#ffd533" : "#ffffff"); // White border, gold while chosen for Guide
                 charShape.setAttribute("stroke-width", isGuideActive ? "3.5" : "2");
                 if (!isGuideSource) {
                     charShape.setAttribute("filter", isGuideActive
@@ -3701,14 +3718,8 @@ function renderSVGMap() {
                     }
                 });
             }
-            // The monster currently holding the Frenzy marker gets a pulsing gold ring,
-            // overriding its normal border, so it's identifiable at a glance on the map.
-            if (isFrenzyMonster) {
-                charShape.classList.add("frenzy-marker-token");
-                charShape.setAttribute("stroke", "#ffd533");
-                charShape.setAttribute("stroke-width", "4");
-                charShape.setAttribute("filter", "drop-shadow(0 0 10px rgba(255,213,51,0.9))");
-            }
+            // The monster currently holding the Frenzy marker is identified solely by the
+            // ⚡ badge below - its token keeps the normal red "enemy" border/glow.
 
             charG.appendChild(charShape);
 
@@ -4054,7 +4065,7 @@ document.getElementById("action-guide").addEventListener("click", () => {
     const eligibleLegends = getEligibleGuideLegends(currentLoc, adjacent);
 
     if (eligibleLegends.length === 0) {
-        alert("There are no active Legends (citizens or Yeti children) at or adjacent to your location to guide.");
+        showAlertToast("There are no active Legends (citizens or Yeti children) at or adjacent to your location to guide.");
         return;
     }
 
@@ -4068,7 +4079,7 @@ document.getElementById("action-pickup").addEventListener("click", () => {
     const items = gameState.items_on_board[myState.location] || [];
     
     if (items.length === 0) {
-        alert("No items to pick up at this location.");
+        showAlertToast("No items to pick up at this location.");
         return;
     }
 
@@ -4182,7 +4193,7 @@ document.getElementById("action-share").addEventListener("click", () => {
     }
 
     if (sharingHeroes.length === 0) {
-        alert("You must be at the same location as another hero to Share.");
+        showAlertToast("You must be at the same location as another hero to Share.");
         return;
     }
 
@@ -4253,7 +4264,7 @@ document.getElementById("action-advance").addEventListener("click", () => {
         }
     }
 
-    alert("No advance challenge available at your current location. (Puzzle slots and dials are worked by clicking them directly in the Monsters panel.)");
+    showAlertToast("No advance challenge available at your current location. (Puzzle slots and dials are worked by clicking them directly in the Monsters panel.)");
 });
 
 // Defeat action
@@ -4279,7 +4290,7 @@ document.getElementById("action-defeat").addEventListener("click", () => {
     }
 
     if (!targetMonster) {
-        alert("You must be at the same location as a monster (and meet its requirements) to Defeat them!");
+        showAlertToast("You must be at the same location as a monster (and meet its requirements) to Defeat them!");
         return;
     }
 
@@ -4354,7 +4365,7 @@ document.getElementById("action-special").addEventListener("click", () => {
         const adjacent = gameState.adjacency_list[myState.location] || [];
         
         if (otherHeroes.length === 0) {
-            alert("There are no other heroes at your location to Guide.");
+            showAlertToast("There are no other heroes at your location to Guide.");
             return;
         }
         let html = `<h3>The Guardian: Guide Hero</h3><p>Guide a hero at your location to an adjacent location (0 AP).</p><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">`;
@@ -4374,12 +4385,12 @@ document.getElementById("action-special").addEventListener("click", () => {
 
     } else if (myState.hero === "The Investigator") {
         if (myState.items.length < 2) {
-            alert("You must have at least 2 items in inventory to discard.");
+            showAlertToast("You must have at least 2 items in inventory to discard.");
             return;
         }
         const discList = gameState.discarded_items || [];
         if (discList.length === 0) {
-            alert("The discard pile is currently empty! Use Investigator power once some items are discarded.");
+            showAlertToast("The discard pile is currently empty! Use Investigator power once some items are discarded.");
             return;
         }
         let html = `<h3>The Investigator: Item Swap</h3><p>Discard 2 items from hand to retrieve 1 item from the discard pile (0 AP).</p><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">`;
@@ -4399,7 +4410,7 @@ document.getElementById("action-special").addEventListener("click", () => {
 
     } else if (myState.hero === "The Buccaneer") {
         if (myState.items.length === 0) {
-            alert("You have no items to discard.");
+            showAlertToast("You have no items to discard.");
             return;
         }
         let html = `<h3>The Buccaneer: Discard for Action</h3><p>Discard 1 item from your inventory to gain +4 AP this turn (0 AP).</p><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">`;
@@ -4420,7 +4431,7 @@ document.getElementById("action-special").addEventListener("click", () => {
 
     } else if (myState.hero === "The Parapsychologist") {
         if (myState.items.length === 0) {
-            alert("You have no items to distribute.");
+            showAlertToast("You have no items to distribute.");
             return;
         }
         const otherPlayers = [];
@@ -4430,7 +4441,7 @@ document.getElementById("action-special").addEventListener("click", () => {
             }
         }
         if (otherPlayers.length === 0) {
-            alert("There are no other players in the room to distribute items to.");
+            showAlertToast("There are no other players in the room to distribute items to.");
             return;
         }
 
@@ -4521,7 +4532,7 @@ window.confirmGuardianGuide = () => {
 window.confirmInvestigatorSwap = () => {
     const checked = Array.from(document.querySelectorAll(".investigator-discard:checked")).map(el => el.value);
     if (checked.length !== 2) {
-        alert("You must select exactly 2 items to discard!");
+        showAlertToast("You must select exactly 2 items to discard!");
         return;
     }
     const claimId = document.getElementById("investigator-claim").value;

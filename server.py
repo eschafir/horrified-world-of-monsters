@@ -210,23 +210,23 @@ MONSTER_CARDS = [
     {"id": "c3", "name": "The Stars Align", "spawn": 2, "event_title": "Sphinx's Gaze", "event_text": "The Sphinx projects a psychic wave. All players at Crossroads locations lose 1 AP on their next turn.", "event_type": "sphinx_gaze", "monster_attack": {"frenzy": False, "symbol": "Jewel", "steps": 2, "dice": 2}},
     {"id": "c4", "name": "A Hopping Terror", "spawn": 1, "event_title": "Jiangshi Outbreak", "event_text": "Jiangshi gains 1 extra movement this phase.", "event_type": "jiangshi_speedup", "monster_attack": {"frenzy": False, "symbol": "Gear", "steps": 2, "dice": 2}},
     {"id": "c5", "name": "Void Eruption", "spawn": 3, "event_title": "The Void Widens", "event_text": "Increase the Terror Level by 1 if Cthulhu is active; otherwise spawn an item at The Void.", "event_type": "void_eruption", "monster_attack": {"frenzy": False, "symbol": "Wrench", "steps": 1, "dice": 2}},
-    {"id": "c6", "name": "Call of the Siren", "spawn": 2, "event_title": "Morgan Appears", "event_text": "Spawn Citizen Morgan at The Scuttled Siren. Safe haven: The Fool's Journey.", "event_type": "spawn_delilah", "monster_attack": {"frenzy": False, "symbol": "Eye", "steps": 1, "dice": 1}},
-    {"id": "c7", "name": "Midnight Bells", "spawn": 1, "event_title": "Mari in Danger", "event_text": "Spawn Citizen Mari at North Station. Safe haven: House of Dawn.", "event_type": "spawn_mayor", "monster_attack": {"frenzy": False, "symbol": "Dagger", "steps": 1, "dice": 2}},
+    {"id": "c6", "name": "Call of the Siren", "spawn": 3, "event_title": "Morgan Appears", "event_text": "Spawn Citizen Morgan at Mary's Mill. Safe haven: The Fool's Journey.", "event_type": "spawn_morgan", "monster_attack": {"frenzy": True, "symbol": "Hand", "steps": 1, "dice": 2}}, ## <<--- ORIGINAL VERSION
+    {"id": "c7", "name": "Midnight Bells", "spawn": 3, "event_title": "Mari in Danger", "event_text": "Spawn Citizen Mari at The Fool's Journey. Safe haven: House of Dawn.", "event_type": "spawn_mari", "monster_attack": {"frenzy": True, "symbol": "Jewel", "steps": 1, "dice": 2}}, ## <<--- ORIGINAL VERSION
     {"id": "c8", "name": "Frenzy!", "spawn": 2, "event_title": "Madness Spreads", "event_text": "The monster holding the Frenzy marker moves 2 spaces and attacks with +1 die.", "event_type": "none", "monster_attack": {"frenzy": True, "symbol": None, "steps": 2, "dice": 3}},
     {"id": "c9", "name": "Heavy Fog", "spawn": 1, "event_title": "Reduced Visibility", "event_text": "All heroes cannot use special abilities on their next turn.", "event_type": "no_abilities", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 1, "dice": 1}},
     {"id": "c10", "name": "Exhaustion", "spawn": 2, "event_title": "Fatigue", "event_text": "The active player must discard 1 item of strength 2+ or lose 2 action points next turn.", "event_type": "exhaustion", "monster_attack": {"frenzy": False, "symbol": "Jewel", "steps": 1, "dice": 2}},
     {"id": "c11", "name": "Portal Resonance", "spawn": 2, "event_title": "Aura of the Deep", "event_text": "Cthulhu rolls +1 attack die if he attacks inside The Void.", "event_type": "cthulhu_res", "monster_attack": {"frenzy": False, "symbol": "Wrench", "steps": 2, "dice": 2}},
-    {"id": "c12", "name": "Echoes of the Past", "spawn": 1, "event_title": "Howard Appears", "event_text": "Spawn Citizen Howard at Spindlewood Institute. Safe haven: The Roaming Wolf.", "event_type": "spawn_higgins", "monster_attack": {"frenzy": False, "symbol": "Hand", "steps": 1, "dice": 2}},
+    {"id": "c12", "name": "Echoes of the Past", "spawn": 3, "event_title": "Howard Appears", "event_text": "Spawn Citizen Howard at Stewards Spire. Safe haven: The Roaming Wolf.", "event_type": "spawn_howard", "monster_attack": {"frenzy": True, "symbol": "Tincture", "steps": 1, "dice": 2}}, ## <<--- ORIGINAL VERSION
     {"id": "c13", "name": "Tonic of Youth", "spawn": 2, "event_title": "Health Tonic", "event_text": "Draw 1 Perk card and give it to the player with the fewest items.", "event_type": "tonic", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 1, "dice": 1}},
     {"id": "c14", "name": "Tidal Wave", "spawn": 1, "event_title": "Flooding Path", "event_text": "The path between Skybound Galleon and Scuttled Siren is blocked for movement this turn.", "event_type": "blocked_path", "monster_attack": {"frenzy": False, "symbol": "Gear", "steps": 2, "dice": 1}},
     {"id": "c15", "name": "Sudden Tempest", "spawn": 2, "event_title": "Scattering Winds", "event_text": "Move all items at Steam Plant to adjacent locations.", "event_type": "scatter_items", "monster_attack": {"frenzy": False, "symbol": "Dagger", "steps": 2, "dice": 1}},
-    {"id": "c16", "name": "Whispers in the Dark", "spawn": 1, "event_title": "Ms. Spindlewood Vanishes", "event_text": "Spawn Ms. Spindlewood at Spindlewood Institute.", "event_type": "spawn_spindlewood", "monster_attack": {"frenzy": False, "symbol": "Ghost", "steps": 1, "dice": 1}},
-    {"id": "c17", "name": "Midnight Consultation", "spawn": 2, "event_title": "Dr. Weir Investigates", "event_text": "Spawn Dr. Weir at Arcane Forge. Safe haven: Weir's Observatory.", "event_type": "spawn_weir", "monster_attack": {"frenzy": False, "symbol": "Hand", "steps": 2, "dice": 2}},
-    {"id": "c18", "name": "A Distant Melody", "spawn": 1, "event_title": "Shinya Wanders", "event_text": "Spawn Citizen Shinya at The Roaming Wolf. Safe haven: Steam Plant.", "event_type": "spawn_shinya", "monster_attack": {"frenzy": False, "symbol": "Eye", "steps": 1, "dice": 2}},
-    {"id": "c19", "name": "Caravan of Shadows", "spawn": 2, "event_title": "James & Betty Arrive", "event_text": "Spawn James & Betty at Specter Trail Caravan. Safe haven: Door of the World.", "event_type": "spawn_james_betty", "monster_attack": {"frenzy": False, "symbol": "Tincture", "steps": 2, "dice": 1}},
-    {"id": "c20", "name": "Bells of the North", "spawn": 1, "event_title": "Vaughn's Warning", "event_text": "Spawn Citizen Vaughn at North Station. Safe haven: The Scuttled Siren.", "event_type": "spawn_vaughn", "monster_attack": {"frenzy": False, "symbol": "Wrench", "steps": 1, "dice": 1}},
-    {"id": "c21", "name": "Forge Fire Flickers", "spawn": 2, "event_title": "Jennifer's Discovery", "event_text": "Spawn Citizen Jennifer at Arcane Forge. Safe haven: Stilt Town.", "event_type": "spawn_jennifer", "monster_attack": {"frenzy": False, "symbol": "Gear", "steps": 2, "dice": 2}},
-    {"id": "c22", "name": "Stilted Silence", "spawn": 1, "event_title": "Raimi Stirs", "event_text": "Spawn Citizen Raimi at Stilt Town. Safe haven: Specter Trail Caravan.", "event_type": "spawn_raimi", "monster_attack": {"frenzy": False, "symbol": "Jewel", "steps": 2, "dice": 1}},
+    {"id": "c16", "name": "Whispers in the Dark", "spawn": 3, "event_title": "Ms. Spindlewood Vanishes", "event_text": "Spawn Ms. Spindlewood at House of Dusk.", "event_type": "spawn_spindlewood", "monster_attack": {"frenzy": True, "symbol": "Gear", "steps": 1, "dice": 2}}, ## <<--- ORIGINAL VERSION
+    {"id": "c17", "name": "Midnight Consultation", "spawn": 3, "event_title": "Dr. Weir Investigates", "event_text": "Spawn Dr. Weir at Skybound Galleon. Safe haven: Weir's Observatory.", "event_type": "spawn_weir", "monster_attack": {"frenzy": True, "symbol": "Jewel", "steps": 1, "dice": 1}}, ## <<--- ORIGINAL VERSION
+    {"id": "c18", "name": "A Distant Melody", "spawn": 3, "event_title": "Shinya Wanders", "event_text": "Spawn Citizen Shinya at Arcane Forge. Safe haven: Steam Plant.", "event_type": "spawn_shinya", "monster_attack": {"frenzy": True, "symbol": "Ghost", "steps": 2, "dice": 1}}, ## <<--- ORIGINAL VERSION
+    {"id": "c19", "name": "James & Betty", "spawn": 3, "event_title": "James & Betty Arrive", "event_text": "Spawn James & Betty at South Station. Safe haven: Door of the World.", "event_type": "spawn_james_betty", "monster_attack": {"frenzy": True, "symbol": "Dagger", "steps": 2, "dice": 2}}, ## <<--- ORIGINAL VERSION
+    {"id": "c20", "name": "Vaughn", "spawn": 3, "event_title": "Citizen - Vaughn", "event_text": "Spawn Citizen Vaughn at House of Dawn. Safe haven: The Scuttled Siren.", "event_type": "spawn_vaughn", "monster_attack": {"frenzy": True, "symbol": "Eye", "steps": 1, "dice": 2}}, ## <<--- ORIGINAL VERSION
+    {"id": "c21", "name": "Forge Fire Flickers", "spawn": 3, "event_title": "Jennifer's Discovery", "event_text": "Spawn Citizen Jennifer at Clockwork Village. Safe haven: Stilt Town.", "event_type": "spawn_jennifer", "monster_attack": {"frenzy": True, "symbol": "Jewel", "steps": 1, "dice": 2}}, ## <<--- ORIGINAL VERSION
+    {"id": "c22", "name": "Stilted Silence", "spawn": 3, "event_title": "Raimi Stirs", "event_text": "Spawn Citizen Raimi at Thornvine Woods. Safe haven: Specter Trail Caravan.", "event_type": "spawn_raimi", "monster_attack": {"frenzy": True, "symbol": "Ghost", "steps": 1, "dice": 3}}, ## <<--- ORIGINAL VERSION
     {"id": "c23", "name": "A Blade in the Fog", "spawn": 2, "event_title": "Steel Glints", "event_text": "Something sharp moves through the mist.", "event_type": "none", "monster_attack": {"frenzy": False, "symbol": "Dagger", "steps": 1, "dice": 2}},
     {"id": "c24", "name": "Feral Tincture", "spawn": 1, "event_title": "Spilled Tincture", "event_text": "If the Frenzy monster also answers to spilled poisons, it strikes twice.", "event_type": "none", "monster_attack": {"frenzy": True, "symbol": "Tincture", "steps": 2, "dice": 2}},
     {"id": "c25", "name": "Unblinking Frenzy", "spawn": 2, "event_title": "Watched From Afar", "event_text": "If the Frenzy monster also answers to the watching eye, it strikes twice.", "event_type": "none", "monster_attack": {"frenzy": True, "symbol": "Eye", "steps": 2, "dice": 2}},
@@ -475,16 +475,16 @@ class GameRoom:
         # Images/Citizens/ (names don't all slugify cleanly, e.g. "Dr. Weir" ->
         # dr_weir.png, and Raimi's art is a .jpg), so the client never has to guess.
         self.citizens = {
-            "Ms. Spindlewood": {"name": "Ms. Spindlewood", "location": "Board", "start": self.get_safe_loc("Spindlewood Institute"), "safe": self.get_safe_loc("Spindlewood Institute"), "active": False, "portrait": "ms_spindlewood.png"},
-            "Mari": {"name": "Mari", "location": "Board", "start": self.get_safe_loc("North Station"), "safe": self.get_safe_loc("House of Dawn"), "active": False, "portrait": "Mari.png"},
-            "Howard": {"name": "Howard", "location": "Board", "start": self.get_safe_loc("Spindlewood Institute"), "safe": self.get_safe_loc("The Roaming Wolf"), "active": False, "portrait": "Howard.png"},
-            "Dr. Weir": {"name": "Dr. Weir", "location": "Board", "start": self.get_safe_loc("Arcane Forge"), "safe": self.get_safe_loc("Weir's Observatory"), "active": False, "portrait": "dr_weir.png"},
-            "Shinya": {"name": "Shinya", "location": "Board", "start": self.get_safe_loc("The Roaming Wolf"), "safe": self.get_safe_loc("Steam Plant"), "active": False, "portrait": "Shinya.png"},
-            "James & Betty": {"name": "James & Betty", "location": "Board", "start": self.get_safe_loc("Specter Trail Caravan"), "safe": self.get_safe_loc("Door of the World"), "active": False, "portrait": "James_Betty.png"},
-            "Morgan": {"name": "Morgan", "location": "Board", "start": self.get_safe_loc("The Scuttled Siren"), "safe": self.get_safe_loc("The Fool's Journey"), "active": False, "portrait": "Morgan.png"},
-            "Vaughn": {"name": "Vaughn", "location": "Board", "start": self.get_safe_loc("North Station"), "safe": self.get_safe_loc("The Scuttled Siren"), "active": False, "portrait": "Vaughn.png"},
-            "Jennifer": {"name": "Jennifer", "location": "Board", "start": self.get_safe_loc("Arcane Forge"), "safe": self.get_safe_loc("Stilt Town"), "active": False, "portrait": "Jennifer.png"},
-            "Raimi": {"name": "Raimi", "location": "Board", "start": self.get_safe_loc("Stilt Town"), "safe": self.get_safe_loc("Specter Trail Caravan"), "active": False, "portrait": "Raimi.jpg"}
+            "Ms. Spindlewood": {"name": "Ms. Spindlewood", "location": "Board", "start": self.get_safe_loc("House of Dusk"), "safe": self.get_safe_loc("Spindlewood Institute"), "active": False, "portrait": "ms_spindlewood.png"}, ## <<--- ORIGINAL VERSION
+            "Mari": {"name": "Mari", "location": "Board", "start": self.get_safe_loc("The Fool's Journey"), "safe": self.get_safe_loc("House of Dawn"), "active": False, "portrait": "Mari.png"},
+            "Howard": {"name": "Howard", "location": "Board", "start": self.get_safe_loc("Stewards Spire"), "safe": self.get_safe_loc("The Roaming Wolf"), "active": False, "portrait": "Howard.png"},
+            "Dr. Weir": {"name": "Dr. Weir", "location": "Board", "start": self.get_safe_loc("Skybound Galleon"), "safe": self.get_safe_loc("Weir's Observatory"), "active": False, "portrait": "dr_weir.png"}, ## <<--- ORIGINAL VERSION
+            "Shinya": {"name": "Shinya", "location": "Board", "start": self.get_safe_loc("Arcane Forge"), "safe": self.get_safe_loc("Steam Plant"), "active": False, "portrait": "Shinya.png"}, ## <<--- ORIGINAL VERSION
+            "James & Betty": {"name": "James & Betty", "location": "Board", "start": self.get_safe_loc("South Station"), "safe": self.get_safe_loc("Door of the World"), "active": False, "portrait": "James_Betty.png"}, ## <<--- ORIGINAL VERSION
+            "Morgan": {"name": "Morgan", "location": "Board", "start": self.get_safe_loc("Mary's Mill"), "safe": self.get_safe_loc("The Fool's Journey"), "active": False, "portrait": "Morgan.png"}, ## <<--- ORIGINAL VERSION
+            "Vaughn": {"name": "Vaughn", "location": "Board", "start": self.get_safe_loc("House of Dawn"), "safe": self.get_safe_loc("The Scuttled Siren"), "active": False, "portrait": "Vaughn.png"}, ## <<--- ORIGINAL VERSION
+            "Jennifer": {"name": "Jennifer", "location": "Board", "start": self.get_safe_loc("Clockwork Village"), "safe": self.get_safe_loc("Stilt Town"), "active": False, "portrait": "Jennifer.png"},
+            "Raimi": {"name": "Raimi", "location": "Board", "start": self.get_safe_loc("Thornvine Woods"), "safe": self.get_safe_loc("Specter Trail Caravan"), "active": False, "portrait": "Raimi.jpg"}
         }
 
         # Lair Tokens: a single shared pool of 4 fixed board locations. Exactly one hides
@@ -1612,73 +1612,73 @@ class GameRoom:
                     h_state["ap"] = max(0, h_state["ap"] - 1)
                     self.add_log(f"{p_name} was caught in Sphinx's gaze and loses 1 AP.")
                     
-        elif ev == "spawn_delilah":
+        elif ev == "spawn_morgan":
             self.citizens["Morgan"]["active"] = True
             self.citizens["Morgan"]["location"] = self.citizens["Morgan"]["start"]
-            msg = "Citizen Morgan has arrived at The Scuttled Siren."
+            msg = "Citizen Morgan has arrived at Mary's Mill."
             self.add_log(msg)
             self.add_citizen_event("Morgan", msg)
 
-        elif ev == "spawn_mayor":
+        elif ev == "spawn_mari":
             self.citizens["Mari"]["active"] = True
             self.citizens["Mari"]["location"] = self.citizens["Mari"]["start"]
-            msg = "Citizen Mari has arrived at North Station."
+            msg = "Citizen Mari has arrived at The Fool's Journey."
             self.add_log(msg)
             self.add_citizen_event("Mari", msg)
 
-        elif ev == "spawn_higgins":
+        elif ev == "spawn_howard":
             self.citizens["Howard"]["active"] = True
             self.citizens["Howard"]["location"] = self.citizens["Howard"]["start"]
-            msg = "Citizen Howard has arrived at Spindlewood Institute."
+            msg = "Citizen Howard has arrived at Stewards Spire"
             self.add_log(msg)
             self.add_citizen_event("Howard", msg)
 
         elif ev == "spawn_spindlewood":
             self.citizens["Ms. Spindlewood"]["active"] = True
             self.citizens["Ms. Spindlewood"]["location"] = self.citizens["Ms. Spindlewood"]["start"]
-            msg = "Ms. Spindlewood has arrived at Spindlewood Institute."
+            msg = "Ms. Spindlewood has arrived at House of Dusk."
             self.add_log(msg)
             self.add_citizen_event("Ms. Spindlewood", msg)
 
         elif ev == "spawn_weir":
             self.citizens["Dr. Weir"]["active"] = True
             self.citizens["Dr. Weir"]["location"] = self.citizens["Dr. Weir"]["start"]
-            msg = "Dr. Weir has arrived at Arcane Forge."
+            msg = "Dr. Weir has arrived at Skybound Galleon."
             self.add_log(msg)
             self.add_citizen_event("Dr. Weir", msg)
 
         elif ev == "spawn_shinya":
             self.citizens["Shinya"]["active"] = True
             self.citizens["Shinya"]["location"] = self.citizens["Shinya"]["start"]
-            msg = "Citizen Shinya has arrived at The Roaming Wolf."
+            msg = "Citizen Shinya has arrived at Arcane Forge."
             self.add_log(msg)
             self.add_citizen_event("Shinya", msg)
 
         elif ev == "spawn_james_betty":
             self.citizens["James & Betty"]["active"] = True
             self.citizens["James & Betty"]["location"] = self.citizens["James & Betty"]["start"]
-            msg = "James & Betty have arrived at Specter Trail Caravan."
+            msg = "James & Betty have arrived at South Station."
             self.add_log(msg)
             self.add_citizen_event("James & Betty", msg)
 
         elif ev == "spawn_vaughn":
             self.citizens["Vaughn"]["active"] = True
             self.citizens["Vaughn"]["location"] = self.citizens["Vaughn"]["start"]
-            msg = "Citizen Vaughn has arrived at North Station."
+            msg = "Citizen Vaughn has arrived at House of Dawn."
             self.add_log(msg)
             self.add_citizen_event("Vaughn", msg)
 
         elif ev == "spawn_jennifer":
             self.citizens["Jennifer"]["active"] = True
             self.citizens["Jennifer"]["location"] = self.citizens["Jennifer"]["start"]
-            msg = "Citizen Jennifer has arrived at Arcane Forge."
+            msg = "Citizen Jennifer has arrived at Clockwork Village."
             self.add_log(msg)
             self.add_citizen_event("Jennifer", msg)
 
         elif ev == "spawn_raimi":
             self.citizens["Raimi"]["active"] = True
             self.citizens["Raimi"]["location"] = self.citizens["Raimi"]["start"]
-            msg = "Citizen Raimi has arrived at Stilt Town."
+            msg = "Citizen Raimi has arrived at Thornvine Woods."
             self.add_log(msg)
             self.add_citizen_event("Raimi", msg)
 
