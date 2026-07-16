@@ -612,9 +612,23 @@ class GameRoom:
         state["location"] = target
         state["ap"] -= 1
         self.add_log(f"{player_name} moved to {target}.")
-        
 
-                            
+        # Any Citizen standing with the hero passively follows along when the hero
+        # moves - no extra action required. (Guide is still needed to pull/push a
+        # Citizen to a location the hero isn't moving to themselves.)
+        for cit_name, cit in self.citizens.items():
+            if cit["active"] and cit["location"] == current:
+                cit["location"] = target
+                self.add_log(f"{cit_name} follows {player_name} to {target}.")
+                if target == cit["safe"]:
+                    cit["active"] = False
+                    cit["location"] = "Rescued"
+                    self.add_log(f"Legend {cit_name} has been rescued!")
+                    if self.perk_deck:
+                        perk = self.perk_deck.pop(0)
+                        state["perks"].append(perk)
+                        self.add_log(f"{player_name} received Perk Card: {perk['name']}.")
+
         return True
 
     def execute_guide(self, player_name: str, legend_name: str, target: str) -> bool:
