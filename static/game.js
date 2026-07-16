@@ -877,7 +877,9 @@ function updateGameUI() {
                 const currentRollId = gameState.pending_dice_roll.id || `${gameState.pending_dice_roll.hero}_${gameState.pending_dice_roll.monster}_${gameState.pending_dice_roll.dice}_${Date.now()}`;
                 const isMyRoll = (gameState.pending_dice_roll.hero === playerName);
                 const descEl = document.getElementById("dice-modal-desc");
-                
+                const titleEl = document.getElementById("dice-modal-title");
+                if (titleEl) titleEl.textContent = "Monster Attack!";
+
                 if (isMyRoll) {
                     descEl.textContent = `${gameState.pending_dice_roll.monster} is attacking you! Roll the dice!`;
                 } else {

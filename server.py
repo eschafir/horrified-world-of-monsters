@@ -2010,8 +2010,9 @@ class GameRoom:
 
         if powers > 0:
             self.frenzy_marker = monster
-            self.add_log(f"Power rolled! The Frenzy marker moves to {monster} and its Power activates.")
-            await self.trigger_monster_power(monster, broadcast_fn)
+            self.add_log(f"Power rolled {powers} time(s)! The Frenzy marker moves to {monster} and its Power activates {powers} time(s).")
+            for _ in range(powers):
+                await self.trigger_monster_power(monster, broadcast_fn)
 
         if broadcast_fn:
             await broadcast_fn()
@@ -2035,8 +2036,9 @@ class GameRoom:
 
         if powers > 0:
             self.frenzy_marker = monster
-            self.add_log(f"Power rolled! The Frenzy marker moves to {monster} and its Power activates.")
-            await self.trigger_monster_power(monster, broadcast_fn)
+            self.add_log(f"Power rolled {powers} time(s)! The Frenzy marker moves to {monster} and its Power activates {powers} time(s).")
+            for _ in range(powers):
+                await self.trigger_monster_power(monster, broadcast_fn)
 
 # ---------------------------------------------------------
 # MULTI-ROOM SOCKET MANAGER
