@@ -4433,20 +4433,81 @@ document.getElementById("action-special").addEventListener("click", () => {
             alert("There are no other players in the room to distribute items to.");
             return;
         }
-        let html = `<h3>The Parapsychologist: Distribute Item</h3><p>Send an item from your hand to another player anywhere on the map (0 AP).</p><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">`;
-        html += `<label style="display:block; margin-bottom:8px;">Choose Item: <select id="para-item" style="width:100%; background:#1b152d; color:#fff; border:1px solid #4a3b70; padding:6px; border-radius:4px; margin-top:4px;">`;
+
+        window.paraSelectedItem = null;
+        window.paraSelectedHero = null;
+
+        let html = `<div style="text-align:center;">`;
+        html += `<h3>The Parapsychologist: Distribute Item</h3><p style="font-size:0.85rem; color:#b0a0cf;">Send an item from your hand to another player anywhere on the map (0 AP).</p><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">`;
+
+        html += `<p style="margin-bottom:8px; text-align:left;"><strong>Choose Item:</strong></p>`;
+        html += `<div id="para-item-list" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-bottom:16px;">`;
         myState.items.forEach(item => {
-            html += `<option value="${item.id}">${item.name} (${item.color} ${item.strength})</option>`;
+            const imgSrc = item.artwork ? `/assets/items/${item.artwork}` : "";
+            const colorHex = getItemColorHex(item.color);
+            html += `
+                <div class="para-item-card" data-item-id="${item.id}" style="width:84px; text-align:center; cursor:pointer;">
+                    <div class="para-item-thumb" style="width:64px; height:64px; margin:0 auto 6px; border-radius:8px; overflow:hidden; background:rgba(255,255,255,0.05); border:3px solid ${colorHex}; display:flex; align-items:center; justify-content:center; transition: box-shadow 0.15s ease;">
+                        ${imgSrc ? `<img src="${imgSrc}" alt="${item.name}" style="width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.style.visibility='hidden'">` : ''}
+                    </div>
+                    <div style="font-size:0.68rem; color:#e5d9c8; line-height:1.2;">${item.name}</div>
+                    <div style="font-size:0.65rem; color:#a491c3;"><strong>${item.strength}</strong></div>
+                </div>
+            `;
         });
-        html += `</select></label>`;
-        html += `<label style="display:block; margin-bottom:15px;">Choose Recipient: <select id="para-target" style="width:100%; background:#1b152d; color:#fff; border:1px solid #4a3b70; padding:6px; border-radius:4px; margin-top:4px;">`;
+        html += `</div>`;
+
+        html += `<p style="margin-bottom:8px; text-align:left;"><strong>Choose Recipient:</strong></p>`;
+        html += `<div id="para-hero-list" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-bottom:20px;">`;
         otherPlayers.forEach(name => {
-            html += `<option value="${name}">${name} (${gameState.heroes_state[name].hero})</option>`;
+            const heroClass = gameState.heroes_state[name].hero;
+            const portrait = `/Images/Heroes/${heroClass} Image.png`;
+            html += `
+                <div class="para-hero-card" data-hero-name="${name}" style="width:84px; text-align:center; cursor:pointer;">
+                    <div class="para-hero-thumb" style="width:64px; height:64px; margin:0 auto 6px; border-radius:50%; overflow:hidden; background:rgba(255,255,255,0.05); border:3px solid rgba(255,255,255,0.2); transition: box-shadow 0.15s ease;">
+                        <img src="${portrait}" alt="${heroClass}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='/Images/Heroes/placeholder.png';">
+                    </div>
+                    <div style="font-size:0.68rem; color:#e5d9c8; line-height:1.2;">${name}</div>
+                    <div style="font-size:0.6rem; color:#a491c3;">${heroClass}</div>
+                </div>
+            `;
         });
-        html += `</select></label>`;
-        html += `<button class="btn btn-primary" onclick="confirmParaDistribute()" style="width:100%;">Send Item</button>`;
+        html += `</div>`;
+
+        html += `<button id="para-send-btn" class="btn btn-primary" style="width:100%;" disabled>Select an item and a recipient</button>`;
+        html += `</div>`;
         elModalBody.innerHTML = html;
         elModalContainer.classList.remove("hidden");
+
+        const updateParaSendButton = () => {
+            const btn = document.getElementById("para-send-btn");
+            if (!btn) return;
+            if (window.paraSelectedItem && window.paraSelectedHero) {
+                btn.disabled = false;
+                btn.textContent = "Send Item";
+            } else {
+                btn.disabled = true;
+                btn.textContent = "Select an item and a recipient";
+            }
+        };
+
+        document.querySelectorAll(".para-item-card").forEach(card => {
+            card.onclick = () => {
+                window.paraSelectedItem = card.dataset.itemId;
+                document.querySelectorAll(".para-item-thumb").forEach(el => el.style.boxShadow = "none");
+                card.querySelector(".para-item-thumb").style.boxShadow = "0 0 10px 2px rgba(255, 213, 51, 0.8)";
+                updateParaSendButton();
+            };
+        });
+        document.querySelectorAll(".para-hero-card").forEach(card => {
+            card.onclick = () => {
+                window.paraSelectedHero = card.dataset.heroName;
+                document.querySelectorAll(".para-hero-thumb").forEach(el => el.style.boxShadow = "none");
+                card.querySelector(".para-hero-thumb").style.boxShadow = "0 0 10px 2px rgba(255, 213, 51, 0.8)";
+                updateParaSendButton();
+            };
+        });
+        document.getElementById("para-send-btn").onclick = () => window.confirmParaDistribute();
     }
 });
 
@@ -4473,9 +4534,8 @@ window.confirmBuccaneerDiscard = () => {
     elModalContainer.classList.add("hidden");
 };
 window.confirmParaDistribute = () => {
-    const itemId = document.getElementById("para-item").value;
-    const target = document.getElementById("para-target").value;
-    sendMsg({ action: "special", args: { item_id: itemId, target_hero: target } });
+    if (!window.paraSelectedItem || !window.paraSelectedHero) return;
+    sendMsg({ action: "special", args: { item_id: window.paraSelectedItem, target_hero: window.paraSelectedHero } });
     elModalContainer.classList.add("hidden");
 };
 
