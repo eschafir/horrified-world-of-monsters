@@ -2987,8 +2987,11 @@ function renderSVGMap() {
     if (gameState.monster_locations) Object.values(gameState.monster_locations).forEach(checkLoc);
     if (gameState.citizens) Object.values(gameState.citizens).forEach(c => checkLoc(c.location));
     if (gameState.monster_states && gameState.monster_states["Yeti"]) {
-        gameState.monster_states["Yeti"].lairs.forEach(l => checkLoc(l.location));
+        gameState.monster_states["Yeti"].cave_candidates.forEach(l => checkLoc(l.location));
         gameState.monster_states["Yeti"].children.forEach(c => checkLoc(c.location));
+    }
+    if (gameState.monster_states && gameState.monster_states["Jiangshi"]) {
+        gameState.monster_states["Jiangshi"].shrine_candidates.forEach(c => checkLoc(c.location));
     }
     // --- END INJECT FALLBACK COORDINATES ---
 

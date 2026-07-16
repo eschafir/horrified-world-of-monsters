@@ -537,9 +537,54 @@ class GameRoom:
             self.items_on_board[loc] = []
         self.items_on_board[loc].append(item)
 
-                self.monster_locations[monster] = self.get_safe_loc("House of Dusk")
-            elif monster == "Cthulhu":
-                self.monster_locations[monster] = self.get_safe_loc("The Void")
+    def _draw_bagged_item(self) -> Optional[Dict]:
+        """Pops one item from the bag without placing it on the board (e.g. Sphinx's
+        locked starter cell, Cthulhu's controlled item)."""
+        if not self.item_bag:
+            return None
+        item = self.item_bag.pop(0)
+        item["id"] = str(uuid.uuid4())[:8]
+        return item
+
+    def get_safe_loc(self, loc: str) -> str:
+        if not self.adjacency_list:
+            return loc
+        if loc in self.adjacency_list or loc in ["Board", "Defeated"]:
+            return loc
+            
+        greek_mapping = {
+            "North Station": "Trading Post",
+            "Specter Trail Caravan": "Temple of Athena",
+            "Reviving Throne": "Temple of Hades",
+            "Spindlewood Institute": "Mount Iliad",
+            "Crossroads West": "Cross Roads",
+            "Steam Plant": "Forest of the Dryads",
+            "Crossroads Center": "Cross Roads",
+            "Stilt Town": "Statue of Talos",
+            "The Void": "Bay of Ghosts",
+            "Skybound Galleon": "Lighthouse",
+            "The Scuttled Siren": "Stables",
+            "Clockwork Village": "Agora",
+            "House of Dusk": "Temple of Nyx",
+            "Arcane Forge": "Ruins",
+            "The Fool's Journey": "Odeon",
+            "Garden of the Risen": "Gaseous Swamp",
+            "Stewards Spire": "Acropolis",
+            "South Station": "Port",
+            "Thornvine Woods": "Vineyards",
+            "Crossroads East": "Cross Roads 2",
+            "Weir's Observatory": "Gymnasium",
+            "Mary's Mill": "Stadium",
+            "Door of the World": "Necropolois",
+            "The Roaming Wolf": "Battlefield",
+            "House of Dawn": "Temple of Zeus"
+        }
+        mapped = greek_mapping.get(loc, loc)
+        if mapped in self.adjacency_list:
+            return mapped
+            
+        import random
+        return random.choice(list(self.adjacency_list.keys()))
 
     def _get_true_lair_location(self, kind: str) -> Optional[str]:
         """kind is 'yeti' or 'jiangshi'. Returns that Lair Token's location, if any."""
@@ -571,9 +616,9 @@ class GameRoom:
             "combat_rolls": self.combat_rolls,
             "log": self.log,
             "players": [{"name": p["name"], "hero": p["hero"], "is_host": p["is_host"]} for p in self.players],
-            "node_coordinates": NODE_COORDINATES,
-            "adjacency_list": ADJACENCY_LIST,
-            "terror_track_coordinates": TERROR_TRACK_COORDS,
+            "node_coordinates": self.node_coordinates,
+            "adjacency_list": self.adjacency_list,
+            "terror_track_coordinates": self.terror_track_coordinates,
             "monster_catalog": MONSTER_CATALOG
         }
 
