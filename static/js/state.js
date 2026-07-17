@@ -15,6 +15,8 @@ let pendingCardData = null;
 let selectedItemsForAction = []; // Track item selections for trades/scaffold
 let destinationNodeSelection = null; // Track movement target
 let guideSelectedLegend = null; // { name, loc, type } — the citizen/Yeti child chosen as the Guide source, on-map, step 2 of 2
+let mapLocationPickerTargets = null; // array of location names highlighted as clickable, while selectedAction === "map_location_picker"
+let mapLocationPickerCallback = null; // (locName) => void, fired when a highlighted node is clicked
 let chosenHero = "The Guardian";
 let dragType = null;
 let dragLocName = null;

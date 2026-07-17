@@ -234,8 +234,7 @@ class CombatMixin:
                 self._apply_direct_hit(hero_name)
 
         if powers > 0:
-            self.frenzy_marker = monster
-            self.add_log(f"Power rolled {powers} time(s)! The Frenzy marker moves to {monster} and its Power activates {powers} time(s).")
+            self.add_log(f"Power rolled {powers} time(s)! {monster}'s Power activates {powers} time(s).")
             for _ in range(powers):
                 await self.trigger_monster_power(monster, broadcast_fn)
 
@@ -260,7 +259,6 @@ class CombatMixin:
             self.add_log(f"The attack on {citizen_name} missed!")
 
         if powers > 0:
-            self.frenzy_marker = monster
-            self.add_log(f"Power rolled {powers} time(s)! The Frenzy marker moves to {monster} and its Power activates {powers} time(s).")
+            self.add_log(f"Power rolled {powers} time(s)! {monster}'s Power activates {powers} time(s).")
             for _ in range(powers):
                 await self.trigger_monster_power(monster, broadcast_fn)

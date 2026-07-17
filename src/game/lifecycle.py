@@ -28,6 +28,7 @@ class LifecycleMixin:
         self.roll_event = None
         self.pending_block_choice = None  # non-dice attack sources (e.g. a monster Power) that target one hero directly
         self.block_choice_event = None
+        self.skip_monster_phase = False  # set by the Lunar Oscillator Perk card
 
         # Board entities
         self.heroes_state: Dict[str, Dict] = {}  # player_name -> state
@@ -97,7 +98,12 @@ class LifecycleMixin:
         self.deck = copy.deepcopy(MONSTER_CARDS)
         random.shuffle(self.deck)
         self.discard = []
-        self.perk_deck = list(PERK_CARDS)
+        # Each Perk card is duplicated once (10 unique -> 20 physical cards in the deck).
+        # Every copy gets a unique instance id so a hand holding both copies of the same
+        # Perk can still unambiguously reference either one.
+        self.perk_deck = copy.deepcopy(PERK_CARDS) + copy.deepcopy(PERK_CARDS)
+        for i, card in enumerate(self.perk_deck):
+            card["id"] = f"{card['id']}-{i}"
         random.shuffle(self.perk_deck)
 
         # Reset locations

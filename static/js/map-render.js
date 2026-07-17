@@ -688,7 +688,8 @@ function renderSVGMap() {
         const adjacent = myState ? adjList[myState.location] : [];
         const isMoveTarget = (selectedAction === "move") && isTurn && (adjacent.includes(locName) || (myState.hero === "Explorer" && isDoubleJump(myState.location, locName)));
         const isGuideTarget = guideDestinations.includes(locName);
-        const isActiveDest = isMoveTarget || isGuideTarget;
+        const isMapPickerTarget = (selectedAction === "map_location_picker") && mapLocationPickerTargets && mapLocationPickerTargets.includes(locName);
+        const isActiveDest = isMoveTarget || isGuideTarget || isMapPickerTarget;
 
         const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
         g.addEventListener("mouseenter", () => {
@@ -739,6 +740,15 @@ function renderSVGMap() {
                 sendMsg({ action: "guide", legend: guideSelectedLegend.name, target: locName });
                 selectedAction = null;
                 guideSelectedLegend = null;
+            });
+        } else if (isMapPickerTarget) {
+            circle.addEventListener("click", (e) => {
+                if (window.isDragging) return;
+                const callback = mapLocationPickerCallback;
+                selectedAction = null;
+                mapLocationPickerTargets = null;
+                mapLocationPickerCallback = null;
+                if (callback) callback(locName);
             });
         } else {
             circle.addEventListener("click", (e) => {
@@ -803,6 +813,15 @@ function renderSVGMap() {
                     sendMsg({ action: "guide", legend: guideSelectedLegend.name, target: locName });
                     selectedAction = null;
                     guideSelectedLegend = null;
+                });
+            } else if (isMapPickerTarget) {
+                rect.addEventListener("click", (e) => {
+                    if (window.isDragging) return;
+                    const callback = mapLocationPickerCallback;
+                    selectedAction = null;
+                    mapLocationPickerTargets = null;
+                    mapLocationPickerCallback = null;
+                    if (callback) callback(locName);
                 });
             } else {
                 rect.addEventListener("click", (e) => {

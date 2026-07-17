@@ -31,6 +31,19 @@ class MonsterPhaseMixin:
     async def run_monster_phase(self, broadcast_fn=None):
         self.monster_phase_running = True
         try:
+            if self.skip_monster_phase:
+                self.skip_monster_phase = False
+                self.add_log("--- MONSTER PHASE SKIPPED (Lunar Oscillator) ---")
+                self.turn_player_idx = (self.turn_player_idx + 1) % len(self.players)
+                next_player = self.players[self.turn_player_idx]["name"]
+                max_ap = self.heroes_state[next_player]["max_ap"]
+                self.heroes_state[next_player]["ap"] = max_ap
+                self.game_phase = "HeroPhase"
+                self.add_log(f"It is now {next_player}'s turn! ({max_ap} AP)")
+                if broadcast_fn:
+                    await broadcast_fn()
+                return
+
             self.add_log("--- MONSTER PHASE ---")
 
             if not self.deck:

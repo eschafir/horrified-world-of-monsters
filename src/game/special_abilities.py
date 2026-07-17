@@ -130,44 +130,132 @@ class SpecialAbilitiesMixin:
             return False
 
         activated = False
-        if perk["name"] == "Swiftness":
+        if perk["name"] == "Lunar Oscillator":
+            item_id = args.get("discard_item_id")
             target_hero = args.get("target_hero")
-            dest = args.get("destination")
-            if target_hero in self.heroes_state and dest in self.adjacency_list:
-                self.heroes_state[target_hero]["location"] = dest
-                self.add_log(f"Perk (Swiftness) used: Moved {target_hero} to {dest}.")
-                activated = True
-
-        elif perk["name"] == "Security":
-            self.active_perks_limit["block_all_hits"] = True
-            self.add_log("Perk (Security) activated: The next attack's hits will be ignored.")
+            item = next((i for i in self.discarded_items if i["id"] == item_id), None)
+            if target_hero in self.heroes_state and item:
+                self.discarded_items.remove(item)
+                self.heroes_state[target_hero]["items"].append(item)
+                self.add_log(f"Perk (Lunar Oscillator) used: gave {item['name']} to {target_hero} from the discard pile.")
+            self.skip_monster_phase = True
+            self.add_log("Perk (Lunar Oscillator) activated: the next Monster Phase will be skipped.")
             activated = True
 
-        elif perk["name"] == "Search":
-            self.spawn_item()
-            self.spawn_item()
-            self.add_log(f"Perk (Search) activated: Spawned 2 items at {player_state['location']}.")
-            activated = True
+        elif perk["name"] == "Pulse Pummel":
+            monster = args.get("monster")
+            dest = args.get("target_location")
+            if monster in self.active_monsters and dest in self.adjacency_list:
+                distances = self._bfs_distances(self.monster_locations[monster])
+                if distances.get(dest, 999) <= 4:
+                    self.monster_locations[monster] = dest
+                    self.add_log(f"Perk (Pulse Pummel) used: moved {monster} to {dest}.")
+                    activated = True
 
-        elif perk["name"] == "Share":
-            self.active_perks_limit["global_share"] = True
-            self.add_log("Perk (Share) activated: Trade items with anyone anywhere on the board.")
-            activated = True
-
-        elif perk["name"] == "Insight":
-            if len(self.deck) >= 3:
-                top3 = [self.deck.pop() for _ in range(3)]
-                top3.reverse()
-                self.deck.extend(top3)
-                self.add_log("Perk (Insight) activated: Rearranged top 3 cards of Monster Deck.")
-                activated = True
-
-        elif perk["name"] == "Restoration":
+        elif perk["name"] == "Neuro Stabilizer":
             active_p = self.get_active_player()
             if active_p:
-                self.heroes_state[active_p["name"]]["ap"] = 4
-                self.add_log(f"Perk (Restoration) activated: {active_p['name']}'s AP restored to 4.")
+                self.heroes_state[active_p["name"]]["ap"] += 2
+                self.add_log(f"Perk (Neuro Stabilizer) activated: {active_p['name']} gains 2 additional actions.")
                 activated = True
+
+        elif perk["name"] == "Location Inverter":
+            target_hero = args.get("target_hero")
+            monster = args.get("monster")
+            if target_hero in self.heroes_state and monster in self.active_monsters:
+                hero_loc = self.heroes_state[target_hero]["location"]
+                monster_loc = self.monster_locations[monster]
+                self.heroes_state[target_hero]["location"] = monster_loc
+                self.monster_locations[monster] = hero_loc
+                self.add_log(f"Perk (Location Inverter) used: swapped {target_hero} and {monster}'s locations.")
+                activated = True
+
+        elif perk["name"] == "Ethereal Goggles":
+            choice = args.get("choice")
+            if choice == "reveal_lair":
+                lair_loc = args.get("lair_location")
+                token = next((t for t in self.lair_tokens if t["location"] == lair_loc and not t["revealed"]), None)
+                if token:
+                    token["revealed"] = True
+                    self.add_log(f"Perk (Ethereal Goggles) used: revealed the Lair Token at {lair_loc}.")
+                    activated = True
+            elif choice == "move_monster":
+                monster = args.get("monster")
+                dest = args.get("target_location")
+                if monster in self.active_monsters and dest in self.adjacency_list:
+                    distances = self._bfs_distances(self.monster_locations[monster])
+                    if distances.get(dest, 999) <= 3:
+                        self.monster_locations[monster] = dest
+                        self.add_log(f"Perk (Ethereal Goggles) used: moved {monster} to {dest}.")
+                        activated = True
+
+        elif perk["name"] == "Chronohelm":
+            choice = args.get("choice")
+            targets = args.get("targets", {})
+            if choice == "monsters":
+                pool = self.active_monsters
+                loc_map = self.monster_locations
+            elif choice == "heroes":
+                pool = list(self.heroes_state.keys())
+                loc_map = {h: self.heroes_state[h]["location"] for h in pool}
+            else:
+                pool = []
+                loc_map = {}
+
+            if pool and targets:
+                valid = True
+                for name, dest in targets.items():
+                    if name not in pool or dest not in self.adjacency_list:
+                        valid = False
+                        break
+                    distances = self._bfs_distances(loc_map[name])
+                    if distances.get(dest, 999) > 2:
+                        valid = False
+                        break
+                if valid:
+                    for name, dest in targets.items():
+                        if choice == "monsters":
+                            self.monster_locations[name] = dest
+                        else:
+                            self.heroes_state[name]["location"] = dest
+                    self.add_log(f"Perk (Chronohelm) used: moved each {'Monster' if choice == 'monsters' else 'Hero'} up to 2 spaces.")
+                    activated = True
+
+        elif perk["name"] == "Clockwork Companion":
+            location = args.get("location")
+            target_hero = args.get("target_hero")
+            if target_hero in self.heroes_state and location in self.items_on_board:
+                moved = self.items_on_board[location]
+                if moved:
+                    self.heroes_state[target_hero]["items"].extend(moved)
+                    self.items_on_board[location] = []
+                    self.add_log(f"Perk (Clockwork Companion) used: gave all {len(moved)} item(s) at {location} to {target_hero}.")
+                    activated = True
+
+        elif perk["name"] == "Pneumatic Jetpack":
+            target_hero = args.get("target_hero")
+            dest = args.get("target_location")
+            if target_hero in self.heroes_state and dest in self.adjacency_list:
+                self.heroes_state[target_hero]["location"] = dest
+                self.add_log(f"Perk (Pneumatic Jetpack) used: placed {target_hero} at {dest}.")
+                activated = True
+
+        elif perk["name"] == "Ironclad Buggy":
+            dest = args.get("target_location")
+            hero_names = args.get("hero_names", [])
+            has_hero_there = any(h["location"] == dest for h in self.heroes_state.values())
+            if dest in self.adjacency_list and has_hero_there and hero_names:
+                if all(h in self.heroes_state for h in hero_names):
+                    for h in hero_names:
+                        self.heroes_state[h]["location"] = dest
+                    self.add_log(f"Perk (Ironclad Buggy) used: gathered {', '.join(hero_names)} at {dest}.")
+                    activated = True
+
+        elif perk["name"] == "Spectral Diverter":
+            for _ in self.heroes_state:
+                self.spawn_item()
+            self.add_log(f"Perk (Spectral Diverter) activated: each player draws and places 1 item from the bag.")
+            activated = True
 
         if activated:
             player_state["perks"].remove(perk)

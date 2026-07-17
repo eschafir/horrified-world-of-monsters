@@ -159,6 +159,204 @@ window.openItemPicker = ({ title, description, items, validateFn, onConfirm, con
     refresh();
 };
 
+// Shortest-path distances from `start`, client-side mirror of the server's
+// _bfs_distances - used to constrain Perk card location pickers (e.g. "move up to N
+// spaces") to only the reachable/legal set instead of the whole board.
+function clientBfsDistances(start) {
+    const distances = { [start]: 0 };
+    const queue = [start];
+    const adj = gameState.adjacency_list || {};
+    while (queue.length) {
+        const node = queue.shift();
+        (adj[node] || []).forEach(n => {
+            if (!(n in distances)) {
+                distances[n] = distances[node] + 1;
+                queue.push(n);
+            }
+        });
+    }
+    return distances;
+}
+
+// Single- or multi-select Hero portrait picker, used by Perk cards that target a Hero
+// (Location Inverter, Pneumatic Jetpack, Ironclad Buggy, Lunar Oscillator's recipient).
+window.openHeroPicker = ({ title, description, heroNames, excludeSelf, multiSelect, confirmLabel, onConfirm }) => {
+    let pool = heroNames || Object.keys(gameState.heroes_state);
+    if (excludeSelf) pool = pool.filter(h => h !== playerName);
+
+    let html = `<div style="text-align:center;">`;
+    html += `<h3 style="margin-top:0;">${title}</h3>`;
+    if (description) html += `<p style="font-size:0.8rem; color:#b0a0cf;">${description}</p>`;
+    html += `<hr style="border-color:rgba(255,255,255,0.05); margin: 10px 0;">`;
+    if (pool.length === 0) {
+        html += `<p style="color:#a491c3; font-style:italic;">No eligible heroes.</p>`;
+    } else {
+        html += `<div id="hero-picker-list" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px;">`;
+        pool.forEach(name => {
+            const heroClass = gameState.heroes_state[name].hero;
+            const portrait = `/Images/Heroes/${heroClass} Image.png`;
+            html += `
+                <div class="hero-picker-card" data-hero-name="${name}" style="width:84px; text-align:center; cursor:pointer;">
+                    <div class="hero-picker-thumb" style="width:64px; height:64px; margin:0 auto 6px; border-radius:50%; overflow:hidden; background:rgba(255,255,255,0.05); border:3px solid rgba(255,255,255,0.2); transition: box-shadow 0.15s ease;">
+                        <img src="${portrait}" alt="${heroClass}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='/Images/Heroes/placeholder.png';">
+                    </div>
+                    <div style="font-size:0.68rem; color:#e5d9c8; line-height:1.2;">${name}</div>
+                    <div style="font-size:0.6rem; color:#a491c3;">${heroClass}</div>
+                </div>
+            `;
+        });
+        html += `</div>`;
+    }
+    html += `<hr style="border-color:rgba(255,255,255,0.05); margin: 15px 0 10px 0;">`;
+    if (multiSelect) {
+        html += `<div style="display:flex; justify-content:center; gap:10px;">`;
+        html += `<button class="btn btn-secondary btn-small" onclick="elModalContainer.classList.add('hidden')">Cancel</button>`;
+        html += `<button class="btn btn-primary btn-small" id="hero-picker-confirm" disabled>${confirmLabel || "Confirm"}</button>`;
+        html += `</div>`;
+    } else {
+        html += `<button class="btn btn-secondary btn-small" onclick="elModalContainer.classList.add('hidden')">Cancel</button>`;
+    }
+    html += `</div>`;
+    elModalBody.innerHTML = html;
+    elModalContainer.classList.remove("hidden");
+
+    const selected = new Set();
+    document.querySelectorAll(".hero-picker-card").forEach(card => {
+        card.onclick = () => {
+            if (multiSelect) {
+                const thumb = card.querySelector(".hero-picker-thumb");
+                if (selected.has(card.dataset.heroName)) {
+                    selected.delete(card.dataset.heroName);
+                    thumb.style.boxShadow = "none";
+                } else {
+                    selected.add(card.dataset.heroName);
+                    thumb.style.boxShadow = "0 0 10px 2px rgba(255, 213, 51, 0.8)";
+                }
+                const confirmBtn = document.getElementById("hero-picker-confirm");
+                confirmBtn.disabled = selected.size === 0;
+                confirmBtn.onclick = () => {
+                    elModalContainer.classList.add("hidden");
+                    onConfirm(Array.from(selected));
+                };
+            } else {
+                elModalContainer.classList.add("hidden");
+                onConfirm(card.dataset.heroName);
+            }
+        };
+    });
+};
+
+// Monster portrait picker, used by Perk cards that target a Monster (Pulse Pummel,
+// Location Inverter, Ethereal Goggles' move option).
+window.openMonsterPicker = ({ title, description, monsterNames, onConfirm }) => {
+    const pool = monsterNames || gameState.active_monsters || [];
+
+    let html = `<div style="text-align:center;">`;
+    html += `<h3 style="margin-top:0;">${title}</h3>`;
+    if (description) html += `<p style="font-size:0.8rem; color:#b0a0cf;">${description}</p>`;
+    html += `<hr style="border-color:rgba(255,255,255,0.05); margin: 10px 0;">`;
+    if (pool.length === 0) {
+        html += `<p style="color:#a491c3; font-style:italic;">No eligible Monsters.</p>`;
+    } else {
+        html += `<div id="monster-picker-list" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px;">`;
+        pool.forEach(name => {
+            const portrait = MONSTER_PORTRAIT_MAP[name] || "";
+            const accent = MONSTER_ACCENT_MAP[name] || { border: "rgba(255,255,255,0.2)" };
+            html += `
+                <div class="monster-picker-card" data-monster-name="${name}" style="width:84px; text-align:center; cursor:pointer;">
+                    <div class="monster-picker-thumb" style="width:64px; height:64px; margin:0 auto 6px; border-radius:50%; overflow:hidden; background:rgba(255,255,255,0.05); border:3px solid ${accent.border};">
+                        ${portrait ? `<img src="${portrait}" alt="${name}" style="width:100%; height:100%; object-fit:cover;">` : ""}
+                    </div>
+                    <div style="font-size:0.68rem; color:#e5d9c8; line-height:1.2;">${name}</div>
+                </div>
+            `;
+        });
+        html += `</div>`;
+    }
+    html += `<hr style="border-color:rgba(255,255,255,0.05); margin: 15px 0 10px 0;">`;
+    html += `<button class="btn btn-secondary btn-small" onclick="elModalContainer.classList.add('hidden')">Cancel</button>`;
+    html += `</div>`;
+    elModalBody.innerHTML = html;
+    elModalContainer.classList.remove("hidden");
+
+    document.querySelectorAll(".monster-picker-card").forEach(card => {
+        card.onclick = () => {
+            elModalContainer.classList.add("hidden");
+            onConfirm(card.dataset.monsterName);
+        };
+    });
+};
+
+// Scrollable location-name list picker, used by Perk cards that target a board space
+// (Pulse Pummel/Ethereal Goggles/Chronohelm destinations, Clockwork Companion's source
+// space, Pneumatic Jetpack/Ironclad Buggy's destination).
+window.openLocationPicker = ({ title, description, locations, onConfirm }) => {
+    const pool = (locations || Object.keys(gameState.adjacency_list || {})).slice().sort();
+
+    let html = `<div style="text-align:center;">`;
+    html += `<h3 style="margin-top:0;">${title}</h3>`;
+    if (description) html += `<p style="font-size:0.8rem; color:#b0a0cf;">${description}</p>`;
+    html += `<hr style="border-color:rgba(255,255,255,0.05); margin: 10px 0;">`;
+    if (pool.length === 0) {
+        html += `<p style="color:#a491c3; font-style:italic;">No eligible locations.</p>`;
+    } else {
+        html += `<div id="location-picker-list" style="max-height:280px; overflow-y:auto; display:flex; flex-direction:column; gap:4px;">`;
+        pool.forEach(loc => {
+            html += `<button class="btn btn-secondary btn-small location-picker-row" data-loc="${loc}" style="width:100%; text-align:left;">${loc}</button>`;
+        });
+        html += `</div>`;
+    }
+    html += `<hr style="border-color:rgba(255,255,255,0.05); margin: 15px 0 10px 0;">`;
+    html += `<button class="btn btn-secondary btn-small" onclick="elModalContainer.classList.add('hidden')">Cancel</button>`;
+    html += `</div>`;
+    elModalBody.innerHTML = html;
+    elModalContainer.classList.remove("hidden");
+
+    document.querySelectorAll(".location-picker-row").forEach(btn => {
+        btn.onclick = () => {
+            elModalContainer.classList.add("hidden");
+            onConfirm(btn.dataset.loc);
+        };
+    });
+};
+
+// On-map location picker: highlights `locations` directly on the SVG board (same
+// active-dest styling as Move/Guide) and resolves via a click there, instead of a modal
+// list. Used by Perk cards that pick a board space (starting with Pulse Pummel).
+window.openMapLocationPicker = ({ locations, hint, onConfirm }) => {
+    elModalContainer.classList.add("hidden");
+    mapLocationPickerTargets = locations || [];
+    mapLocationPickerCallback = onConfirm;
+    selectedAction = "map_location_picker";
+    gameState.log.push(`>>> ${hint || "Click a highlighted node on the map to choose the target!"}`);
+    renderSVGMap();
+};
+
+// Two-option choice picker, used by "Choose one:" Perk cards (Ethereal Goggles, Chronohelm).
+window.openChoicePicker = ({ title, description, options, onConfirm }) => {
+    let html = `<div style="text-align:center;">`;
+    html += `<h3 style="margin-top:0;">${title}</h3>`;
+    if (description) html += `<p style="font-size:0.8rem; color:#b0a0cf;">${description}</p>`;
+    html += `<hr style="border-color:rgba(255,255,255,0.05); margin: 10px 0;">`;
+    html += `<div style="display:flex; flex-direction:column; gap:8px;">`;
+    options.forEach(opt => {
+        html += `<button class="btn btn-primary choice-picker-btn" data-choice="${opt.id}" style="width:100%;">${opt.label}</button>`;
+    });
+    html += `</div>`;
+    html += `<hr style="border-color:rgba(255,255,255,0.05); margin: 15px 0 10px 0;">`;
+    html += `<button class="btn btn-secondary btn-small" onclick="elModalContainer.classList.add('hidden')">Cancel</button>`;
+    html += `</div>`;
+    elModalBody.innerHTML = html;
+    elModalContainer.classList.remove("hidden");
+
+    document.querySelectorAll(".choice-picker-btn").forEach(btn => {
+        btn.onclick = () => {
+            elModalContainer.classList.add("hidden");
+            onConfirm(btn.dataset.choice);
+        };
+    });
+};
+
 function buildItemChipsHtml(items, options = {}) {
     const { selectable = false, selectedIds = [] } = options;
     if (!items || items.length === 0) {
