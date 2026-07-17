@@ -926,7 +926,8 @@ function renderSVGMap() {
             lastCharacterPositions[charKey] = { x: targetX, y: targetY };
             
             if (isCustomMonster) {
-                charShape.setAttribute("class", "monster-token");
+                const isMonsterPickable = (mapEntityPickerType === "monster") && mapEntityPickerNames && mapEntityPickerNames.includes(char.name);
+                charShape.setAttribute("class", `monster-token ${isMonsterPickable ? "guide-source-pulse" : ""}`);
                 charShape.setAttribute("fill", `url(#pattern-monster-${char.name.toLowerCase()})`);
                 charShape.setAttribute("stroke", "#ff3366"); // Red border marks it as an enemy
                 charShape.setAttribute("stroke-width", "4.5");
@@ -986,34 +987,62 @@ function renderSVGMap() {
                 const patId = `pattern-hero-${char.heroClass.replaceAll(" ", "_")}`;
                 const isMe = (char.name === playerName);
                 const isActiveTurn = (gameState.players[gameState.turn_player_idx].name === char.name);
+                const isHeroPickable = (mapEntityPickerType === "hero") && mapEntityPickerNames && mapEntityPickerNames.includes(char.name);
+                const isHeroPickerSelected = isHeroPickable && mapEntityPickerSelected && mapEntityPickerSelected.has(char.name);
                 charShape.setAttribute("id", "map-hero-" + char.name.replace(/ /g, "_"));
-                charShape.setAttribute("class", "hero-token");
+                charShape.setAttribute("class", `hero-token ${isHeroPickable ? "guide-source-pulse" : ""}`);
                 charShape.setAttribute("fill", `url(#${patId})`);
-                charShape.setAttribute("stroke", (isMe || isActiveTurn) ? "#ffd533" : "#33ccff");
-                charShape.setAttribute("stroke-width", (isMe || isActiveTurn) ? "3.5" : "2.5");
-                charShape.setAttribute("filter", `drop-shadow(0 0 ${(isMe || isActiveTurn) ? 12 : 6}px ${(isMe || isActiveTurn) ? "rgba(255,213,51,0.9)" : "rgba(51,204,255,0.7)"})`);
-                
+                if (isHeroPickerSelected) {
+                    charShape.setAttribute("stroke", "#ffd533");
+                    charShape.setAttribute("stroke-width", "4.5");
+                    charShape.setAttribute("filter", "drop-shadow(0 0 14px rgba(255,213,51,1))");
+                } else {
+                    charShape.setAttribute("stroke", (isMe || isActiveTurn) ? "#ffd533" : "#33ccff");
+                    charShape.setAttribute("stroke-width", (isMe || isActiveTurn) ? "3.5" : "2.5");
+                    charShape.setAttribute("filter", `drop-shadow(0 0 ${(isMe || isActiveTurn) ? 12 : 6}px ${(isMe || isActiveTurn) ? "rgba(255,213,51,0.9)" : "rgba(51,204,255,0.7)"})`);
+                }
+
                 charShape.style.cursor = "pointer";
-                charShape.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    if (isMe) {
-                        const tabBtn = document.getElementById("gtab-btn-my-hero");
-                        if (tabBtn && !tabBtn.classList.contains("active")) {
-                            tabBtn.click();
+                if (isHeroPickable) {
+                    charShape.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        if (mapEntityPickerMultiSelect) {
+                            if (mapEntityPickerSelected.has(char.name)) {
+                                mapEntityPickerSelected.delete(char.name);
+                            } else {
+                                mapEntityPickerSelected.add(char.name);
+                            }
+                            updateMapPickerConfirmBar();
+                            renderSVGMap();
+                        } else {
+                            const callback = mapEntityPickerCallback;
+                            closeMapEntityPicker();
+                            renderSVGMap();
+                            if (callback) callback(char.name);
                         }
-                    } else {
-                        const activeHeroes = Object.keys(gameState.heroes_state || {}).filter(name => name !== playerName);
-                        const idx = activeHeroes.indexOf(char.name);
-                        if (idx !== -1) {
-                            currentHeroTabIndex = idx;
-                            renderPlayerPanel();
+                    });
+                } else {
+                    charShape.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        if (isMe) {
+                            const tabBtn = document.getElementById("gtab-btn-my-hero");
+                            if (tabBtn && !tabBtn.classList.contains("active")) {
+                                tabBtn.click();
+                            }
+                        } else {
+                            const activeHeroes = Object.keys(gameState.heroes_state || {}).filter(name => name !== playerName);
+                            const idx = activeHeroes.indexOf(char.name);
+                            if (idx !== -1) {
+                                currentHeroTabIndex = idx;
+                                renderPlayerPanel();
+                            }
+                            const tabBtn = document.getElementById("gtab-btn-hero");
+                            if (tabBtn && !tabBtn.classList.contains("active")) {
+                                tabBtn.click();
+                            }
                         }
-                        const tabBtn = document.getElementById("gtab-btn-hero");
-                        if (tabBtn && !tabBtn.classList.contains("active")) {
-                            tabBtn.click();
-                        }
-                    }
-                });
+                    });
+                }
             } else if (isCitizen) {
                 const patId = `pattern-citizen-${char.name.replaceAll(" ", "_")}`;
                 const isGuideSource = guideEligibleNames.includes(char.name);
@@ -1045,21 +1074,32 @@ function renderSVGMap() {
             if (char.type === "monster") {
                 charShape.setAttribute("id", "map-monster-" + char.name.replace(/ /g, "_"));
                 charShape.style.cursor = "pointer";
-                charShape.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    const active = gameState.active_monsters || [];
-                    const defeated = gameState.defeated_monsters || [];
-                    const allMonsters = [...active, ...defeated];
-                    const idx = allMonsters.indexOf(char.name);
-                    if (idx !== -1) {
-                        currentMonsterTabIndex = idx;
-                        renderMonstersStatusPanel();
-                    }
-                    const tabBtn = document.getElementById("gtab-btn-monsters");
-                    if (tabBtn && !tabBtn.classList.contains("active")) {
-                        tabBtn.click();
-                    }
-                });
+                const isMonsterPickable = (mapEntityPickerType === "monster") && mapEntityPickerNames && mapEntityPickerNames.includes(char.name);
+                if (isMonsterPickable) {
+                    charShape.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        const callback = mapEntityPickerCallback;
+                        closeMapEntityPicker();
+                        renderSVGMap();
+                        if (callback) callback(char.name);
+                    });
+                } else {
+                    charShape.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        const active = gameState.active_monsters || [];
+                        const defeated = gameState.defeated_monsters || [];
+                        const allMonsters = [...active, ...defeated];
+                        const idx = allMonsters.indexOf(char.name);
+                        if (idx !== -1) {
+                            currentMonsterTabIndex = idx;
+                            renderMonstersStatusPanel();
+                        }
+                        const tabBtn = document.getElementById("gtab-btn-monsters");
+                        if (tabBtn && !tabBtn.classList.contains("active")) {
+                            tabBtn.click();
+                        }
+                    });
+                }
             }
             // The monster currently holding the Frenzy marker is identified solely by the
             // ⚡ badge below - its token keeps the normal red "enemy" border/glow.

@@ -190,146 +190,29 @@ function clientBfsDistances(start) {
     return distances;
 }
 
-// Single- or multi-select Hero portrait picker, used by Perk cards that target a Hero
-// (Location Inverter, Pneumatic Jetpack, Ironclad Buggy, Lunar Oscillator's recipient).
-window.openHeroPicker = ({ title, description, heroNames, excludeSelf, multiSelect, confirmLabel, onConfirm }) => {
-    let pool = heroNames || Object.keys(gameState.heroes_state);
-    if (excludeSelf) pool = pool.filter(h => h !== playerName);
-
-    let html = `<div style="text-align:center;">`;
-    html += `<h3 style="margin-top:0;">${title}</h3>`;
-    if (description) html += `<p style="font-size:0.8rem; color:#b0a0cf;">${description}</p>`;
-    html += `<hr style="border-color:rgba(255,255,255,0.05); margin: 10px 0;">`;
-    if (pool.length === 0) {
-        html += `<p style="color:#a491c3; font-style:italic;">No eligible heroes.</p>`;
-    } else {
-        html += `<div id="hero-picker-list" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px;">`;
-        pool.forEach(name => {
-            const heroClass = gameState.heroes_state[name].hero;
-            const portrait = `/Images/Heroes/${heroClass} Image.png`;
-            html += `
-                <div class="hero-picker-card" data-hero-name="${name}" style="width:84px; text-align:center; cursor:pointer;">
-                    <div class="hero-picker-thumb" style="width:64px; height:64px; margin:0 auto 6px; border-radius:50%; overflow:hidden; background:rgba(255,255,255,0.05); border:3px solid rgba(255,255,255,0.2); transition: box-shadow 0.15s ease;">
-                        <img src="${portrait}" alt="${heroClass}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='/Images/Heroes/placeholder.png';">
-                    </div>
-                    <div style="font-size:0.68rem; color:#e5d9c8; line-height:1.2;">${name}</div>
-                    <div style="font-size:0.6rem; color:#a491c3;">${heroClass}</div>
-                </div>
-            `;
-        });
-        html += `</div>`;
-    }
-    html += `<hr style="border-color:rgba(255,255,255,0.05); margin: 15px 0 10px 0;">`;
-    if (multiSelect) {
-        html += `<div style="display:flex; justify-content:center; gap:10px;">`;
-        html += `<button class="btn btn-secondary btn-small" onclick="elModalContainer.classList.add('hidden')">Cancel</button>`;
-        html += `<button class="btn btn-primary btn-small" id="hero-picker-confirm" disabled>${confirmLabel || "Confirm"}</button>`;
-        html += `</div>`;
-    } else {
-        html += `<button class="btn btn-secondary btn-small" onclick="elModalContainer.classList.add('hidden')">Cancel</button>`;
-    }
-    html += `</div>`;
-    elModalBody.innerHTML = html;
-    elModalContainer.classList.remove("hidden");
-
-    const selected = new Set();
-    document.querySelectorAll(".hero-picker-card").forEach(card => {
-        card.onclick = () => {
-            if (multiSelect) {
-                const thumb = card.querySelector(".hero-picker-thumb");
-                if (selected.has(card.dataset.heroName)) {
-                    selected.delete(card.dataset.heroName);
-                    thumb.style.boxShadow = "none";
-                } else {
-                    selected.add(card.dataset.heroName);
-                    thumb.style.boxShadow = "0 0 10px 2px rgba(255, 213, 51, 0.8)";
-                }
-                const confirmBtn = document.getElementById("hero-picker-confirm");
-                confirmBtn.disabled = selected.size === 0;
-                confirmBtn.onclick = () => {
-                    elModalContainer.classList.add("hidden");
-                    onConfirm(Array.from(selected));
-                };
-            } else {
-                elModalContainer.classList.add("hidden");
-                onConfirm(card.dataset.heroName);
-            }
-        };
-    });
+// On-map Hero/Monster picker: glows eligible tokens directly on the SVG board (the same
+// gold guide-source-pulse used by the Guide action) and resolves via a click there,
+// instead of a portrait-grid modal. Used by every Perk card that targets a Hero or
+// Monster. Single-select resolves immediately; multi-select (Ironclad Buggy) toggles
+// selection and requires the Confirm button on the floating bar.
+window.openMapEntityPicker = ({ entityType, names, hint, multiSelect, confirmLabel, onConfirm }) => {
+    elModalContainer.classList.add("hidden");
+    mapEntityPickerType = entityType;
+    mapEntityPickerNames = names || [];
+    mapEntityPickerCallback = onConfirm;
+    mapEntityPickerMultiSelect = !!multiSelect;
+    mapEntityPickerSelected = new Set();
+    gameState.log.push(`>>> ${hint || `Click a highlighted ${entityType} on the map!`}`);
+    renderSVGMap();
+    showPerkPickerBar(multiSelect ? (confirmLabel || "Confirm") : null);
 };
 
-// Monster portrait picker, used by Perk cards that target a Monster (Pulse Pummel,
-// Location Inverter, Ethereal Goggles' move option).
-window.openMonsterPicker = ({ title, description, monsterNames, onConfirm }) => {
-    const pool = monsterNames || gameState.active_monsters || [];
-
-    let html = `<div style="text-align:center;">`;
-    html += `<h3 style="margin-top:0;">${title}</h3>`;
-    if (description) html += `<p style="font-size:0.8rem; color:#b0a0cf;">${description}</p>`;
-    html += `<hr style="border-color:rgba(255,255,255,0.05); margin: 10px 0;">`;
-    if (pool.length === 0) {
-        html += `<p style="color:#a491c3; font-style:italic;">No eligible Monsters.</p>`;
-    } else {
-        html += `<div id="monster-picker-list" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px;">`;
-        pool.forEach(name => {
-            const portrait = MONSTER_PORTRAIT_MAP[name] || "";
-            const accent = MONSTER_ACCENT_MAP[name] || { border: "rgba(255,255,255,0.2)" };
-            html += `
-                <div class="monster-picker-card" data-monster-name="${name}" style="width:84px; text-align:center; cursor:pointer;">
-                    <div class="monster-picker-thumb" style="width:64px; height:64px; margin:0 auto 6px; border-radius:50%; overflow:hidden; background:rgba(255,255,255,0.05); border:3px solid ${accent.border};">
-                        ${portrait ? `<img src="${portrait}" alt="${name}" style="width:100%; height:100%; object-fit:cover;">` : ""}
-                    </div>
-                    <div style="font-size:0.68rem; color:#e5d9c8; line-height:1.2;">${name}</div>
-                </div>
-            `;
-        });
-        html += `</div>`;
-    }
-    html += `<hr style="border-color:rgba(255,255,255,0.05); margin: 15px 0 10px 0;">`;
-    html += `<button class="btn btn-secondary btn-small" onclick="elModalContainer.classList.add('hidden')">Cancel</button>`;
-    html += `</div>`;
-    elModalBody.innerHTML = html;
-    elModalContainer.classList.remove("hidden");
-
-    document.querySelectorAll(".monster-picker-card").forEach(card => {
-        card.onclick = () => {
-            elModalContainer.classList.add("hidden");
-            onConfirm(card.dataset.monsterName);
-        };
-    });
-};
-
-// Scrollable location-name list picker, used by Perk cards that target a board space
-// (Pulse Pummel/Ethereal Goggles/Chronohelm destinations, Clockwork Companion's source
-// space, Pneumatic Jetpack/Ironclad Buggy's destination).
-window.openLocationPicker = ({ title, description, locations, onConfirm }) => {
-    const pool = (locations || Object.keys(gameState.adjacency_list || {})).slice().sort();
-
-    let html = `<div style="text-align:center;">`;
-    html += `<h3 style="margin-top:0;">${title}</h3>`;
-    if (description) html += `<p style="font-size:0.8rem; color:#b0a0cf;">${description}</p>`;
-    html += `<hr style="border-color:rgba(255,255,255,0.05); margin: 10px 0;">`;
-    if (pool.length === 0) {
-        html += `<p style="color:#a491c3; font-style:italic;">No eligible locations.</p>`;
-    } else {
-        html += `<div id="location-picker-list" style="max-height:280px; overflow-y:auto; display:flex; flex-direction:column; gap:4px;">`;
-        pool.forEach(loc => {
-            html += `<button class="btn btn-secondary btn-small location-picker-row" data-loc="${loc}" style="width:100%; text-align:left;">${loc}</button>`;
-        });
-        html += `</div>`;
-    }
-    html += `<hr style="border-color:rgba(255,255,255,0.05); margin: 15px 0 10px 0;">`;
-    html += `<button class="btn btn-secondary btn-small" onclick="elModalContainer.classList.add('hidden')">Cancel</button>`;
-    html += `</div>`;
-    elModalBody.innerHTML = html;
-    elModalContainer.classList.remove("hidden");
-
-    document.querySelectorAll(".location-picker-row").forEach(btn => {
-        btn.onclick = () => {
-            elModalContainer.classList.add("hidden");
-            onConfirm(btn.dataset.loc);
-        };
-    });
+window.closeMapEntityPicker = () => {
+    mapEntityPickerType = null;
+    mapEntityPickerNames = null;
+    mapEntityPickerCallback = null;
+    mapEntityPickerMultiSelect = false;
+    mapEntityPickerSelected = null;
 };
 
 // On-map location picker: highlights `locations` directly on the SVG board (same
@@ -341,6 +224,64 @@ window.openMapLocationPicker = ({ locations, hint, onConfirm }) => {
     mapLocationPickerCallback = onConfirm;
     selectedAction = "map_location_picker";
     gameState.log.push(`>>> ${hint || "Click a highlighted node on the map to choose the target!"}`);
+    renderSVGMap();
+    showPerkPickerBar(null);
+};
+
+// Floating bar shown for every step of an on-map Perk flow (both entity and location
+// pickers), so there's always a visible way out - Play used to have no cancel path once
+// a picker opened. Shows a live selection count + Confirm only while multi-selecting;
+// otherwise it's just a "click a highlighted target" reminder + Cancel.
+function showPerkPickerBar(confirmLabel) {
+    hidePerkPickerBar();
+    const bar = document.createElement("div");
+    bar.id = "map-picker-confirm-bar";
+    bar.innerHTML = confirmLabel
+        ? `
+            <span id="map-picker-confirm-count">0 selected</span>
+            <button class="btn btn-primary btn-small" id="map-picker-confirm-btn" disabled>${confirmLabel}</button>
+            <button class="btn btn-secondary btn-small" onclick="window.cancelPerkFlow()">Cancel</button>
+        `
+        : `
+            <span>Choose a target on the map, or cancel</span>
+            <button class="btn btn-secondary btn-small" onclick="window.cancelPerkFlow()">Cancel</button>
+        `;
+    document.body.appendChild(bar);
+    if (confirmLabel) {
+        document.getElementById("map-picker-confirm-btn").onclick = () => {
+            const callback = mapEntityPickerCallback;
+            const selected = Array.from(mapEntityPickerSelected || []);
+            closeMapEntityPicker();
+            hidePerkPickerBar();
+            renderSVGMap();
+            if (callback) callback(selected);
+        };
+    }
+}
+
+function hidePerkPickerBar() {
+    const bar = document.getElementById("map-picker-confirm-bar");
+    if (bar) bar.remove();
+}
+
+function updateMapPickerConfirmBar() {
+    const countEl = document.getElementById("map-picker-confirm-count");
+    const btnEl = document.getElementById("map-picker-confirm-btn");
+    if (!countEl || !btnEl || !mapEntityPickerSelected) return;
+    countEl.textContent = `${mapEntityPickerSelected.size} selected`;
+    btnEl.disabled = mapEntityPickerSelected.size === 0;
+}
+
+// Aborts an in-progress Perk flow from any step (item/choice modal, on-map entity pick,
+// or on-map location pick) and clears every bit of picker state so the map goes back to
+// normal - the single "way out" this feature was missing.
+window.cancelPerkFlow = () => {
+    selectedAction = null;
+    mapLocationPickerTargets = null;
+    mapLocationPickerCallback = null;
+    closeMapEntityPicker();
+    hidePerkPickerBar();
+    elModalContainer.classList.add("hidden");
     renderSVGMap();
 };
 
@@ -356,7 +297,7 @@ window.openChoicePicker = ({ title, description, options, onConfirm }) => {
     });
     html += `</div>`;
     html += `<hr style="border-color:rgba(255,255,255,0.05); margin: 15px 0 10px 0;">`;
-    html += `<button class="btn btn-secondary btn-small" onclick="elModalContainer.classList.add('hidden')">Cancel</button>`;
+    html += `<button class="btn btn-secondary btn-small" onclick="window.cancelPerkFlow()">Cancel</button>`;
     html += `</div>`;
     elModalBody.innerHTML = html;
     elModalContainer.classList.remove("hidden");

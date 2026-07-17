@@ -17,6 +17,11 @@ let destinationNodeSelection = null; // Track movement target
 let guideSelectedLegend = null; // { name, loc, type } — the citizen/Yeti child chosen as the Guide source, on-map, step 2 of 2
 let mapLocationPickerTargets = null; // array of location names highlighted as clickable, while selectedAction === "map_location_picker"
 let mapLocationPickerCallback = null; // (locName) => void, fired when a highlighted node is clicked
+let mapEntityPickerType = null; // "hero" | "monster" - which token type is glowing/clickable on the map
+let mapEntityPickerNames = null; // array of eligible hero/monster names
+let mapEntityPickerCallback = null; // (name) => void, single-select; (names[]) => void, multi-select
+let mapEntityPickerMultiSelect = false;
+let mapEntityPickerSelected = null; // Set of currently-toggled names, only used when multi-select
 let chosenHero = "The Guardian";
 let dragType = null;
 let dragLocName = null;

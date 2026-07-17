@@ -552,13 +552,16 @@ document.getElementById("action-end-turn").addEventListener("click", () => {
 
 
 function sendPlayPerk(perkId, args) {
+    hidePerkPickerBar();
     sendMsg({ action: "play_perk", perk_id: perkId, args: args || {} });
 }
 
 // Perk cards that need no target selection at all fire immediately; every other perk
-// walks the player through a short chain of pickers (hero/monster/location/choice,
-// all defined in sidebar.js) before sending the action, instead of a single free-text
-// prompt() like the old Swiftness perk used to.
+// walks the player through a short chain of on-map picks (glowing Hero/Monster tokens,
+// highlighted destination nodes - the same interaction language as the Guide action)
+// instead of any list/portrait modal. Only a binary "choose one" (Ethereal Goggles,
+// Chronohelm) and Lunar Oscillator's discard-pile item pick still use a small modal,
+// since neither is representable as a map click.
 window.playPerkCard = (perkId, perkName) => {
     if (perkName === "Neuro Stabilizer" || perkName === "Spectral Diverter") {
         sendPlayPerk(perkId, {});
@@ -576,21 +579,21 @@ window.playPerkCard = (perkId, perkName) => {
             validateFn: (sel) => ({ valid: sel.length === 1, message: sel.length === 1 ? "" : "Select exactly 1 item." }),
             confirmLabel: "Next: Choose Recipient",
             onConfirm: (ids) => {
-                openHeroPicker({
-                    title: "Lunar Oscillator",
-                    description: "Give the item to which player?",
-                    excludeSelf: true,
-                    onConfirm: (targetHero) => {
-                        sendPlayPerk(perkId, { discard_item_id: ids[0], target_hero: targetHero });
-                    }
+                const heroNames = Object.keys(gameState.heroes_state || {}).filter(h => h !== playerName);
+                openMapEntityPicker({
+                    entityType: "hero",
+                    names: heroNames,
+                    hint: "Click a glowing Hero on the map to give them the item!",
+                    onConfirm: (targetHero) => sendPlayPerk(perkId, { discard_item_id: ids[0], target_hero: targetHero })
                 });
             }
         });
 
     } else if (perkName === "Pulse Pummel") {
-        openMonsterPicker({
-            title: "Pulse Pummel",
-            description: "Choose a Monster to move up to 4 spaces.",
+        openMapEntityPicker({
+            entityType: "monster",
+            names: gameState.active_monsters || [],
+            hint: "Click a glowing Monster on the map to move it up to 4 spaces!",
             onConfirm: (monster) => {
                 const dist = clientBfsDistances(gameState.monster_locations[monster]);
                 const locations = Object.keys(dist).filter(l => dist[l] >= 1 && dist[l] <= 4);
@@ -603,13 +606,15 @@ window.playPerkCard = (perkId, perkName) => {
         });
 
     } else if (perkName === "Location Inverter") {
-        openHeroPicker({
-            title: "Location Inverter",
-            description: "Choose a Hero to swap with a Monster.",
+        openMapEntityPicker({
+            entityType: "hero",
+            names: Object.keys(gameState.heroes_state || {}),
+            hint: "Click a glowing Hero on the map to swap with a Monster!",
             onConfirm: (targetHero) => {
-                openMonsterPicker({
-                    title: "Location Inverter",
-                    description: `Swap ${targetHero} with which Monster?`,
+                openMapEntityPicker({
+                    entityType: "monster",
+                    names: gameState.active_monsters || [],
+                    hint: `Click a glowing Monster to swap locations with ${targetHero}!`,
                     onConfirm: (monster) => sendPlayPerk(perkId, { target_hero: targetHero, monster })
                 });
             }
@@ -626,23 +631,22 @@ window.playPerkCard = (perkId, perkName) => {
             onConfirm: (choice) => {
                 if (choice === "reveal_lair") {
                     const locations = (gameState.lair_tokens || []).filter(t => !t.revealed).map(t => t.location);
-                    openLocationPicker({
-                        title: "Ethereal Goggles",
-                        description: "Reveal which facedown Lair?",
+                    openMapLocationPicker({
                         locations,
+                        hint: "Click a highlighted Lair Token to reveal it!",
                         onConfirm: (lairLoc) => sendPlayPerk(perkId, { choice: "reveal_lair", lair_location: lairLoc })
                     });
                 } else {
-                    openMonsterPicker({
-                        title: "Ethereal Goggles",
-                        description: "Choose a Monster to move up to 3 spaces.",
+                    openMapEntityPicker({
+                        entityType: "monster",
+                        names: gameState.active_monsters || [],
+                        hint: "Click a glowing Monster on the map to move it up to 3 spaces!",
                         onConfirm: (monster) => {
                             const dist = clientBfsDistances(gameState.monster_locations[monster]);
                             const locations = Object.keys(dist).filter(l => dist[l] >= 1 && dist[l] <= 3);
-                            openLocationPicker({
-                                title: "Ethereal Goggles",
-                                description: `Move ${monster} to which space (up to 3 spaces away)?`,
+                            openMapLocationPicker({
                                 locations,
+                                hint: `Click a highlighted node to move ${monster} there (up to 3 spaces away)!`,
                                 onConfirm: (dest) => sendPlayPerk(perkId, { choice: "move_monster", monster, target_location: dest })
                             });
                         }
@@ -672,10 +676,9 @@ window.playPerkCard = (perkId, perkName) => {
                     const name = pool[idx];
                     const dist = clientBfsDistances(getLoc(name));
                     const locations = Object.keys(dist).filter(l => dist[l] <= 2);
-                    openLocationPicker({
-                        title: "Chronohelm",
-                        description: `Move ${name} up to 2 spaces (${idx + 1}/${pool.length}):`,
+                    openMapLocationPicker({
                         locations,
+                        hint: `Click a highlighted node to move ${name} up to 2 spaces (${idx + 1}/${pool.length})!`,
                         onConfirm: (dest) => {
                             targets[name] = dest;
                             pickNext(idx + 1);
@@ -688,27 +691,28 @@ window.playPerkCard = (perkId, perkName) => {
 
     } else if (perkName === "Clockwork Companion") {
         const locations = Object.keys(gameState.items_on_board || {}).filter(l => (gameState.items_on_board[l] || []).length > 0);
-        openLocationPicker({
-            title: "Clockwork Companion",
-            description: "Take all items from which space?",
+        openMapLocationPicker({
             locations,
+            hint: "Click a highlighted node to take all its items!",
             onConfirm: (loc) => {
-                openHeroPicker({
-                    title: "Clockwork Companion",
-                    description: `Give all items at ${loc} to which player?`,
+                openMapEntityPicker({
+                    entityType: "hero",
+                    names: Object.keys(gameState.heroes_state || {}),
+                    hint: `Click a glowing Hero to give them all items from ${loc}!`,
                     onConfirm: (targetHero) => sendPlayPerk(perkId, { location: loc, target_hero: targetHero })
                 });
             }
         });
 
     } else if (perkName === "Pneumatic Jetpack") {
-        openHeroPicker({
-            title: "Pneumatic Jetpack",
-            description: "Choose a Hero to place anywhere on the board.",
+        openMapEntityPicker({
+            entityType: "hero",
+            names: Object.keys(gameState.heroes_state || {}),
+            hint: "Click a glowing Hero on the map to place them anywhere on the board!",
             onConfirm: (targetHero) => {
-                openLocationPicker({
-                    title: "Pneumatic Jetpack",
-                    description: `Place ${targetHero} at which space?`,
+                openMapLocationPicker({
+                    locations: Object.keys(gameState.adjacency_list || {}),
+                    hint: `Click any node to place ${targetHero} there!`,
                     onConfirm: (dest) => sendPlayPerk(perkId, { target_hero: targetHero, target_location: dest })
                 });
             }
@@ -716,16 +720,16 @@ window.playPerkCard = (perkId, perkName) => {
 
     } else if (perkName === "Ironclad Buggy") {
         const heroLocs = new Set(Object.values(gameState.heroes_state || {}).map(h => h.location));
-        openLocationPicker({
-            title: "Ironclad Buggy",
-            description: "Choose a space that currently has a Hero.",
+        openMapLocationPicker({
             locations: Array.from(heroLocs),
+            hint: "Click a highlighted node that currently has a Hero!",
             onConfirm: (dest) => {
-                openHeroPicker({
-                    title: "Ironclad Buggy",
-                    description: `Choose any number of Heroes to gather at ${dest}.`,
+                openMapEntityPicker({
+                    entityType: "hero",
+                    names: Object.keys(gameState.heroes_state || {}),
                     multiSelect: true,
                     confirmLabel: "Gather Heroes",
+                    hint: `Click any number of glowing Heroes to gather at ${dest}, then confirm!`,
                     onConfirm: (heroNames) => sendPlayPerk(perkId, { target_location: dest, hero_names: heroNames })
                 });
             }
