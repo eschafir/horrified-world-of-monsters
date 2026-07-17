@@ -102,3 +102,20 @@ def _get_monster_symbols(name: str) -> List[str]:
 
 
 MONSTER_SYMBOLS: Dict[str, List[str]] = {name: _get_monster_symbols(name) for name in MONSTER_CATALOG}
+
+
+def _get_monster_colors(name: str) -> List[str]:
+    """Perception Die colors a monster currently reacts to (same source list as
+    MONSTER_SYMBOLS, just keyed by each symbol's color instead of its name) - Monster
+    Card event text refers to monsters by either name ("Ghost Monster") or color
+    ("Orange Monster") interchangeably."""
+    entry = MONSTER_CATALOG.get(name)
+    if not entry:
+        return []
+    if entry.get("frenzySymbols"):
+        return [s["color"] for s in entry["frenzySymbols"]]
+    phase = entry.get("phases", [{}])[0]
+    return [s["color"] for s in phase.get("frenzySymbols", [])]
+
+
+MONSTER_COLORS: Dict[str, List[str]] = {name: _get_monster_colors(name) for name in MONSTER_CATALOG}

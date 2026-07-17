@@ -56,6 +56,22 @@ const SYMBOL_TO_COLOR = {
     Jewel: "Teal", Eye: "Purple", Gear: "Brown", Wrench: "Blue"
 };
 
+// Every color name a Monster Card's event_text can reference (e.g. "Each Yellow
+// Monster..."). Replaced with a small colored dot in buildCardHTML below so the color
+// reads visually instead of as plain text - the word is kept as a hover tooltip.
+const EVENT_TEXT_COLOR_WORDS = ["Orange", "Yellow", "Green", "Red", "Teal", "Purple", "Brown", "Blue"];
+
+function formatEventTextWithColorIcons(text) {
+    if (!text) return text;
+    let result = text;
+    EVENT_TEXT_COLOR_WORDS.forEach(color => {
+        const hex = getSymbolColorHex(color);
+        const icon = `<span class="mp-inline-color-dot" style="background:${hex}; box-shadow:0 0 4px ${hex};" title="${color}"></span>`;
+        result = result.replace(new RegExp(`\\b${color}\\b`, "g"), icon);
+    });
+    return result;
+}
+
 const MONSTER_PORTRAIT_MAP = {
     "Yeti":     "/Images/Monsters/Yeti.png",
     "Sphinx":   "/Images/Monsters/Sphinx.png",
@@ -483,7 +499,7 @@ function buildCardHTML(card, alreadyFlipped) {
                     </div>
                     <div class="mp-card-event">
                         <span class="mp-event-title">${card.event_title}</span>
-                        <span class="mp-event-text">${card.event_text}</span>
+                        <span class="mp-event-text">${formatEventTextWithColorIcons(card.event_text)}</span>
                     </div>
                     <div class="mp-card-icons">
                         <span class="mp-icon-group" title="Frenzy: ${attack.frenzy ? "Yes" : "No"}">

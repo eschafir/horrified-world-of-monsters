@@ -17,6 +17,22 @@ class FrenzyMixin:
         else:
             self.frenzy_marker = ""
 
+    def _advance_frenzy_marker(self):
+        """Card-driven "move the Frenzy marker to the next Monster" effect (distinct from
+        _reassign_frenzy_if_needed, which only fires when the current holder was just
+        defeated) - always advances to the next-highest active monster in Frenzy order,
+        wrapping back to the lowest."""
+        if not self.active_monsters:
+            self.frenzy_marker = ""
+            return
+        ordered = sorted(self.active_monsters, key=lambda m: FRENZY_ORDER.get(m, 99))
+        if self.frenzy_marker in ordered:
+            idx = ordered.index(self.frenzy_marker)
+            self.frenzy_marker = ordered[(idx + 1) % len(ordered)]
+        else:
+            self.frenzy_marker = ordered[0]
+        self.add_log(f"The Frenzy marker moves to {self.frenzy_marker}.")
+
     def check_victory(self):
         if not self.active_monsters:
             self.game_phase = "GameOverWin"

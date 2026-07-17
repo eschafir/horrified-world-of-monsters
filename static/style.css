@@ -2239,6 +2239,16 @@ body {
     font-style: italic;
 }
 
+.mp-inline-color-dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(0, 0, 0, 0.4);
+    vertical-align: middle;
+    margin: 0 1px -1px;
+}
+
 /* Bottom info bar: Frenzy | Symbol | Move | Dice, left to right */
 .mp-card-icons {
     display: flex;
