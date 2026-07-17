@@ -23,6 +23,7 @@ let dragLocName = null;
 let lastGamePhaseSeen = null;
 let lastPendingDiceRollId = "";
 let lastBlockChoiceId = ""; // pending_block_choice.id already shown, so the modal isn't re-triggered every broadcast
+let lastTurnPlayerIdx = null; // clears the permanent dice display only when the turn actually changes
 let intentionalDisconnect = false;
 let lastTerrorLevel = null;
 let pendingTerrorTransitionFrom = null; // consumed once by renderSVGMap to slide the neon ring from its old slot

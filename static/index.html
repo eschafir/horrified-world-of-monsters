@@ -123,6 +123,18 @@
                         <h4>Monster Phase</h4>
                         <p class="phase-hint">After ending your turn, a Monster Card is drawn and resolved — monsters move, spawn, or strike.</p>
                     </section>
+
+                    <!-- Persistent dice display: stays visible with the last roll's result
+                         for the rest of the turn (see updateGameUI in ui-sync.js), instead of
+                         only appearing inside the transient attack modal. -->
+                    <section class="sidebar-section glass-inner" id="sec-dice" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+                        <h4 style="margin: 0; font-size: 0.9rem; color: #d4c8eb; text-transform: uppercase; letter-spacing: 0.5px;">Combat Dice</h4>
+                        <div id="permanent-dice-container" style="display: flex; gap: 12px; height: 60px;">
+                            <div class="dice-slot permanent-die" id="perm-die-0" style="width: 50px; height: 50px; border-radius: 8px; background: rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; opacity: 0.5; transition: all 0.3s ease;"></div>
+                            <div class="dice-slot permanent-die" id="perm-die-1" style="width: 50px; height: 50px; border-radius: 8px; background: rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; opacity: 0.5; transition: all 0.3s ease;"></div>
+                            <div class="dice-slot permanent-die" id="perm-die-2" style="width: 50px; height: 50px; border-radius: 8px; background: rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; opacity: 0.5; transition: all 0.3s ease;"></div>
+                        </div>
+                    </section>
                 </aside>
 
                 <!-- GAME CENTER: top tab panels + map + bottom log -->
@@ -307,18 +319,6 @@
         <div class="game-over-banner">
             <h2 id="game-over-message"></h2>
             <button id="btn-main-menu" class="btn btn-primary game-over-menu-btn">Main Menu</button>
-        </div>
-    </div>
-
-    <!-- DICE ROLL MODAL -->
-    <div id="dice-modal-overlay" class="game-over-overlay hidden" style="z-index: 10000; background: rgba(0,0,0,0.85);">
-        <div class="glass" style="padding: 40px; border-radius: 20px; text-align: center; max-width: 600px; display: flex; flex-direction: column; align-items: center;">
-            <h2 id="dice-modal-title" style="color: #ff3366; margin-bottom: 10px; font-size: 2.2rem; text-shadow: 0 0 10px rgba(255, 51, 102, 0.5);">Monster Attack!</h2>
-            <p id="dice-modal-desc" style="color: #b0a0cf; margin-bottom: 30px; font-size: 1.1rem;"></p>
-            <div id="dice-container" style="display: flex; gap: 25px; justify-content: center; min-height: 100px;">
-                <!-- Dice will be injected here -->
-            </div>
-            <button id="btn-finish-dice" class="btn btn-primary hidden" style="margin-top: 35px; font-size: 1.1rem; padding: 12px 35px;">Continue</button>
         </div>
     </div>
 

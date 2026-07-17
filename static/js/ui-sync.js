@@ -149,148 +149,227 @@ function updateGameUI() {
         }
         lastGamePhaseSeen = gameState.game_phase;
 
-        // Handle Interactive Dice Roll
-        const elDiceOverlay = document.getElementById("dice-modal-overlay");
-        const btnFinishDice = document.getElementById("btn-finish-dice");
-        if (elDiceOverlay) {
-            if (gameState.pending_dice_roll) {
-                // Generate a unique ID for this exact attack
-                const currentRollId = gameState.pending_dice_roll.id || `${gameState.pending_dice_roll.hero}_${gameState.pending_dice_roll.monster}_${gameState.pending_dice_roll.dice}_${Date.now()}`;
-                const isMyRoll = (gameState.pending_dice_roll.hero === playerName);
-                const descEl = document.getElementById("dice-modal-desc");
-                const titleEl = document.getElementById("dice-modal-title");
-                if (titleEl) titleEl.textContent = "Monster Attack!";
+        // Handle Interactive Dice Roll. The permanent sidebar dice (#perm-die-0/1/2)
+        // stay showing the last roll's result for the rest of the turn - only cleared
+        // when the turn actually changes - instead of disappearing once a blocking
+        // modal closes. The attacked player gets a small modal (reusing the app's
+        // generic elModalContainer/elModalBody) to click through the roll; everyone
+        // else just sees a toast banner while the permanent dice auto-reveal live, so
+        // spectators watch the roll happen without a blocking popup of their own.
+        function resetPermanentDice() {
+            for (let i = 0; i < 3; i++) {
+                const slot = document.getElementById(`perm-die-${i}`);
+                if (slot) {
+                    slot.style.borderColor = "rgba(255,255,255,0.1)";
+                    slot.style.boxShadow = "none";
+                    slot.style.opacity = "0.5";
+                    slot.textContent = "";
+                    slot.classList.remove("die-rolling");
+                }
+            }
+        }
+
+        if (lastTurnPlayerIdx !== gameState.turn_player_idx) {
+            lastTurnPlayerIdx = gameState.turn_player_idx;
+            resetPermanentDice();
+        }
+
+        if (gameState.pending_dice_roll) {
+            const currentRollId = gameState.pending_dice_roll.id || `${gameState.pending_dice_roll.hero}_${gameState.pending_dice_roll.monster}_${gameState.pending_dice_roll.dice}_${Date.now()}`;
+            const isMyRoll = (gameState.pending_dice_roll.hero === playerName);
+
+            if (lastPendingDiceRollId !== currentRollId) {
+                lastPendingDiceRollId = currentRollId;
+                resetPermanentDice();
 
                 if (isMyRoll) {
-                    descEl.textContent = `${gameState.pending_dice_roll.monster} is attacking you! Roll the dice!`;
-                } else {
-                    descEl.textContent = `${gameState.pending_dice_roll.monster} is attacking ${gameState.pending_dice_roll.hero}! Waiting for them to roll...`;
-                }
+                    elModalBody.innerHTML = `
+                        <div style="text-align:center; padding: 20px;">
+                            <h2 style="color:#ff3366; margin-top:0; text-shadow: 0 0 10px rgba(255, 51, 102, 0.5);">Monster Attack!</h2>
+                            <p style="font-size:1.1rem; color:#d4c8eb; margin: 15px 0;">${gameState.pending_dice_roll.monster} is attacking you!</p>
+                            <p style="font-size:0.95rem; color:#b0a0cf; margin-bottom: 20px;">Click the dice below to roll them.</p>
+                            <div id="modal-dice-container" style="display: flex; gap: 25px; justify-content: center; margin: 25px 0; min-height: 80px;"></div>
+                        </div>
+                    `;
+                    elModalContainer.classList.remove("hidden");
 
-                if (lastPendingDiceRollId !== currentRollId) {
-                    lastPendingDiceRollId = currentRollId;
-                    
-                    const container = document.getElementById("dice-container");
-                    container.innerHTML = "";
-                    btnFinishDice.classList.add("hidden");
-                    btnFinishDice.disabled = false;
-                    btnFinishDice.onclick = null;
-                    
+                    const modalDiceContainer = document.getElementById("modal-dice-container");
                     let diceRolled = 0;
-                    
-                    gameState.pending_dice_roll.results.forEach((result, idx) => {
-                        const die = document.createElement("div");
-                        die.className = "die-button";
-                        die.textContent = "?";
-                        container.appendChild(die);
-                        
-                        if (isMyRoll) {
-                            die.onclick = () => {
-                                if (die.classList.contains("rolled")) return;
-                                
-                                die.classList.add("die-rolling");
-                                setTimeout(() => {
-                                    die.classList.remove("die-rolling");
-                                    die.classList.add("rolled");
-                                    if (result === "Hit") {
-                                        die.textContent = "💥";
-                                    } else if (result === "Power") {
-                                        die.textContent = "❗";
-                                    } else {
-                                        die.textContent = "—";
-                                    }
-                                    
-                                    diceRolled++;
-                                    if (diceRolled === gameState.pending_dice_roll.dice) {
-                                        const hits = gameState.pending_dice_roll.results.filter(r => r === "Hit").length;
-                                        if (hits === 0) {
-                                            btnFinishDice.textContent = "Continue";
-                                            btnFinishDice.className = "btn btn-primary";
-                                            btnFinishDice.classList.remove("hidden");
-                                            btnFinishDice.onclick = () => {
-                                                btnFinishDice.disabled = true;
-                                                btnFinishDice.textContent = "Processing...";
-                                                elDiceOverlay.classList.add("hidden");
-                                                socket.send(JSON.stringify({ action: "finish_dice_roll" }));
-                                            };
-                                        } else {
-                                            btnFinishDice.textContent = "Take Damage";
-                                            btnFinishDice.className = "btn btn-danger";
-                                            btnFinishDice.classList.remove("hidden");
-                                            btnFinishDice.onclick = () => {
-                                                showDamageSelection(hits);
-                                            };
-                                        }
-                                    }
-                                }, 500); // Wait for animation to finish
-                            };
-                        }
-                    });
-                }
-                
-                elDiceOverlay.classList.remove("hidden");
-            } else if (gameState.pending_block_choice) {
-                // A monster Power targeting a single hero directly (e.g. the Yeti's Snow
-                // Blast) reuses this same overlay's item-selection step, just with no
-                // dice to roll first.
-                lastPendingDiceRollId = "";
-                const pending = gameState.pending_block_choice;
-                const titleEl = document.getElementById("dice-modal-title");
-                const descEl = document.getElementById("dice-modal-desc");
 
-                if (pending.hero === playerName) {
-                    if (lastBlockChoiceId !== pending.id) {
-                        lastBlockChoiceId = pending.id;
-                        if (titleEl) titleEl.textContent = `${pending.reason}!`;
-                        showDamageSelection(pending.hits, "finish_block_choice", `The ${pending.reason} targets you!`);
+                    for (let i = 0; i < gameState.pending_dice_roll.dice; i++) {
+                        const result = gameState.pending_dice_roll.results[i];
+
+                        const permSlot = document.getElementById(`perm-die-${i}`);
+                        if (permSlot) {
+                            permSlot.style.borderColor = "gold";
+                            permSlot.style.boxShadow = "0 0 10px gold";
+                            permSlot.style.opacity = "1";
+                            permSlot.textContent = "?";
+                        }
+
+                        const modalDie = document.createElement("div");
+                        modalDie.className = "die-button";
+                        modalDie.textContent = "?";
+                        modalDiceContainer.appendChild(modalDie);
+
+                        modalDie.onclick = () => {
+                            if (modalDie.classList.contains("rolled")) return;
+
+                            modalDie.classList.add("die-rolling");
+                            if (permSlot) permSlot.classList.add("die-rolling");
+
+                            setTimeout(() => {
+                                modalDie.classList.remove("die-rolling");
+                                modalDie.classList.add("rolled");
+                                if (permSlot) {
+                                    permSlot.classList.remove("die-rolling");
+                                    permSlot.style.borderColor = "rgba(255,255,255,0.4)";
+                                    permSlot.style.boxShadow = "none";
+                                }
+
+                                let char = "—";
+                                if (result === "Hit") char = "❗";
+                                else if (result === "Power") char = "💥";
+
+                                modalDie.textContent = char;
+                                if (permSlot) permSlot.textContent = char;
+
+                                diceRolled++;
+                                if (diceRolled === gameState.pending_dice_roll.dice) {
+                                    const hits = gameState.pending_dice_roll.results.filter(r => r === "Hit").length;
+                                    setTimeout(() => {
+                                        if (hits === 0) {
+                                            elModalContainer.classList.add("hidden");
+                                            socket.send(JSON.stringify({ action: "finish_dice_roll" }));
+                                        } else {
+                                            showDamageSelection(hits);
+                                        }
+                                    }, 600);
+                                }
+                            }, 500); // 500ms rolling animation
+                        };
                     }
                 } else {
-                    lastBlockChoiceId = "";
-                    if (titleEl) titleEl.textContent = `${pending.reason}!`;
-                    if (descEl) descEl.textContent = `${pending.hero} is defending against the ${pending.reason}...`;
-                    document.getElementById("dice-container").innerHTML = "";
-                    btnFinishDice.classList.add("hidden");
-                    const existingBlockBtn = document.getElementById("btn-block-damage");
-                    if (existingBlockBtn) existingBlockBtn.remove();
+                    // Not my roll! Show a 3-second banner while the permanent dice
+                    // reveal themselves live, one by one.
+                    const div = document.createElement("div");
+                    div.className = "glass";
+                    div.style.cssText = "position:fixed; top:30px; left:50%; transform:translateX(-50%); padding:15px 30px; z-index:10000; color:#ff3366; font-size:1.2rem; border-radius:10px; box-shadow:0 0 20px rgba(255, 51, 102, 0.6);";
+                    div.textContent = `${gameState.pending_dice_roll.monster} is attacking ${gameState.pending_dice_roll.hero}!`;
+                    document.body.appendChild(div);
+                    setTimeout(() => div.remove(), 3000);
+
+                    for (let i = 0; i < gameState.pending_dice_roll.dice; i++) {
+                        const permSlot = document.getElementById(`perm-die-${i}`);
+                        if (permSlot) {
+                            permSlot.style.borderColor = "gold";
+                            permSlot.style.boxShadow = "0 0 10px gold";
+                            permSlot.style.opacity = "1";
+                            permSlot.textContent = "?";
+                        }
+                    }
+
+                    let idx = 0;
+                    const interval = setInterval(() => {
+                        // Check if pending roll was somehow resolved early (e.g. they disconnected)
+                        if (idx >= gameState.pending_dice_roll?.dice) {
+                            clearInterval(interval);
+                            return;
+                        }
+                        const permSlot = document.getElementById(`perm-die-${idx}`);
+                        const result = gameState.pending_dice_roll.results[idx];
+                        if (permSlot) {
+                            permSlot.classList.add("die-rolling");
+                            setTimeout(() => {
+                                permSlot.classList.remove("die-rolling");
+                                permSlot.style.borderColor = "rgba(255,255,255,0.4)";
+                                permSlot.style.boxShadow = "none";
+
+                                let char = "—";
+                                if (result === "Hit") char = "❗";
+                                else if (result === "Power") char = "💥";
+                                permSlot.textContent = char;
+                            }, 500);
+                        }
+                        idx++;
+                    }, 800);
                 }
-                elDiceOverlay.classList.remove("hidden");
-            } else {
-                elDiceOverlay.classList.add("hidden");
-                lastPendingDiceRollId = "";
-                lastBlockChoiceId = "";
-                const existing = document.getElementById("btn-block-damage");
-                if (existing) existing.remove();
             }
+        } else if (gameState.pending_block_choice) {
+            // A monster Power targeting a single hero directly (e.g. the Yeti's Snow
+            // Blast) reuses the same generic modal's item-selection step, just with no
+            // dice to roll first.
+            lastPendingDiceRollId = "";
+            const pending = gameState.pending_block_choice;
+
+            if (pending.hero === playerName) {
+                if (lastBlockChoiceId !== pending.id) {
+                    lastBlockChoiceId = pending.id;
+                    showDamageSelection(pending.hits, "finish_block_choice", `The ${pending.reason} targets you!`);
+                }
+            } else if (lastBlockChoiceId !== pending.id) {
+                lastBlockChoiceId = pending.id;
+                const div = document.createElement("div");
+                div.className = "glass";
+                div.style.cssText = "position:fixed; top:30px; left:50%; transform:translateX(-50%); padding:15px 30px; z-index:10000; color:#ff3366; font-size:1.2rem; border-radius:10px; box-shadow:0 0 20px rgba(255, 51, 102, 0.6);";
+                div.textContent = `${pending.reason}! ${pending.hero} is defending...`;
+                document.body.appendChild(div);
+                setTimeout(() => div.remove(), 3000);
+            }
+        } else {
+            lastPendingDiceRollId = "";
+            lastBlockChoiceId = "";
         }
 
         // Render Sidebar lists (Inventory)
         renderPlayerPanel();
-        
+
         // finishAction lets this be reused for both a dice-roll's hits and a monster
         // Power that targets a single hero directly (e.g. the Yeti's Snow Blast) -
         // either way it's "select N items to block, or take the damage".
         function showDamageSelection(hits, finishAction = "finish_dice_roll", promptPrefix = null) {
-            const container = document.getElementById("dice-container");
-            const descEl = document.getElementById("dice-modal-desc");
-            const btnFinishDice = document.getElementById("btn-finish-dice");
+            let html = `<div style="text-align:center; padding: 10px;">`;
+            html += `<h2 style="color:#ff3366; margin-top:0; text-shadow: 0 0 10px rgba(255, 51, 102, 0.5);">Take Damage</h2>`;
 
-            descEl.textContent = promptPrefix
+            const desc = promptPrefix
                 ? `${promptPrefix} Select ${hits} item${hits !== 1 ? "s" : ""} to discard and block it, or take the damage.`
                 : `You took ${hits} hit${hits !== 1 ? "s" : ""}! Select ${hits} item${hits !== 1 ? "s" : ""} to discard and block it, or take the damage.`;
-            container.innerHTML = "";
-            
+
+            html += `<p style="font-size:1.05rem; color:#d4c8eb;">${desc}</p>`;
+
             const myState = gameState.heroes_state[playerName];
             let selectedIds = new Set();
-            
-            if (myState.items.length === 0) {
-                container.innerHTML = `<p style="color: #ff3366; font-size: 1.2rem;">You have no items to block the damage!</p>`;
-            } else {
-                const itemsDiv = document.createElement("div");
-                itemsDiv.style.display = "flex";
-                itemsDiv.style.gap = "10px";
-                itemsDiv.style.flexWrap = "wrap";
-                itemsDiv.style.justifyContent = "center";
 
+            if (myState.items.length === 0) {
+                html += `<p style="color: #ff3366; font-size: 1.1rem; margin:25px 0;">You have no items to block the damage!</p>`;
+            } else {
+                html += `<div id="damage-items-container" style="display:flex; flex-wrap:wrap; justify-content:center; gap:12px; margin:25px 0;"></div>`;
+            }
+
+            html += `
+                <hr style="border-color:rgba(255,255,255,0.05); margin: 20px 0;">
+                <div style="display:flex; justify-content:center; gap:15px; margin-top:20px;">
+                    <button class="btn btn-danger" id="btn-take-damage" style="font-size: 1.05rem;">Take Damage (Terror +1)</button>
+                    <button class="btn btn-primary hidden" id="btn-block-damage" style="font-size: 1.05rem;">Block Damage</button>
+                </div>
+            </div>`;
+
+            elModalBody.innerHTML = html;
+            elModalContainer.classList.remove("hidden");
+
+            const btnTake = document.getElementById("btn-take-damage");
+            const btnBlock = document.getElementById("btn-block-damage");
+
+            btnTake.onclick = () => {
+                btnTake.disabled = true;
+                btnTake.textContent = "Processing...";
+                if (btnBlock) btnBlock.disabled = true;
+                elModalContainer.classList.add("hidden");
+                socket.send(JSON.stringify({ action: finishAction }));
+            };
+
+            if (myState.items.length > 0) {
+                const itemsContainer = document.getElementById("damage-items-container");
                 // Image + color-coded border, matching the item cards used everywhere
                 // else (Pick Up modal, puzzle item pickers) so items are recognizable
                 // at a glance instead of a plain colored square + text row.
@@ -299,8 +378,8 @@ function updateGameUI() {
                     const colorHex = getItemColorHex(item.color);
 
                     const itemEl = document.createElement("div");
-                    itemEl.className = "inventory-item";
-                    itemEl.style.cssText = "width:84px; text-align:center; cursor:pointer;";
+                    itemEl.className = "inventory-item glass";
+                    itemEl.style.cssText = "width:84px; text-align:center; cursor:pointer; padding:10px 15px; border:2px solid transparent; border-radius:8px; transition:all 0.2s ease;";
                     itemEl.innerHTML = `
                         <div class="pickup-item-thumb" style="width:64px; height:64px; margin:0 auto 6px; border-radius:8px; overflow:hidden; background:rgba(255,255,255,0.05); border:3px solid ${colorHex}; display:flex; align-items:center; justify-content:center; transition: box-shadow 0.15s ease;">
                             ${imgSrc ? `<img src="${imgSrc}" alt="${item.name}" style="width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.style.visibility='hidden'">` : ''}
@@ -313,59 +392,32 @@ function updateGameUI() {
                     itemEl.onclick = () => {
                         if (selectedIds.has(item.id)) {
                             selectedIds.delete(item.id);
+                            itemEl.style.borderColor = "transparent";
+                            itemEl.style.boxShadow = "none";
                             thumb.style.boxShadow = "none";
                         } else {
                             selectedIds.add(item.id);
+                            itemEl.style.borderColor = "#ffcc00";
+                            itemEl.style.boxShadow = "0 0 12px rgba(255, 204, 0, 0.4)";
                             thumb.style.boxShadow = "0 0 10px 2px rgba(255, 213, 51, 0.8)";
                         }
-                        updateDamageButtons();
+
+                        if (selectedIds.size >= hits) {
+                            btnBlock.classList.remove("hidden");
+                        } else {
+                            btnBlock.classList.add("hidden");
+                        }
                     };
-                    itemsDiv.appendChild(itemEl);
+                    itemsContainer.appendChild(itemEl);
                 });
-                container.appendChild(itemsDiv);
-            }
-            
-            btnFinishDice.textContent = "Take Damage (Terror +1)";
-            btnFinishDice.className = "btn btn-danger";
-            btnFinishDice.onclick = () => {
-                btnFinishDice.disabled = true;
-                btnFinishDice.textContent = "Processing...";
-                const existingBlockBtn = document.getElementById("btn-block-damage");
-                if (existingBlockBtn) existingBlockBtn.disabled = true;
-                const overlay = document.getElementById("dice-modal-overlay");
-                if (overlay) overlay.classList.add("hidden");
-                socket.send(JSON.stringify({ action: finishAction }));
-            };
-            
-            const existing = document.getElementById("btn-block-damage");
-            if (existing) existing.remove();
-            
-            const btnBlock = document.createElement("button");
-            btnBlock.id = "btn-block-damage";
-            btnBlock.className = "btn btn-primary hidden";
-            btnBlock.style.marginLeft = "15px";
-            btnBlock.style.marginTop = "35px";
-            btnBlock.style.fontSize = "1.1rem";
-            btnBlock.style.padding = "12px 35px";
-            btnBlock.textContent = "Block Damage";
-            
-            btnFinishDice.parentNode.appendChild(btnBlock);
-            
-            function updateDamageButtons() {
-                // One item per Hit rolled - strength no longer matters for blocking.
-                if (selectedIds.size >= hits) {
-                    btnBlock.classList.remove("hidden");
-                    btnBlock.onclick = () => {
-                        btnBlock.disabled = true;
-                        btnBlock.textContent = "Processing...";
-                        btnFinishDice.disabled = true;
-                        const overlay = document.getElementById("dice-modal-overlay");
-                        if (overlay) overlay.classList.add("hidden");
-                        socket.send(JSON.stringify({ action: finishAction, item_ids: Array.from(selectedIds) }));
-                    };
-                } else {
-                    btnBlock.classList.add("hidden");
-                }
+
+                btnBlock.onclick = () => {
+                    btnBlock.disabled = true;
+                    btnBlock.textContent = "Processing...";
+                    btnTake.disabled = true;
+                    elModalContainer.classList.add("hidden");
+                    socket.send(JSON.stringify({ action: finishAction, item_ids: Array.from(selectedIds) }));
+                };
             }
         }
 
