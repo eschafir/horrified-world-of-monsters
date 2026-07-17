@@ -369,6 +369,21 @@
         </div>
     </div>
 
-    <script src="game.js?v=141"></script>
+    <!-- Split from a single game.js into modular files (see CLAUDE.md); state.js must load
+         first (declares gameState/element selectors other files wire up against), audio.js
+         before websocket.js (websocket.js's volume-slider wiring references
+         updateMusicVolume by name at top level), and zoom-pan.js last (mirrors the original
+         end-of-file DOMContentLoaded bootstrap). -->
+    <script src="js/state.js?v=1"></script>
+    <script src="js/audio.js?v=1"></script>
+    <script src="js/websocket.js?v=1"></script>
+    <script src="js/lobby.js?v=1"></script>
+    <script src="js/modals.js?v=1"></script>
+    <script src="js/ui-sync.js?v=1"></script>
+    <script src="js/sidebar.js?v=1"></script>
+    <script src="js/notifications.js?v=1"></script>
+    <script src="js/map-render.js?v=1"></script>
+    <script src="js/actions.js?v=1"></script>
+    <script src="js/zoom-pan.js?v=1"></script>
 </body>
 </html>

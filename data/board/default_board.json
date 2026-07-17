@@ -1,0 +1,655 @@
+{
+    "nodes": {
+        "The Void": {
+            "x": 648,
+            "y": 641,
+            "bx": 612,
+            "by": 735,
+            "r": 100,
+            "rw": 80,
+            "rh": 34
+        },
+        "North Station": {
+            "x": 267,
+            "y": 136,
+            "bx": 231,
+            "by": 214,
+            "r": 83,
+            "rw": 106,
+            "rh": 34
+        },
+        "Specter Trail Caravan": {
+            "x": 498,
+            "y": 250,
+            "bx": 493,
+            "by": 163,
+            "rw": 96,
+            "rh": 34,
+            "r": 99
+        },
+        "Reviving Throne": {
+            "x": 705,
+            "y": 173,
+            "bx": 599,
+            "by": 143,
+            "rw": 80,
+            "rh": 34,
+            "r": 91
+        },
+        "Spindlewood Institute": {
+            "x": 128,
+            "y": 349,
+            "bx": 200,
+            "by": 439,
+            "rw": 98,
+            "rh": 34,
+            "r": 94
+        },
+        "Crossroads West": {
+            "x": 348,
+            "y": 494,
+            "bx": 289,
+            "by": 523,
+            "rw": 96,
+            "rh": 34,
+            "r": 72
+        },
+        "Steam Plant": {
+            "x": 546,
+            "y": 425,
+            "bx": 535,
+            "by": 541,
+            "r": 88,
+            "rw": 102,
+            "rh": 34
+        },
+        "Crossroads Center": {
+            "x": 768,
+            "y": 328,
+            "bx": 777,
+            "by": 368,
+            "rw": 96,
+            "rh": 34,
+            "r": 60
+        },
+        "Stilt Town": {
+            "x": 828,
+            "y": 489,
+            "bx": 843,
+            "by": 580,
+            "rw": 96,
+            "rh": 34,
+            "r": 94
+        },
+        "Skybound Galleon": {
+            "x": 280,
+            "y": 656,
+            "bx": 132,
+            "by": 570,
+            "r": 78,
+            "rw": 88,
+            "rh": 34
+        },
+        "The Scuttled Siren": {
+            "x": 652,
+            "y": 865,
+            "bx": 717,
+            "by": 921,
+            "r": 90,
+            "rw": 96,
+            "rh": 34
+        },
+        "Clockwork Village": {
+            "x": 371,
+            "y": 925,
+            "bx": 374,
+            "by": 806,
+            "rw": 96,
+            "rh": 34,
+            "r": 100
+        },
+        "House of Dusk": {
+            "x": 137,
+            "y": 791,
+            "bx": 147,
+            "by": 898,
+            "rw": 110,
+            "rh": 34,
+            "r": 90
+        },
+        "Arcane Forge": {
+            "x": 157,
+            "y": 1086,
+            "bx": 149,
+            "by": 1179,
+            "r": 73,
+            "rw": 120,
+            "rh": 34
+        },
+        "The Fool's Journey": {
+            "x": 469,
+            "y": 1120,
+            "bx": 513,
+            "by": 1189,
+            "r": 92,
+            "rw": 138,
+            "rh": 34
+        },
+        "Garden of the Risen": {
+            "x": 806,
+            "y": 1081,
+            "bx": 821,
+            "by": 1189,
+            "r": 100,
+            "rw": 150,
+            "rh": 34
+        },
+        "Stewards Spire": {
+            "x": 1046,
+            "y": 931,
+            "bx": 1154,
+            "by": 992,
+            "rw": 82,
+            "rh": 34,
+            "r": 75
+        },
+        "South Station": {
+            "x": 1094,
+            "y": 1114,
+            "bx": 1103,
+            "by": 1191,
+            "r": 100,
+            "rw": 110,
+            "rh": 34
+        },
+        "Thornvine Woods": {
+            "x": 869,
+            "y": 807,
+            "bx": 870,
+            "by": 925,
+            "rw": 90,
+            "rh": 34,
+            "r": 100
+        },
+        "Crossroads East": {
+            "x": 1017,
+            "y": 601,
+            "bx": 963,
+            "by": 656,
+            "r": 72,
+            "rw": 96,
+            "rh": 34
+        },
+        "Weir's Observatory": {
+            "x": 1188,
+            "y": 683,
+            "bx": 1192,
+            "by": 759,
+            "r": 89
+        },
+        "Mary's Mill": {
+            "x": 957,
+            "y": 363,
+            "bx": 896,
+            "by": 389,
+            "rw": 94,
+            "rh": 34,
+            "r": 75
+        },
+        "Door of the World": {
+            "x": 988,
+            "y": 167,
+            "bx": 889,
+            "by": 143,
+            "rw": 82,
+            "rh": 34,
+            "r": 82
+        },
+        "The Roaming Wolf": {
+            "x": 1149,
+            "y": 243,
+            "bx": 1149,
+            "by": 147,
+            "rw": 118,
+            "rh": 34,
+            "r": 88
+        },
+        "House of Dawn": {
+            "x": 1141,
+            "y": 443,
+            "bx": 1142,
+            "by": 524,
+            "r": 92,
+            "rw": 112,
+            "rh": 34
+        }
+    },
+    "terror": [
+        {
+            "x": 359,
+            "y": 57,
+            "r": 30,
+            "points": [
+                [
+                    12,
+                    33
+                ],
+                [
+                    30,
+                    -6
+                ],
+                [
+                    18,
+                    2
+                ],
+                [
+                    32,
+                    -27
+                ],
+                [
+                    -31,
+                    -28
+                ],
+                [
+                    -17,
+                    3
+                ],
+                [
+                    -30,
+                    -6
+                ],
+                [
+                    -13,
+                    33
+                ]
+            ]
+        },
+        {
+            "x": 437,
+            "y": 59,
+            "r": 31,
+            "points": [
+                [
+                    12,
+                    33
+                ],
+                [
+                    30,
+                    -6
+                ],
+                [
+                    18,
+                    2
+                ],
+                [
+                    32,
+                    -27
+                ],
+                [
+                    -31,
+                    -28
+                ],
+                [
+                    -17,
+                    3
+                ],
+                [
+                    -30,
+                    -6
+                ],
+                [
+                    -13,
+                    33
+                ]
+            ]
+        },
+        {
+            "x": 515,
+            "y": 58,
+            "r": 31,
+            "points": [
+                [
+                    12,
+                    33
+                ],
+                [
+                    30,
+                    -6
+                ],
+                [
+                    18,
+                    2
+                ],
+                [
+                    32,
+                    -27
+                ],
+                [
+                    -31,
+                    -28
+                ],
+                [
+                    -17,
+                    3
+                ],
+                [
+                    -30,
+                    -6
+                ],
+                [
+                    -13,
+                    33
+                ]
+            ]
+        },
+        {
+            "x": 599,
+            "y": 57,
+            "r": 32,
+            "points": [
+                [
+                    12,
+                    33
+                ],
+                [
+                    30,
+                    -6
+                ],
+                [
+                    18,
+                    2
+                ],
+                [
+                    32,
+                    -27
+                ],
+                [
+                    -31,
+                    -28
+                ],
+                [
+                    -17,
+                    3
+                ],
+                [
+                    -30,
+                    -6
+                ],
+                [
+                    -13,
+                    33
+                ]
+            ]
+        },
+        {
+            "x": 683,
+            "y": 57,
+            "r": 31,
+            "points": [
+                [
+                    12,
+                    33
+                ],
+                [
+                    30,
+                    -6
+                ],
+                [
+                    18,
+                    2
+                ],
+                [
+                    32,
+                    -27
+                ],
+                [
+                    -31,
+                    -28
+                ],
+                [
+                    -17,
+                    3
+                ],
+                [
+                    -30,
+                    -6
+                ],
+                [
+                    -13,
+                    33
+                ]
+            ]
+        },
+        {
+            "x": 764,
+            "y": 57,
+            "r": 32,
+            "points": [
+                [
+                    12,
+                    33
+                ],
+                [
+                    30,
+                    -6
+                ],
+                [
+                    18,
+                    2
+                ],
+                [
+                    32,
+                    -27
+                ],
+                [
+                    -31,
+                    -28
+                ],
+                [
+                    -17,
+                    3
+                ],
+                [
+                    -30,
+                    -6
+                ],
+                [
+                    -13,
+                    33
+                ]
+            ]
+        },
+        {
+            "x": 845,
+            "y": 59,
+            "r": 32,
+            "points": [
+                [
+                    12,
+                    33
+                ],
+                [
+                    30,
+                    -6
+                ],
+                [
+                    18,
+                    2
+                ],
+                [
+                    32,
+                    -27
+                ],
+                [
+                    -31,
+                    -28
+                ],
+                [
+                    -17,
+                    3
+                ],
+                [
+                    -30,
+                    -6
+                ],
+                [
+                    -13,
+                    33
+                ]
+            ]
+        },
+        {
+            "x": 928,
+            "y": 59,
+            "r": 32,
+            "points": [
+                [
+                    12,
+                    33
+                ],
+                [
+                    30,
+                    -6
+                ],
+                [
+                    18,
+                    2
+                ],
+                [
+                    32,
+                    -27
+                ],
+                [
+                    -31,
+                    -28
+                ],
+                [
+                    -17,
+                    3
+                ],
+                [
+                    -30,
+                    -6
+                ],
+                [
+                    -13,
+                    33
+                ]
+            ]
+        }
+    ],
+    "adjacency": {
+        "North Station": [
+            "Specter Trail Caravan"
+        ],
+        "Specter Trail Caravan": [
+            "North Station",
+            "Spindlewood Institute",
+            "Crossroads Center",
+            "Reviving Throne"
+        ],
+        "Reviving Throne": [
+            "Specter Trail Caravan"
+        ],
+        "Spindlewood Institute": [
+            "Specter Trail Caravan",
+            "Steam Plant",
+            "Crossroads West"
+        ],
+        "Crossroads West": [
+            "Spindlewood Institute",
+            "Skybound Galleon",
+            "Steam Plant"
+        ],
+        "Steam Plant": [
+            "Crossroads West",
+            "Spindlewood Institute",
+            "Crossroads Center",
+            "Stilt Town"
+        ],
+        "Crossroads Center": [
+            "Steam Plant",
+            "Specter Trail Caravan",
+            "Mary's Mill"
+        ],
+        "Stilt Town": [
+            "Steam Plant",
+            "The Void"
+        ],
+        "The Void": [
+            "Skybound Galleon",
+            "Thornvine Woods",
+            "Stilt Town"
+        ],
+        "Skybound Galleon": [
+            "Crossroads West",
+            "The Void",
+            "The Scuttled Siren"
+        ],
+        "The Scuttled Siren": [
+            "Skybound Galleon",
+            "Clockwork Village",
+            "Garden of the Risen"
+        ],
+        "Clockwork Village": [
+            "House of Dusk",
+            "Arcane Forge",
+            "The Fool's Journey",
+            "The Scuttled Siren"
+        ],
+        "House of Dusk": [
+            "Clockwork Village"
+        ],
+        "Arcane Forge": [
+            "Clockwork Village"
+        ],
+        "The Fool's Journey": [
+            "Clockwork Village",
+            "Garden of the Risen"
+        ],
+        "Garden of the Risen": [
+            "The Fool's Journey",
+            "The Scuttled Siren",
+            "Stewards Spire"
+        ],
+        "Stewards Spire": [
+            "Thornvine Woods",
+            "Crossroads East",
+            "Garden of the Risen",
+            "South Station"
+        ],
+        "South Station": [
+            "Stewards Spire"
+        ],
+        "Thornvine Woods": [
+            "The Void",
+            "Stewards Spire"
+        ],
+        "Crossroads East": [
+            "Weir's Observatory",
+            "Mary's Mill",
+            "Stewards Spire"
+        ],
+        "Weir's Observatory": [
+            "Crossroads East"
+        ],
+        "Mary's Mill": [
+            "Crossroads Center",
+            "Door of the World",
+            "House of Dawn",
+            "Crossroads East"
+        ],
+        "Door of the World": [
+            "Mary's Mill",
+            "The Roaming Wolf"
+        ],
+        "The Roaming Wolf": [
+            "Door of the World",
+            "House of Dawn"
+        ],
+        "House of Dawn": [
+            "Mary's Mill",
+            "The Roaming Wolf"
+        ]
+    }
+}

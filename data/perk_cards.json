@@ -1,0 +1,8 @@
+[
+    {"id": "p1", "name": "Swiftness", "text": "Move any hero up to 3 spaces for free."},
+    {"id": "p2", "name": "Security", "text": "Ignore all hits from one attack."},
+    {"id": "p3", "name": "Search", "text": "Draw 2 items from the bag and place them in your current location."},
+    {"id": "p4", "name": "Share", "text": "Trade items between any two heroes anywhere on the board."},
+    {"id": "p5", "name": "Insight", "text": "Look at the top 3 cards of the Monster Deck and rearrange them."},
+    {"id": "p6", "name": "Restoration", "text": "Set the active player's AP back to 4."}
+]
