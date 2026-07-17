@@ -1,6 +1,10 @@
 {
     "id": "jiangshi",
     "name": "Jiangshi",
+    "displayName": "The Jiangshi",
+    "summary": "Reveal the Moon Shrine, forge the Coin Sword, then dispossess it with 9+ Purple strength.",
+    "origin_map": "Map.png",
+    "selectable": true,
     "complexity": "Medium",
     "hasLair": true,
     "frenzyLevel": 3,

@@ -65,6 +65,67 @@ class MonsterPuzzlesMixin:
             self.add_log(f"{player_name} discarded {names} (strength {total}) to reveal the Lair token at {loc}. It is {label}")
             return True
 
+        if monster == "Siren":
+            if loc != self.monster_locations["Siren"]:
+                self.add_log(f"Must be at the Siren's location ({self.monster_locations['Siren']}) to Advance.")
+                return False
+
+            siren_state = self.monster_states["Siren"]
+            action_type = args.get("type")
+
+            if action_type == "pay":
+                item_id = args.get("item_id")
+                item = next((i for i in h_state["items"] if i["id"] == item_id), None)
+                if not item or item["color"] != "Blue":
+                    self.add_log("Must discard a Blue item to buy flips.")
+                    return False
+                h_state["items"].remove(item)
+                self.discarded_items.append(item)
+                h_state["ap"] -= 1
+                siren_state["pending_flips"] += 2
+                self.add_log(f"{player_name} spent {item['name']} to gain 2 tile flips.")
+                return True
+
+            elif action_type == "flip":
+                square_id = args.get("square_id")
+                sq = next((s for s in siren_state["squares"] if s["id"] == square_id), None)
+                if not sq or sq["matched"] or sq["flipped"]:
+                    return False
+
+                if siren_state["pending_flips"] <= 0:
+                    self.add_log("You have no pending flips. Spend a Blue item first.")
+                    return False
+
+                # If we have 2 mismatched tiles currently showing, unflip them now before flipping the new one
+                if len(siren_state["currently_flipping"]) == 2:
+                    for old_sq in siren_state["currently_flipping"]:
+                        old_sq["flipped"] = False
+                    siren_state["currently_flipping"] = []
+
+                siren_state["pending_flips"] -= 1
+                sq["flipped"] = True
+                siren_state["currently_flipping"].append(sq)
+
+                if len(siren_state["currently_flipping"]) == 2:
+                    sq1, sq2 = siren_state["currently_flipping"]
+                    if sq1["letter"] == sq2["letter"]:
+                        sq1["matched"] = True
+                        sq2["matched"] = True
+                        siren_state["currently_flipping"] = []
+                        self.add_log(f"{player_name} matched two {sq1['letter']} squares!")
+                    else:
+                        self.add_log(f"{player_name} flipped {sq2['letter']}, but it doesn't match {sq1['letter']}.")
+                        # Signals the websocket handler to schedule a delayed unflip -
+                        # execute_advance normally returns bool, this is the one case that
+                        # returns a dict to request a follow-up timed action.
+                        return {"action": "siren_delay", "sq1": sq1["id"], "sq2": sq2["id"]}
+                else:
+                    self.add_log(f"{player_name} flipped a Siren square: it's {sq['letter']}.")
+
+                return True
+
+            return False
+
         if monster == "Yeti":
             # Placing a Yeti Child on the mat is a second, distinct action from guiding it
             # to the True Cave: the child must already be standing there, unplaced.
@@ -277,6 +338,45 @@ class MonsterPuzzlesMixin:
 
         args = args or {}
         loc = h_state["location"]
+
+        if monster == "Siren":
+            siren_state = self.monster_states["Siren"]
+            all_matched = all(sq["matched"] for sq in siren_state["squares"])
+            hero_with_siren = (loc == self.monster_locations["Siren"])
+
+            if not all_matched:
+                self.add_log("All squares must be flipped and matched to silence the Siren.")
+                return False
+            if not hero_with_siren:
+                self.add_log(f"Must be in the Siren's location ({self.monster_locations['Siren']}) to defeat her.")
+                return False
+
+            item_ids = args.get("item_ids", [])
+            items = [next((i for i in h_state["items"] if i["id"] == iid), None) for iid in item_ids]
+
+            if not items or any(i is None for i in items):
+                return False
+
+            if any(i["color"] != "Green" for i in items):
+                self.add_log("Only Green items can be used to defeat the Siren.")
+                return False
+
+            if sum(i["strength"] for i in items) < 6:
+                self.add_log("Must discard Green items with a total strength of 6 or more.")
+                return False
+
+            for item in items:
+                h_state["items"].remove(item)
+                self.discarded_items.append(item)
+
+            h_state["ap"] -= 1
+            self.active_monsters.remove("Siren")
+            self.defeated_monsters.append("Siren")
+            self.monster_locations["Siren"] = "Defeated"
+            self._reassign_frenzy_if_needed()
+            self.add_log(f"{player_name} matched the Siren's tones and silenced her song! The Siren is defeated!")
+            self.check_victory()
+            return True
 
         if monster == "Yeti":
             y_state = self.monster_states["Yeti"]

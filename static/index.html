@@ -78,55 +78,8 @@
                         <!-- Game Settings (Host Only) -->
                         <div class="lobby-col glass-inner" id="host-settings">
                             <h4>Choose Monsters</h4>
-                            <div class="monster-cards-grid">
-                                <label class="monster-select-card monster-yeti">
-                                    <input type="checkbox" id="mon-yeti" checked>
-                                    <div class="monster-select-portrait-wrap">
-                                        <div class="monster-select-portrait">
-                                            <img src="/Images/Monsters/Yeti.png" alt="The Yeti">
-                                        </div>
-                                        <button type="button" class="monster-select-info-btn" title="View Yeti details" onclick="event.preventDefault(); event.stopPropagation(); showMonsterInfoModal('Yeti')">i</button>
-                                    </div>
-                                    <div class="monster-select-name">The Yeti (&#9889; 1)</div>
-                                    <div class="monster-select-diff diff-easy">Easy</div>
-                                    <div class="monster-select-desc">Reveal the hidden Cave, guide the children home, then calm the Yeti with one of each item color.</div>
-                                </label>
-                                <label class="monster-select-card monster-jiangshi">
-                                    <input type="checkbox" id="mon-jiangshi" checked>
-                                    <div class="monster-select-portrait-wrap">
-                                        <div class="monster-select-portrait">
-                                            <img src="/Images/Monsters/Jiangshi.png" alt="The Jiangshi">
-                                        </div>
-                                        <button type="button" class="monster-select-info-btn" title="View Jiangshi details" onclick="event.preventDefault(); event.stopPropagation(); showMonsterInfoModal('Jiangshi')">i</button>
-                                    </div>
-                                    <div class="monster-select-name">The Jiangshi (&#9889; 3)</div>
-                                    <div class="monster-select-diff diff-medium">Medium</div>
-                                    <div class="monster-select-desc">Reveal the Moon Shrine, forge the Coin Sword, then dispossess it with 9+ Purple strength.</div>
-                                </label>
-                                <label class="monster-select-card monster-sphinx">
-                                    <input type="checkbox" id="mon-sphinx">
-                                    <div class="monster-select-portrait-wrap">
-                                        <div class="monster-select-portrait">
-                                            <img src="/Images/Monsters/Sphinx.png" alt="The Sphinx">
-                                        </div>
-                                        <button type="button" class="monster-select-info-btn" title="View Sphinx details" onclick="event.preventDefault(); event.stopPropagation(); showMonsterInfoModal('Sphinx')">i</button>
-                                    </div>
-                                    <div class="monster-select-name">The Sphinx (&#9889; 2)</div>
-                                    <div class="monster-select-diff diff-easy">Easy</div>
-                                    <div class="monster-select-desc">Solve the riddle grid so every row and column sums correctly, then outwit it with 6+ Green strength.</div>
-                                </label>
-                                <label class="monster-select-card monster-cthulhu">
-                                    <input type="checkbox" id="mon-cthulhu">
-                                    <div class="monster-select-portrait-wrap">
-                                        <div class="monster-select-portrait">
-                                            <img src="/Images/Monsters/Cthulhu.png" alt="Cthulhu">
-                                        </div>
-                                        <button type="button" class="monster-select-info-btn" title="View Cthulhu details" onclick="event.preventDefault(); event.stopPropagation(); showMonsterInfoModal('Cthulhu')">i</button>
-                                    </div>
-                                    <div class="monster-select-name">Cthulhu (&#9889; 4)</div>
-                                    <div class="monster-select-diff diff-vhard">Very Hard</div>
-                                    <div class="monster-select-desc">Align the runic dials to open the portal, then bind all four tentacles in R'lyeh to lock it away.</div>
-                                </label>
+                            <div id="monster-options" class="monster-cards-grid">
+                                <!-- Loaded dynamically from gameState.monster_catalog by renderMonsterSelectOptions() -->
                             </div>
                         </div>
 

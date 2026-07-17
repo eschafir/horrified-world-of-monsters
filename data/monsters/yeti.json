@@ -1,6 +1,10 @@
 {
     "id": "yeti",
     "name": "Yeti",
+    "displayName": "The Yeti",
+    "summary": "Reveal the hidden Cave, guide the children home, then calm the Yeti with one of each item color.",
+    "origin_map": "Map.png",
+    "selectable": true,
     "complexity": "Low",
     "hasLair": true,
     "frenzyLevel": 1,

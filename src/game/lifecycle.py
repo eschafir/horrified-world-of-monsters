@@ -5,7 +5,7 @@ import time
 import uuid
 from typing import Dict, List, Optional
 
-from src.data_loader import FRENZY_ORDER, HERO_CLASSES, ITEMS_POOL, MONSTER_CARDS, PERK_CARDS, load_map_coordinates
+from src.data_loader import FRENZY_ORDER, HERO_CLASSES, ITEMS_POOL, MONSTER_CARDS, MONSTER_CATALOG, PERK_CARDS, load_map_coordinates
 
 
 class LifecycleMixin:
@@ -78,6 +78,19 @@ class LifecycleMixin:
         })
         if len(self.citizen_events) > 20:
             self.citizen_events.pop(0)
+
+    def _get_monster_home_location(self, monster: str) -> Optional[str]:
+        """The monster's own starting location, in its origin map's terms, read from its
+        catalog's phase-1 PlaceMonster setup step (falls back to None if absent, e.g. a
+        scaffolded-but-not-yet-implemented monster with no setup data)."""
+        entry = MONSTER_CATALOG.get(monster)
+        if not entry:
+            return None
+        phases = entry.get("phases") or [{}]
+        for step in phases[0].get("setup", []):
+            if step.get("action") == "PlaceMonster" and step.get("locations"):
+                return step["locations"][0]
+        return None
 
     def initialize_game(self, chosen_monsters: List[str]):
         self.active_monsters = sorted(chosen_monsters, key=lambda m: FRENZY_ORDER.get(m, 99))
@@ -184,17 +197,30 @@ class LifecycleMixin:
             print(f"DEBUG - Lair Tokens: {[(t['location'], t['type']) for t in self.lair_tokens]}")
 
         # Initialize monster states
+
+        # Guest monsters (whose catalog origin_map differs from the selected map) spawn
+        # at the home location of a local monster that isn't currently in play, mirroring
+        # how guest heroes use an unused local hero's start location (see hero setup above).
+        unused_local_monster_locations = [
+            loc for loc in (
+                self._get_monster_home_location(m) for m, cat in MONSTER_CATALOG.items()
+                if cat.get("origin_map", "Map.png") == self.selected_map
+                and cat.get("selectable", True)
+                and m not in self.active_monsters
+            ) if loc
+        ]
+
         self.monster_locations = {}
         self.monster_states = {}
         for monster in self.active_monsters:
-            if monster == "Sphinx":
-                self.monster_locations[monster] = self.get_safe_loc("Specter Trail Caravan")
-            elif monster == "Jiangshi":
-                self.monster_locations[monster] = self.get_safe_loc("House of Dusk")
-            elif monster == "Cthulhu":
-                self.monster_locations[monster] = self.get_safe_loc("The Void")
+            home_loc = self._get_monster_home_location(monster) or "The Roaming Wolf"
+            is_guest = MONSTER_CATALOG.get(monster, {}).get("origin_map", "Map.png") != self.selected_map
+            if is_guest and unused_local_monster_locations:
+                start_loc = random.choice(unused_local_monster_locations)
+                unused_local_monster_locations.remove(start_loc)
             else:
-                self.monster_locations[monster] = self.get_safe_loc("The Roaming Wolf")
+                start_loc = home_loc
+            self.monster_locations[monster] = self.get_safe_loc(start_loc)
             if monster == "Yeti":
 
                 child_locs = [self.get_safe_loc("House of Dusk"), self.get_safe_loc("Thornvine Woods"), self.get_safe_loc("Stewards Spire")]
@@ -251,6 +277,18 @@ class LifecycleMixin:
                 }
                 for p in self.players:
                     self.monster_states["Cthulhu"]["player_tracks"][p["name"]] = -1
+            elif monster == "Siren":
+                # Greek letters for the matching game (4 pairs = 8 squares)
+                letters = ["Alpha", "Beta", "Gamma", "Delta", "Alpha", "Beta", "Gamma", "Delta"]
+                random.shuffle(letters)
+                self.monster_states["Siren"] = {
+                    "squares": [
+                        {"id": i, "letter": letter, "flipped": False, "matched": False}
+                        for i, letter in enumerate(letters)
+                    ],
+                    "currently_flipping": [],
+                    "pending_flips": 0
+                }
 
         if self.active_monsters:
             self.frenzy_marker = self.active_monsters[0]

@@ -1,6 +1,79 @@
 // ---------------------------------------------------------
-// HERO SELECTION RENDERING (LOBBY)
+// HERO & MONSTER SELECTION RENDERING (LOBBY)
 // ---------------------------------------------------------
+
+// Maps a monster catalog's "complexity" field to the select-card's difficulty badge.
+// Complexity, origin_map, selectable, displayName, and summary all live in each
+// monster's data/monsters/<name>.json - see CLAUDE.md - so adding a new monster never
+// requires touching this table.
+const COMPLEXITY_DIFF = {
+    "Low": { label: "Easy", cls: "diff-easy" },
+    "Medium": { label: "Medium", cls: "diff-medium" },
+    "High": { label: "Hard", cls: "diff-hard" },
+    "Very High": { label: "Very Hard", cls: "diff-vhard" }
+};
+
+function renderMonsterSelectOptions() {
+    const elMonsterOptions = document.getElementById("monster-options");
+    if (!elMonsterOptions) return;
+    elMonsterOptions.innerHTML = "";
+
+    const catalog = (gameState && gameState.monster_catalog) || {};
+    // Scaffolded-but-not-yet-implemented monsters (empty phases, no Advance/Defeat logic)
+    // are excluded from the picker entirely so a host can't start an uncompletable game.
+    const monsterNames = Object.keys(catalog).filter(m => catalog[m].selectable !== false);
+
+    const currentMap = gameState ? gameState.selected_map : "Map.png";
+    const localMonsters = monsterNames.filter(m => catalog[m].origin_map === currentMap);
+    const guestMonsters = monsterNames.filter(m => catalog[m].origin_map !== currentMap);
+
+    const me = gameState && gameState.players && gameState.players.find(p => p.name === playerName);
+    const isHost = !!(me && me.is_host);
+
+    const renderMonsterCard = (monster, isLocal) => {
+        const data = catalog[monster];
+        const diff = COMPLEXITY_DIFF[data.complexity] || { label: data.complexity || "?", cls: "diff-medium" };
+        const card = document.createElement("label");
+        card.className = `monster-select-card monster-${monster.toLowerCase()}`;
+
+        const isChecked = (gameState && gameState.selected_monsters && gameState.selected_monsters.includes(monster)) ? "checked" : "";
+        const badge = isLocal ? `<span class="hero-local-badge" style="margin-bottom:8px; display:inline-block">Local Monster</span>` : `<span class="hero-guest-badge" style="margin-bottom:8px; display:inline-block">Guest Monster</span>`;
+
+        card.innerHTML = `
+            <input type="checkbox" id="mon-${monster.toLowerCase()}" value="${monster}" ${isChecked}>
+            <div class="monster-select-portrait-wrap">
+                <div class="monster-select-portrait">
+                    <img src="/Images/Monsters/${monster}.png" alt="${monster}">
+                </div>
+                <button type="button" class="monster-select-info-btn" title="View ${monster} details" onclick="event.preventDefault(); event.stopPropagation(); showMonsterInfoModal('${monster}')">i</button>
+            </div>
+            ${badge}
+            <div class="monster-select-name">${data.displayName || monster} (&#9889; ${getMonsterFrenzyLevel(monster)})</div>
+            <div class="monster-select-diff ${diff.cls}">${diff.label}</div>
+            <div class="monster-select-desc">${data.summary || data.objective || ""}</div>
+        `;
+
+        const cb = card.querySelector("input");
+        cb.disabled = !isHost;
+        cb.addEventListener("change", () => {
+            if (!isHost) return;
+            const selectedMonsters = Array.from(elMonsterOptions.querySelectorAll("input:checked")).map(el => el.value);
+            sendMsg({ action: "select_monsters", monsters: selectedMonsters });
+        });
+
+        elMonsterOptions.appendChild(card);
+    };
+
+    localMonsters.forEach(m => renderMonsterCard(m, true));
+
+    if (guestMonsters.length > 0) {
+        const divider = document.createElement("div");
+        divider.className = "hero-category-divider";
+        divider.innerHTML = `<span>Guest Monsters</span>`;
+        elMonsterOptions.appendChild(divider);
+        guestMonsters.forEach(m => renderMonsterCard(m, false));
+    }
+}
 
 function renderHeroSelectOptions() {
     elHeroOptions.innerHTML = "";

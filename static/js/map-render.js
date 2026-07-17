@@ -425,85 +425,29 @@ function renderSVGMap() {
 
     defs.appendChild(filter);
 
-    // Create pattern for Yeti face marker
-    const pattern = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
-    pattern.setAttribute("id", "pattern-yeti");
-    pattern.setAttribute("x", "0");
-    pattern.setAttribute("y", "0");
-    pattern.setAttribute("height", "1");
-    pattern.setAttribute("width", "1");
-    pattern.setAttribute("patternContentUnits", "objectBoundingBox");
+    // Create a face-marker pattern for every monster in the catalog (not just the
+    // original 4) - a new monster just needs a data/monsters/<name>.json + portrait,
+    // no rendering code change here.
+    Object.keys(gameState.monster_catalog || {}).forEach(monster => {
+        const pattern = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
+        pattern.setAttribute("id", `pattern-monster-${monster.toLowerCase()}`);
+        pattern.setAttribute("x", "0");
+        pattern.setAttribute("y", "0");
+        pattern.setAttribute("height", "1");
+        pattern.setAttribute("width", "1");
+        pattern.setAttribute("patternContentUnits", "objectBoundingBox");
 
-    const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
-    img.setAttribute("href", "/Images/Monsters/Yeti.png");
-    img.setAttribute("x", "0");
-    img.setAttribute("y", "0");
-    img.setAttribute("height", "1");
-    img.setAttribute("width", "1");
-    img.setAttribute("preserveAspectRatio", "xMidYMid slice");
+        const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
+        img.setAttribute("href", `/Images/Monsters/${monster}.png`);
+        img.setAttribute("x", "0");
+        img.setAttribute("y", "0");
+        img.setAttribute("height", "1");
+        img.setAttribute("width", "1");
+        img.setAttribute("preserveAspectRatio", "xMidYMid slice");
 
-    pattern.appendChild(img);
-    defs.appendChild(pattern);
-
-    // Create pattern for Sphinx face marker
-    const patternSphinx = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
-    patternSphinx.setAttribute("id", "pattern-sphinx");
-    patternSphinx.setAttribute("x", "0");
-    patternSphinx.setAttribute("y", "0");
-    patternSphinx.setAttribute("height", "1");
-    patternSphinx.setAttribute("width", "1");
-    patternSphinx.setAttribute("patternContentUnits", "objectBoundingBox");
-
-    const imgSphinx = document.createElementNS("http://www.w3.org/2000/svg", "image");
-    imgSphinx.setAttribute("href", "/Images/Monsters/Sphinx.png");
-    imgSphinx.setAttribute("x", "0");
-    imgSphinx.setAttribute("y", "0");
-    imgSphinx.setAttribute("height", "1");
-    imgSphinx.setAttribute("width", "1");
-    imgSphinx.setAttribute("preserveAspectRatio", "xMidYMid slice");
-
-    patternSphinx.appendChild(imgSphinx);
-    defs.appendChild(patternSphinx);
-
-    // Create pattern for Jiangshi face marker
-    const patternJiangshi = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
-    patternJiangshi.setAttribute("id", "pattern-jiangshi");
-    patternJiangshi.setAttribute("x", "0");
-    patternJiangshi.setAttribute("y", "0");
-    patternJiangshi.setAttribute("height", "1");
-    patternJiangshi.setAttribute("width", "1");
-    patternJiangshi.setAttribute("patternContentUnits", "objectBoundingBox");
-
-    const imgJiangshi = document.createElementNS("http://www.w3.org/2000/svg", "image");
-    imgJiangshi.setAttribute("href", "/Images/Monsters/Jiangshi.png");
-    imgJiangshi.setAttribute("x", "0");
-    imgJiangshi.setAttribute("y", "0");
-    imgJiangshi.setAttribute("height", "1");
-    imgJiangshi.setAttribute("width", "1");
-    imgJiangshi.setAttribute("preserveAspectRatio", "xMidYMid slice");
-
-    patternJiangshi.appendChild(imgJiangshi);
-    defs.appendChild(patternJiangshi);
-
-    // Create pattern for Cthulhu face marker
-    const patternCthulhu = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
-    patternCthulhu.setAttribute("id", "pattern-cthulhu");
-    patternCthulhu.setAttribute("x", "0");
-    patternCthulhu.setAttribute("y", "0");
-    patternCthulhu.setAttribute("height", "1");
-    patternCthulhu.setAttribute("width", "1");
-    patternCthulhu.setAttribute("patternContentUnits", "objectBoundingBox");
-
-    const imgCthulhu = document.createElementNS("http://www.w3.org/2000/svg", "image");
-    imgCthulhu.setAttribute("href", "/Images/Monsters/Cthulhu.png");
-    imgCthulhu.setAttribute("x", "0");
-    imgCthulhu.setAttribute("y", "0");
-    imgCthulhu.setAttribute("height", "1");
-    imgCthulhu.setAttribute("width", "1");
-    imgCthulhu.setAttribute("preserveAspectRatio", "xMidYMid slice");
-
-    patternCthulhu.appendChild(imgCthulhu);
-    defs.appendChild(patternCthulhu);
+        pattern.appendChild(img);
+        defs.appendChild(pattern);
+    });
 
     // Create patterns for Yeti children face markers
     for (let i = 1; i <= 3; i++) {
@@ -920,14 +864,10 @@ function renderSVGMap() {
         });
 
         characters.forEach((char, index) => {
-            const isYeti = (char.name === "Yeti");
-            const isSphinx = (char.name === "Sphinx");
-            const isJiangshi = (char.name === "Jiangshi");
-            const isCthulhu = (char.name === "Cthulhu");
             const isYetiChild = char.name.startsWith("Yeti Child");
             const isLair = (char.type === "lair");
             const childId = isYetiChild ? char.name.replace("Yeti Child ", "") : null;
-            const isCustomMonster = isYeti || isSphinx || isJiangshi || isCthulhu;
+            const isCustomMonster = (char.type === "monster");
             const isFrenzyMonster = (char.type === "monster") && char.name === gameState.frenzy_marker;
             const isHero = (char.type === "hero");
             const isCitizen = (char.type === "citizen") && !isYetiChild;
@@ -985,27 +925,9 @@ function renderSVGMap() {
 
             lastCharacterPositions[charKey] = { x: targetX, y: targetY };
             
-            if (isYeti) {
-                charShape.setAttribute("class", "yeti-token");
-                charShape.setAttribute("fill", "url(#pattern-yeti)");
-                charShape.setAttribute("stroke", "#ff3366"); // Red border marks it as an enemy
-                charShape.setAttribute("stroke-width", "4.5");
-                charShape.setAttribute("filter", "drop-shadow(0 0 10px rgba(255,51,102,0.9)) drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
-            } else if (isSphinx) {
-                charShape.setAttribute("class", "sphinx-token");
-                charShape.setAttribute("fill", "url(#pattern-sphinx)");
-                charShape.setAttribute("stroke", "#ff3366"); // Red border marks it as an enemy
-                charShape.setAttribute("stroke-width", "4.5");
-                charShape.setAttribute("filter", "drop-shadow(0 0 10px rgba(255,51,102,0.9)) drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
-            } else if (isJiangshi) {
-                charShape.setAttribute("class", "jiangshi-token");
-                charShape.setAttribute("fill", "url(#pattern-jiangshi)");
-                charShape.setAttribute("stroke", "#ff3366"); // Red border marks it as an enemy
-                charShape.setAttribute("stroke-width", "4.5");
-                charShape.setAttribute("filter", "drop-shadow(0 0 10px rgba(255,51,102,0.9)) drop-shadow(0 2px 5px rgba(0,0,0,0.5))");
-            } else if (isCthulhu) {
-                charShape.setAttribute("class", "cthulhu-token");
-                charShape.setAttribute("fill", "url(#pattern-cthulhu)");
+            if (isCustomMonster) {
+                charShape.setAttribute("class", "monster-token");
+                charShape.setAttribute("fill", `url(#pattern-monster-${char.name.toLowerCase()})`);
                 charShape.setAttribute("stroke", "#ff3366"); // Red border marks it as an enemy
                 charShape.setAttribute("stroke-width", "4.5");
                 charShape.setAttribute("filter", "drop-shadow(0 0 10px rgba(255,51,102,0.9)) drop-shadow(0 2px 5px rgba(0,0,0,0.5))");

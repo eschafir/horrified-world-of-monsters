@@ -516,6 +516,14 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 8px;
     margin-bottom: 14px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    padding-right: 5px;
+    scrollbar-width: none; /* Firefox */
+}
+.monster-cards-grid::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
 }
 
 .monster-select-card {
@@ -550,10 +558,7 @@ body {
     transform: none;
 }
 
-#host-settings.read-only .monster-select-card.monster-yeti:has(input:checked),
-#host-settings.read-only .monster-select-card.monster-jiangshi:has(input:checked),
-#host-settings.read-only .monster-select-card.monster-sphinx:has(input:checked),
-#host-settings.read-only .monster-select-card.monster-cthulhu:has(input:checked) {
+#host-settings.read-only .monster-select-card:has(input:checked) {
     opacity: 1;
 }
 
@@ -569,30 +574,14 @@ body {
     pointer-events: none;
 }
 
-/* Checked state per monster */
-.monster-select-card.monster-yeti:has(input:checked) {
+/* Checked state - one generic rule shared by every monster, data-driven now instead of
+   a hardcoded rule per monster name (see renderMonsterSelectOptions in lobby.js). */
+.monster-select-card:has(input:checked) {
     opacity: 1;
-    border-color: rgba(51, 204, 255, 0.65);
-    box-shadow: 0 0 14px rgba(51, 204, 255, 0.2);
-    background: linear-gradient(160deg, rgba(8,20,40,0.75) 0%, rgba(4,10,22,0.9) 100%);
-}
-.monster-select-card.monster-jiangshi:has(input:checked) {
-    opacity: 1;
-    border-color: rgba(255, 51, 102, 0.65);
-    box-shadow: 0 0 14px rgba(255, 51, 102, 0.2);
-    background: linear-gradient(160deg, rgba(38,5,15,0.75) 0%, rgba(18,3,8,0.9) 100%);
-}
-.monster-select-card.monster-sphinx:has(input:checked) {
-    opacity: 1;
-    border-color: rgba(255, 204, 0, 0.65);
-    box-shadow: 0 0 14px rgba(255, 204, 0, 0.2);
-    background: linear-gradient(160deg, rgba(35,28,4,0.75) 0%, rgba(18,14,3,0.9) 100%);
-}
-.monster-select-card.monster-cthulhu:has(input:checked) {
-    opacity: 1;
-    border-color: rgba(153, 51, 255, 0.65);
-    box-shadow: 0 0 14px rgba(153, 51, 255, 0.2);
-    background: linear-gradient(160deg, rgba(22,5,40,0.75) 0%, rgba(10,3,20,0.9) 100%);
+    background: rgba(43,30,61, 0.95);
+    border-color: rgba(51,204,255, 0.4);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4), inset 0 0 20px rgba(51,204,255,0.1);
+    transform: translateY(-4px) scale(1.02);
 }
 
 .monster-select-portrait-wrap {
@@ -639,10 +628,7 @@ body {
     color: #0a0514;
     box-shadow: 0 0 8px rgba(255, 213, 51, 0.7);
 }
-.monster-yeti:has(input:checked)     .monster-select-portrait { border-color: rgba(51,204,255,0.5); }
-.monster-jiangshi:has(input:checked) .monster-select-portrait { border-color: rgba(255,51,102,0.5); }
-.monster-sphinx:has(input:checked)   .monster-select-portrait { border-color: rgba(255,204,0,0.5); }
-.monster-cthulhu:has(input:checked)  .monster-select-portrait { border-color: rgba(153,51,255,0.5); }
+.monster-select-card:has(input:checked) .monster-select-portrait { border-color: rgba(51,204,255,0.5); }
 
 .monster-select-portrait img {
     width: 100%;
@@ -1919,54 +1905,17 @@ body {
     transform: scale(1.6);
 }
 
-.yeti-token {
+/* One shared rule for every monster token (used to be 4 identical copies, one per
+   hardcoded monster name) - any monster in the catalog gets the same hover treatment. */
+.monster-token {
     transform-box: fill-box;
     transform-origin: center;
     transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), stroke-width 0.25s, filter 0.25s;
     cursor: pointer;
 }
 
-.yeti-token:hover {
-    transform: scale(2.2); /* Double and a bit more the size of the Yeti on hover! */
-    stroke-width: 5.5px !important;
-    filter: drop-shadow(0 0 16px rgba(255, 51, 102, 1)) !important; /* Glowing hover shadow! */
-}
-
-.sphinx-token {
-    transform-box: fill-box;
-    transform-origin: center;
-    transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), stroke-width 0.25s, filter 0.25s;
-    cursor: pointer;
-}
-
-.sphinx-token:hover {
-    transform: scale(2.2); /* Double and a bit more the size of the Sphinx on hover! */
-    stroke-width: 5.5px !important;
-    filter: drop-shadow(0 0 16px rgba(255, 51, 102, 1)) !important; /* Glowing red hover shadow! */
-}
-
-.jiangshi-token {
-    transform-box: fill-box;
-    transform-origin: center;
-    transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), stroke-width 0.25s, filter 0.25s;
-    cursor: pointer;
-}
-
-.jiangshi-token:hover {
-    transform: scale(2.2);
-    stroke-width: 5.5px !important;
-    filter: drop-shadow(0 0 16px rgba(255, 51, 102, 1)) !important; /* Glowing red hover shadow */
-}
-
-.cthulhu-token {
-    transform-box: fill-box;
-    transform-origin: center;
-    transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), stroke-width 0.25s, filter 0.25s;
-    cursor: pointer;
-}
-
-.cthulhu-token:hover {
-    transform: scale(2.2);
+.monster-token:hover {
+    transform: scale(2.2); /* Double and a bit more the size of the monster on hover! */
     stroke-width: 5.5px !important;
     filter: drop-shadow(0 0 16px rgba(255, 51, 102, 1)) !important; /* Glowing red hover shadow */
 }

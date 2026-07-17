@@ -123,7 +123,27 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
             elif action == "advance":
                 monster = msg.get("monster")
                 args = msg.get("args", {})
-                room.execute_advance(player_name, monster, args)
+                result = room.execute_advance(player_name, monster, args)
+                # execute_advance normally returns bool; the Siren's tile-flip mismatch
+                # case returns a dict signaling a delayed follow-up (auto-unflip after 5s).
+                if isinstance(result, dict) and result.get("action") == "siren_delay":
+                    async def _delayed_siren_unflip(sq1_id, sq2_id):
+                        await asyncio.sleep(5)
+                        siren_state = room.monster_states.get("Siren")
+                        if not siren_state:
+                            return
+                        sq1 = next((s for s in siren_state["squares"] if s["id"] == sq1_id), None)
+                        sq2 = next((s for s in siren_state["squares"] if s["id"] == sq2_id), None)
+                        if sq1 and sq2 and not sq1["matched"] and not sq2["matched"]:
+                            sq1["flipped"] = False
+                            sq2["flipped"] = False
+                            if sq1 in siren_state["currently_flipping"]:
+                                siren_state["currently_flipping"].remove(sq1)
+                            if sq2 in siren_state["currently_flipping"]:
+                                siren_state["currently_flipping"].remove(sq2)
+                            await room_manager.broadcast_state(room_code)
+
+                    asyncio.create_task(_delayed_siren_unflip(result["sq1"], result["sq2"]))
 
             elif action == "defeat":
                 monster = msg.get("monster")

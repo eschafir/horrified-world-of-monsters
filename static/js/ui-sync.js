@@ -25,8 +25,7 @@ function updateGameUI() {
         const myPlayer = gameState.players.find(p => p.name === playerName);
         if (myPlayer) chosenHero = myPlayer.hero;
         renderHeroSelectOptions();
-        
-
+        renderMonsterSelectOptions();
 
         // Sync player lists
         elConnectedPlayers.innerHTML = "";
@@ -51,14 +50,6 @@ function updateGameUI() {
         const isHost = !!(me && me.is_host);
         elHostStartWrap.classList.toggle("hidden", !isHost);
         elHostSettings.classList.toggle("read-only", !isHost);
-
-        const selected = new Set(gameState.selected_monsters || []);
-        Object.entries(MONSTER_CHECKBOX_IDS).forEach(([id, name]) => {
-            const cb = document.getElementById(id);
-            if (!cb) return;
-            cb.checked = selected.has(name);
-            cb.disabled = !isHost;
-        });
     } else {
         // The game has started!
         elLobbyScreen.classList.add("hidden");

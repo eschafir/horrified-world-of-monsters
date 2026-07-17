@@ -1,6 +1,10 @@
 {
     "id": "sphinx",
     "name": "Sphinx",
+    "displayName": "The Sphinx",
+    "summary": "Solve the riddle grid so every row and column sums correctly, then outwit it with 6+ Green strength.",
+    "origin_map": "Map.png",
+    "selectable": true,
     "complexity": "Low",
     "hasLair": false,
     "frenzyLevel": 2,

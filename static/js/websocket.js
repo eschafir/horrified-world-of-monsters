@@ -59,22 +59,8 @@ elBtnStart.addEventListener("click", () => {
     sendMsg({ action: "start_game" });
 });
 
-// Only the host can change the monster line-up; every client's checkboxes are kept in
-// sync with gameState.selected_monsters (see updateGameUI), so this just relays the
-// host's own change back to the server to broadcast to everyone else.
-const MONSTER_CHECKBOX_IDS = { "mon-yeti": "Yeti", "mon-jiangshi": "Jiangshi", "mon-sphinx": "Sphinx", "mon-cthulhu": "Cthulhu" };
-Object.keys(MONSTER_CHECKBOX_IDS).forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener("change", () => {
-        const me = gameState && gameState.players && gameState.players.find(p => p.name === playerName);
-        if (!me || !me.is_host) return;
-        const monsters = Object.entries(MONSTER_CHECKBOX_IDS)
-            .filter(([cbId]) => document.getElementById(cbId).checked)
-            .map(([, name]) => name);
-        sendMsg({ action: "select_monsters", monsters: monsters });
-    });
-});
+// Monster checkboxes are now rendered dynamically (renderMonsterSelectOptions in
+// lobby.js), which wires each one's own change listener at render time - see there.
 
 // Game duration timer (bottom-left sidebar, under Monster Phase). Ticks every second off
 // the server-tracked game_start_time/game_end_time so it stays correct across reconnects

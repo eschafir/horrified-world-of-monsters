@@ -78,9 +78,14 @@ ITEMS_POOL: List[Dict] = _load_items_pool()
 
 
 def _load_monster_catalog() -> Dict[str, Dict]:
+    """Auto-discovers every monster catalog file in data/monsters/, so adding a new
+    monster (playable or scaffolded-but-not-yet-selectable) only requires dropping in a
+    JSON file here - no loader code change needed."""
     monsters_dir = os.path.join(DATA_DIR, "monsters")
     catalog = {}
-    for fname in ("yeti.json", "sphinx.json", "jiangshi.json", "cthulhu.json"):
+    for fname in sorted(os.listdir(monsters_dir)):
+        if not fname.endswith(".json"):
+            continue
         with open(os.path.join(monsters_dir, fname), "r", encoding="utf-8") as f:
             data = json.load(f)
             catalog[data["name"]] = data

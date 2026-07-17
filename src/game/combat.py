@@ -15,8 +15,11 @@ class CombatMixin:
         self.terror_level = min(7, self.terror_level + 1)
         self.add_log(f"{hero_name} was DEFEATED by the attack!")
         self.check_terror()
-        h_state["location"] = "Reviving Throne"
-        self.add_log(f"{hero_name} respawns at Reviving Throne.")
+        # get_safe_loc resolves this through the Greek-map location table when needed,
+        # instead of always respawning at the American map's literal "Reviving Throne".
+        respawn_loc = self.get_safe_loc("Reviving Throne")
+        h_state["location"] = respawn_loc
+        self.add_log(f"{hero_name} respawns at {respawn_loc}.")
         if "Cthulhu" in self.active_monsters:
             self.monster_states["Cthulhu"]["player_tracks"][hero_name] = -1
 

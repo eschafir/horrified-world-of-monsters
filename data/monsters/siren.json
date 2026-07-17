@@ -1,0 +1,53 @@
+{
+    "id": "siren",
+    "name": "Siren",
+    "displayName": "Siren",
+    "summary": "Spend Blue items to flip and match Greek-letter tiles, then silence her with 6+ Green strength.",
+    "origin_map": "map-greek.png",
+    "selectable": true,
+    "complexity": "Low",
+    "hasLair": false,
+    "frenzyLevel": 1,
+    "frenzySymbols": [
+        { "symbol": "Dagger", "color": "Orange" },
+        { "symbol": "Ghost", "color": "Yellow" },
+        { "symbol": "Tincture", "color": "Green" }
+    ],
+    "objective": "The Siren's luring song can only be blocked by precisely matching her tones.",
+    "phases": [
+        {
+            "id": 1,
+            "name": "Main Map",
+            "setup": [
+                {
+                    "action": "PlaceMonster",
+                    "target": "Siren",
+                    "locations": ["LightHouse"]
+                }
+            ],
+            "powers": [
+                {
+                    "name": "Luring Song",
+                    "description": "Each hero in the Siren's space takes one hit (which can be blocked as normal) and all other heroes move one space towards the Siren."
+                }
+            ],
+            "steps": [
+                {
+                    "number": 1,
+                    "title": "Match the Tones",
+                    "type": "Advance",
+                    "description": "Spend Blue Items/Tokens to flip two squares on the Siren's card. If they match (contain the same Greek letter), they stay face up. If they don't, they flip face down again."
+                },
+                {
+                    "number": 2,
+                    "title": "Silence the Song",
+                    "type": "Defeat",
+                    "description": "Once all eight squares are successfully matched and face up, discard Green Items/Tokens with a total strength of 6 or more in the Siren's location to defeat her."
+                }
+            ],
+            "notes": [
+                "Luring Song is documented for flavor only and is not yet triggered mechanically, matching this codebase's existing pattern of some catalog Powers/event types being descriptive-only until implemented."
+            ]
+        }
+    ]
+}

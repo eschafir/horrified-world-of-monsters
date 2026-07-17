@@ -1,0 +1,21 @@
+{
+    "id": "chimera",
+    "name": "Chimera",
+    "origin_map": "map-greek.png",
+    "selectable": false,
+    "complexity": "Medium",
+    "hasLair": false,
+    "frenzyLevel": 1,
+    "frenzySymbols": [],
+    "objective": "Defeat the Chimera.",
+    "phases": [
+        {
+            "id": 1,
+            "name": "Main Map",
+            "setup": [],
+            "powers": [],
+            "steps": [],
+            "notes": ["Scaffolding only - not yet implemented, not selectable in the monster picker."]
+        }
+    ]
+}

@@ -226,6 +226,25 @@ document.getElementById("action-advance").addEventListener("click", () => {
         }
     }
 
+    if (gameState.active_monsters.includes("Siren") && loc === gameState.monster_locations["Siren"]) {
+        const sirenState = gameState.monster_states["Siren"];
+        if (sirenState.pending_flips > 0) {
+            document.getElementById('gtab-btn-monsters').click();
+            return;
+        }
+        const blueItems = selectedItemsForAction.filter(id => {
+            const it = myState.items.find(i => i.id === id);
+            return it && it.color === "Blue";
+        });
+        if (blueItems.length === 1) {
+            sendMsg({ action: "advance", monster: "Siren", args: { type: "pay", item_id: blueItems[0] } });
+            document.getElementById('gtab-btn-monsters').click();
+            return;
+        }
+        showAlertToast("To advance the Siren challenge, select exactly 1 Blue item in your inventory, then click Advance.");
+        return;
+    }
+
     showAlertToast("No advance challenge available at your current location. (Puzzle slots and dials are worked by clicking them directly in the Monsters panel.)");
 });
 
@@ -253,6 +272,20 @@ document.getElementById("action-defeat").addEventListener("click", () => {
 
     if (!targetMonster) {
         showAlertToast("You must be at the same location as a monster (and meet its requirements) to Defeat them!");
+        return;
+    }
+
+    if (targetMonster === "Siren") {
+        openItemPicker({
+            title: "Silence the Siren",
+            description: "Discard Green items totaling 6+ strength.",
+            items: myState.items.filter(i => i.color === "Green"),
+            validateFn: (sel) => {
+                const total = sel.reduce((a, i) => a + i.strength, 0);
+                return { valid: sel.length > 0 && total >= 6, message: `Total strength: ${total} / 6` };
+            },
+            onConfirm: (ids) => sendMsg({ action: "defeat", monster: "Siren", args: { item_ids: ids } })
+        });
         return;
     }
 
@@ -709,6 +742,15 @@ window.playPerkCard = (perkId, perkName) => {
 // actions - this is the second one (Advance), no items involved.
 window.placeYetiChild = (childId) => {
     sendMsg({ action: "advance", monster: "Yeti", args: { type: "place_child", child_id: childId } });
+};
+
+window.flipSirenSquare = (sqId) => {
+    const siren_state = gameState.monster_states["Siren"];
+    if (siren_state.pending_flips <= 0) {
+        showAlertToast("You must spend a Blue item first to gain tile flips! Select a Blue item in the hero tab and click Advance.");
+        return;
+    }
+    sendMsg({ action: "advance", monster: "Siren", args: { type: "flip", square_id: sqId } });
 };
 
 window.advanceJiangshi = (slotId) => {

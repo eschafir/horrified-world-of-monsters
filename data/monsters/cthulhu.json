@@ -1,7 +1,11 @@
 {
     "id": "cthulhu",
     "name": "Cthulhu",
-    "complexity": "High",
+    "displayName": "Cthulhu",
+    "summary": "Align the runic dials to open the portal, then bind all four tentacles in R'lyeh to lock it away.",
+    "origin_map": "Map.png",
+    "selectable": true,
+    "complexity": "Very High",
     "hasLair": false,
     "objective": "Phase 1: Open the cryptic lock by matching the runic carvings. Once the locks are open, force Cthulhu through the void to The Corpse-City R'lyeh. Phase 2: Use items to avoid Cthulhu's attacks and place manacles on his tentacles. When all four manacles are placed, you can lock Cthulhu in R'lyeh... for now.",
   

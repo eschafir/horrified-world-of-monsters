@@ -33,6 +33,17 @@ function getMonsterSymbols(name) {
     return (phase && phase.frenzySymbols) || [];
 }
 
+// Mirrors getMonsterSymbols' top-level-then-phase-1-fallback pattern: most monsters
+// carry frenzyLevel at the top of their catalog entry, but Cthulhu only has it per-phase
+// (phase 1 = 4, phase 2 = 0), matching the server's _get_monster_symbols() convention.
+function getMonsterFrenzyLevel(name) {
+    const entry = gameState.monster_catalog && gameState.monster_catalog[name];
+    if (!entry) return 0;
+    if (typeof entry.frenzyLevel === "number") return entry.frenzyLevel;
+    const phase = (entry.phases || [])[0];
+    return (phase && phase.frenzyLevel) || 0;
+}
+
 // The monster's currently-relevant Power (name + description), so it can be read
 // straight from its in-game status card. Cthulhu has a different Power per phase
 // (Touch of Madness in Phase 1, Tentacles of Insanity in Phase 2); every other monster
@@ -83,7 +94,8 @@ const MONSTER_ACCENT_MAP = {
     "Yeti":     { border: "rgba(51,204,255,0.6)",  glow: "rgba(51,204,255,0.3)"  },
     "Sphinx":   { border: "rgba(255,204,0,0.6)",   glow: "rgba(255,204,0,0.3)"   },
     "Jiangshi": { border: "rgba(255,51,102,0.6)",  glow: "rgba(255,51,102,0.3)"  },
-    "Cthulhu":  { border: "rgba(153,51,255,0.6)",  glow: "rgba(153,51,255,0.3)"  }
+    "Cthulhu":  { border: "rgba(153,51,255,0.6)",  glow: "rgba(153,51,255,0.3)"  },
+    "Siren":    { border: "rgba(51,255,204,0.6)",  glow: "rgba(51,255,204,0.3)"  }
 };
 
 // Generic multi-select item-card modal used for monster puzzle/defeat item costs
@@ -924,16 +936,10 @@ function renderMonstersStatusPanel() {
     card.className = `monster-status-card ${isDefeated ? "defeated" : ""}`;
 
     const loc = (gameState.monster_locations && gameState.monster_locations[m]) || "Unknown";
-    const portrait = MONSTER_PORTRAIT_MAP[m] || "";
+    const portrait = MONSTER_PORTRAIT_MAP[m] || `/Images/Monsters/${m}.png`;
     const accent = MONSTER_ACCENT_MAP[m] || { border: "rgba(255,51,102,0.6)", glow: "rgba(255,51,102,0.3)" };
 
-    const frenzyValues = {
-        "Yeti": 1,
-        "Sphinx": 2,
-        "Jiangshi": 3,
-        "Cthulhu": 4
-    };
-    const fVal = frenzyValues[m] || 0;
+    const fVal = getMonsterFrenzyLevel(m);
     const isFrenzyHolder = (m === gameState.frenzy_marker);
     const symbolDots = getMonsterSymbols(m).map(s =>
         `<span title="${s.symbol} (${s.color})" style="display:inline-block; width:12px; height:12px; border-radius:50%; background:${getSymbolColorHex(s.color)}; border:1.5px solid rgba(0,0,0,0.4); box-shadow:0 0 4px ${getSymbolColorHex(s.color)}99;"></span>`
@@ -1088,6 +1094,24 @@ function renderMonstersStatusPanel() {
                 <p style="font-size: 0.68rem; color: #a491c3; margin-top:6px;">Defeat: once all manacled and everyone's in R'lyeh, gather items from each other hero via Share, then Defeat.</p>
             `;
         }
+    } else if (m === "Siren") {
+        const siren_state = gameState.monster_states["Siren"];
+        details += `
+            <p style="font-size: 0.72rem; color: #a491c3;">Spend Blue Items to flip squares. Match Greek letters to keep them face up. Once all 8 are face up, discard 6+ combined Green strength at the Siren's location to defeat.</p>
+            <div class="monster-puzzle-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+        `;
+        siren_state.squares.forEach(sq => {
+            const isFlipped = sq.flipped || sq.matched;
+            // Map full Greek names to actual Greek symbols
+            const greekChar = {"Alpha": "Α", "Beta": "Β", "Gamma": "Γ", "Delta": "Δ"}[sq.letter] || sq.letter[0];
+            details += `
+                <div class="puzzle-slot ${sq.matched ? 'filled' : ''}" style="height:44px; flex: unset; background: ${isFlipped ? 'rgba(255, 255, 255, 0.08)' : 'rgba(51, 153, 255, 0.15)'}; border: 1px solid ${isFlipped ? 'rgba(255, 255, 255, 0.2)' : 'rgba(51, 153, 255, 0.4)'}; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s ease; cursor: ${!isFlipped ? 'pointer' : 'default'};" ${!isFlipped ? `onclick="flipSirenSquare(${sq.id})"` : ''} ${!isFlipped ? `onmouseover="this.style.transform='translateY(-2px) scale(1.03)'; this.style.background='rgba(51, 153, 255, 0.25)';" onmouseout="this.style.transform='none'; this.style.background='rgba(51, 153, 255, 0.15)';"` : ''}>
+                    ${isFlipped ? `<strong style="color:#f0e8ff; font-size:1.2rem; text-shadow: 0 0 8px rgba(255,255,255,0.4);">${greekChar}</strong>` : `<span style="opacity: 0.4; font-size: 0.9rem;">?</span>`}
+                </div>
+            `;
+        });
+        details += `</div>`;
+        details += `<p style="font-size: 0.68rem; color: #a491c3; margin-top:6px;">Pending flips: <strong>${siren_state.pending_flips}</strong> &mdash; select 1 Blue item in your hero tab, then Advance to buy 2 more.</p>`;
     }
 
     if (isDefeated) {
