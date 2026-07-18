@@ -49,6 +49,7 @@ class LifecycleMixin:
         self.frenzy_marker = ""  # which monster has frenzy token
         self.power_events: List[Dict] = []  # rolling feed of resolved monster Powers, for client-side toast notifications
         self.citizen_events: List[Dict] = []  # rolling feed of citizen spawns, for client-side toast notifications
+        self.citizen_attack_events: List[Dict] = []  # rolling feed of monster-vs-citizen dice rolls, for an on-map marker
 
     def add_log(self, msg: str):
         self.log.append(msg)
@@ -78,6 +79,21 @@ class LifecycleMixin:
         })
         if len(self.citizen_events) > 20:
             self.citizen_events.pop(0)
+
+    def add_citizen_attack_event(self, monster: str, citizen_name: str, location: str, rolls: list, hit: bool):
+        """Records a monster's dice roll against a citizen, with where it happened, so the
+        client can pop a small on-map marker there - a Terror bump and a vanished citizen
+        are otherwise silent, with no visible cause other than digging through the log."""
+        self.citizen_attack_events.append({
+            "id": str(uuid.uuid4())[:8],
+            "monster": monster,
+            "citizen": citizen_name,
+            "location": location,
+            "rolls": rolls,
+            "hit": hit,
+        })
+        if len(self.citizen_attack_events) > 20:
+            self.citizen_attack_events.pop(0)
 
     def _get_monster_home_location(self, monster: str) -> Optional[str]:
         """The monster's own starting location, in its origin map's terms, read from its

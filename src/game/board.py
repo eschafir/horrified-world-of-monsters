@@ -72,6 +72,7 @@ class BoardMixin:
             "frenzy_marker": self.frenzy_marker,
             "power_events": self.power_events,
             "citizen_events": self.citizen_events,
+            "citizen_attack_events": self.citizen_attack_events,
             "heroes_state": self.heroes_state,
             "items_on_board": self.items_on_board,
             "discarded_items": self.discarded_items,

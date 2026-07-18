@@ -181,6 +181,24 @@ function showCitizenSpawnToast(evt) {
     });
 }
 
+// Diff-detects newly-resolved monster-vs-citizen dice rolls (server-side
+// citizen_attack_events feed) and pops a small on-map marker with the die faces right
+// where it happened - otherwise a citizen vanishing and Terror ticking up look like they
+// came from nowhere unless you go dig through the log.
+function detectAndShowCitizenAttackMarkers() {
+    const events = (gameState && gameState.citizen_attack_events) || [];
+    if (!knownCitizenAttackEventIds) {
+        knownCitizenAttackEventIds = new Set(events.map(e => e.id));
+        return;
+    }
+    events.forEach(evt => {
+        if (!knownCitizenAttackEventIds.has(evt.id)) {
+            knownCitizenAttackEventIds.add(evt.id);
+            showCitizenAttackMarker(evt);
+        }
+    });
+}
+
 function showEventToast({ portraitSrc, alt, borderColor, glowColor, title, text, icon }) {
     const toast = document.createElement("div");
     toast.className = "monster-power-toast";

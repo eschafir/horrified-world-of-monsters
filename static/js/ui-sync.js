@@ -126,6 +126,10 @@ function updateGameUI() {
         // beyond the map marker appearing.
         detectAndShowCitizenEvents();
 
+        // Small on-map marker showing the actual dice roll wherever a monster just
+        // attacked a citizen, so a vanished citizen / Terror bump isn't unexplained.
+        detectAndShowCitizenAttackMarkers();
+
         // Game Over banner (Defeat or Victory)
         if (elGameOverOverlay) {
             const elGameOverBanner = document.querySelector(".game-over-banner");
@@ -228,8 +232,8 @@ function updateGameUI() {
                                 }
 
                                 let char = "—";
-                                if (result === "Hit") char = "❗";
-                                else if (result === "Power") char = "💥";
+                                if (result === "Hit") char = "💥";
+                                else if (result === "Power") char = "❗";
 
                                 modalDie.textContent = char;
                                 if (permSlot) permSlot.textContent = char;
@@ -286,8 +290,8 @@ function updateGameUI() {
                                 permSlot.style.boxShadow = "none";
 
                                 let char = "—";
-                                if (result === "Hit") char = "❗";
-                                else if (result === "Power") char = "💥";
+                                if (result === "Hit") char = "💥";
+                                else if (result === "Power") char = "❗";
                                 permSlot.textContent = char;
                             }, 500);
                         }

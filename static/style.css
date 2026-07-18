@@ -2714,3 +2714,63 @@ body.greek-theme .input-group input:focus {
     color: #e5d9c8;
     line-height: 1.35;
 }
+
+/* On-map dice marker for a monster attacking a citizen - anchored to the exact node
+   where it happened via getScreenCoordsOfSVGPoint, so it reads as "this is what just
+   happened here" instead of a generic corner notification. */
+.citizen-attack-marker {
+    position: fixed;
+    z-index: 40000;
+    transform: translate(-50%, calc(-100% - 18px)) scale(0.85);
+    pointer-events: none;
+    text-align: center;
+    padding: 8px 14px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(255, 213, 51, 0.6);
+    background: rgba(12, 6, 20, 0.94);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.6), 0 0 16px rgba(255, 213, 51, 0.35);
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.25, 1, 0.3, 1);
+    white-space: nowrap;
+}
+
+.citizen-attack-marker.shown {
+    opacity: 1;
+    transform: translate(-50%, calc(-100% - 28px)) scale(1);
+}
+
+.citizen-attack-marker.hiding {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% - 34px)) scale(0.9);
+}
+
+.citizen-attack-marker-title {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #e0d0ff;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 3px;
+}
+
+.citizen-attack-marker-dice {
+    font-size: 1.3rem;
+    line-height: 1;
+    margin-bottom: 3px;
+    letter-spacing: 4px;
+}
+
+.citizen-attack-marker-outcome {
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.citizen-attack-marker-outcome.hit {
+    color: #ff3366;
+}
+
+.citizen-attack-marker-outcome.miss {
+    color: #a491c3;
+}

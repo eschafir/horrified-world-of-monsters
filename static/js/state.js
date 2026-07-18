@@ -35,6 +35,7 @@ let pendingTerrorTransitionFrom = null; // consumed once by renderSVGMap to slid
 let knownDefeatedMonsters = null; // Set of monster names already seen in defeated_monsters, to trigger a defeat sound only once
 let knownPowerEventIds = null; // Set of power_event ids already shown as a toast, to fire each one only once
 let knownCitizenEventIds = null; // Set of citizen_event ids already shown as a toast, to fire each one only once
+let knownCitizenAttackEventIds = null; // Set of citizen_attack_event ids already shown as an on-map marker, to fire each one only once
 
 // Map Zoom & Pan State
 let zoomLevel = 1.0;

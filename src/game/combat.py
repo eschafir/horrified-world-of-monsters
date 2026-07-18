@@ -246,15 +246,20 @@ class CombatMixin:
 
     async def perform_attack_citizen(self, monster: str, citizen_name: str, dice: int, broadcast_fn=None):
         self.add_log(f"{monster} is attacking {citizen_name}!")
+        attack_loc = self.citizens[citizen_name]["location"]
 
         hits = 0
         powers = 0
+        rolls = []
         for _ in range(dice):
             roll = random.choice(["Hit", "Hit", "Power", "Blank", "Blank", "Blank"])
+            rolls.append(roll)
             if roll == "Hit":
                 hits += 1
             elif roll == "Power":
                 powers += 1
+
+        self.add_citizen_attack_event(monster, citizen_name, attack_loc, rolls, hits > 0)
 
         if hits > 0:
             self._defeat_citizen(citizen_name, monster=monster)

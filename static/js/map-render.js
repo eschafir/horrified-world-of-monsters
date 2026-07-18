@@ -157,6 +157,43 @@ function animateItemFly(fromLoc, itemColor, itemLabel, itemName) {
     }, { once: true });
 }
 
+// Small floating marker at the exact map node where a monster just attacked a citizen,
+// showing the actual die faces rolled (same icons as the hero dice-roll modal: Hit=💥,
+// Power=❗, Blank=—) so the outcome is visible right where it happened instead of only
+// in the log or a Terror-level tick.
+function showCitizenAttackMarker(evt) {
+    const coord = gameState.node_coordinates[evt.location];
+    if (!coord) return;
+
+    const screenPos = getScreenCoordsOfSVGPoint(coord.x, coord.y);
+    const diceHtml = (evt.rolls || []).map(r => {
+        if (r === "Hit") return "💥";
+        if (r === "Power") return "❗";
+        return "—";
+    }).join(" ");
+
+    const marker = document.createElement("div");
+    marker.className = "citizen-attack-marker";
+    marker.style.left = `${screenPos.left}px`;
+    marker.style.top = `${screenPos.top}px`;
+    marker.innerHTML = `
+        <div class="citizen-attack-marker-title">${evt.monster} vs ${evt.citizen}</div>
+        <div class="citizen-attack-marker-dice">${diceHtml}</div>
+        <div class="citizen-attack-marker-outcome ${evt.hit ? "hit" : "miss"}">${evt.hit ? "Defeated!" : "Missed!"}</div>
+    `;
+    document.body.appendChild(marker);
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        marker.classList.add("shown");
+    }));
+
+    setTimeout(() => {
+        marker.classList.remove("shown");
+        marker.classList.add("hiding");
+        setTimeout(() => marker.remove(), 400);
+    }, 3000);
+}
+
 function triggerNodePulse(svgX, svgY, radius, pulseColor, strokeWidth = 3, scaleEnd = 3.5) {
     const pulseCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     pulseCircle.setAttribute("cx", svgX.toString());
