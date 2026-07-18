@@ -32,9 +32,12 @@ class CombatMixin:
         if monster:
             self.add_power_event(monster, "Citizen Defeated", f"{citizen_name} was defeated by the {monster}!")
 
-    async def request_block_choice(self, hero_name: str, hits: int, reason: str, broadcast_fn=None) -> bool:
+    async def request_block_choice(self, hero_name: str, hits: int, reason: str, broadcast_fn=None, required_color: str = None) -> bool:
         """Pauses to let hero_name pick item(s) to block `hits` hit(s) from a non-dice
-        attack source (e.g. a monster Power). Returns True if the hit was blocked."""
+        attack source (e.g. a monster Power). If required_color is set (e.g. the
+        Basilisk's Petrifying Gaze only accepts Purple items), items of any other color
+        never count towards the block, regardless of what the client sends - server
+        stays authoritative. Returns True if the hit was blocked."""
         if self.active_perks_limit.get("block_all_hits", False):
             return True
 
@@ -43,6 +46,7 @@ class CombatMixin:
             "hero": hero_name,
             "hits": hits,
             "reason": reason,
+            "required_color": required_color,
         }
         if self.block_choice_event is None:
             self.block_choice_event = asyncio.Event()
@@ -62,7 +66,7 @@ class CombatMixin:
         if chosen_items is not None:
             for i_id in chosen_items:
                 item = next((i for i in h_state["items"] if i["id"] == i_id), None)
-                if item and item not in matched_items:
+                if item and item not in matched_items and (required_color is None or item["color"] == required_color):
                     matched_items.append(item)
 
         if chosen_items is not None and len(matched_items) >= hits:
@@ -128,6 +132,25 @@ class CombatMixin:
                 msg = "Lethal Conundrum! No matching items to sacrifice — Terror Level increases by 1."
                 self.add_log(msg)
                 self.add_power_event("Sphinx", "Lethal Conundrum", msg)
+
+        elif monster == "Basilisk":
+            active_player = self.get_active_player()
+            if active_player:
+                target_name = active_player["name"]
+                target_loc = self.heroes_state[target_name]["location"]
+                self.monster_locations["Basilisk"] = target_loc
+
+                has_purple = any(i["color"] == "Purple" for i in self.heroes_state[target_name]["items"])
+                blocked = False
+                if has_purple:
+                    blocked = await self.request_block_choice(target_name, 1, "Petrifying Gaze", broadcast_fn, required_color="Purple")
+                if blocked:
+                    msg = f"Petrifying Gaze! The Basilisk fixes its stare on {target_name}, who blocks it by discarding a Purple item."
+                else:
+                    self._apply_direct_hit(target_name)
+                    msg = f"Petrifying Gaze! The Basilisk moves to {target_name}'s location and its stare turns them to stone!"
+                self.add_log(msg)
+                self.add_power_event("Basilisk", "Petrifying Gaze", msg)
 
         elif monster == "Jiangshi" and self.players:
             next_idx = (self.turn_player_idx + 1) % len(self.players)

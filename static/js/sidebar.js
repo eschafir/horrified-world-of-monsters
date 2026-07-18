@@ -95,7 +95,8 @@ const MONSTER_ACCENT_MAP = {
     "Sphinx":   { border: "rgba(255,204,0,0.6)",   glow: "rgba(255,204,0,0.3)"   },
     "Jiangshi": { border: "rgba(255,51,102,0.6)",  glow: "rgba(255,51,102,0.3)"  },
     "Cthulhu":  { border: "rgba(153,51,255,0.6)",  glow: "rgba(153,51,255,0.3)"  },
-    "Siren":    { border: "rgba(51,255,204,0.6)",  glow: "rgba(51,255,204,0.3)"  }
+    "Siren":    { border: "rgba(51,255,204,0.6)",  glow: "rgba(51,255,204,0.3)"  },
+    "Basilisk": { border: "rgba(107,168,60,0.6)",  glow: "rgba(107,168,60,0.3)"  }
 };
 
 // Generic multi-select item-card modal used for monster puzzle/defeat item costs
@@ -1133,6 +1134,28 @@ function renderMonstersStatusPanel() {
         });
         details += `</div>`;
         details += `<p style="font-size: 0.68rem; color: #a491c3; margin-top:6px;">Pending flips: <strong>${siren_state.pending_flips}</strong> &mdash; select 1 Blue item in your hero tab, then Advance to buy 2 more.</p>`;
+    } else if (m === "Basilisk") {
+        const bas_state = gameState.monster_states["Basilisk"];
+        const myLoc = gameState.heroes_state[playerName] ? gameState.heroes_state[playerName].location : null;
+        const cardValue = bas_state.temple_slots.reduce((sum, s) => sum + (s.item ? s.item.strength + 2 : 0), 0);
+
+        details += `
+            <p style="font-size: 0.72rem; color: #a491c3;">Place any item at each Temple while standing there (four Temples, four items). Once all four are placed, spend items totaling 30+ combined strength (Temple items count double) at the Basilisk's location to defeat it.</p>
+            <div class="monster-puzzle-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+        `;
+        bas_state.temple_slots.forEach(slot => {
+            const canPlace = !slot.filled && myLoc === slot.location;
+            details += `
+                <div class="puzzle-slot ${slot.filled ? 'filled' : ''}" style="height:60px; flex-direction:column; gap:2px; font-size:0.62rem; cursor:${canPlace ? 'pointer' : 'default'};" ${canPlace ? `onclick="advanceBasilisk()"` : ''}>
+                    <strong style="font-size:0.66rem;">${slot.location}</strong>
+                    ${slot.filled
+                        ? `<span>${slot.item.name} (${slot.item.strength})</span>`
+                        : (canPlace ? `<span style="color:#ffd533;">Place item here</span>` : `<span style="opacity:0.5;">Empty</span>`)}
+                </div>
+            `;
+        });
+        details += `</div>`;
+        details += `<p style="font-size: 0.68rem; color: #a491c3; margin-top:6px;">Temple offering value so far: <strong>${cardValue}</strong> (each item's strength +2, counts towards the 30+ Defeat total).</p>`;
     }
 
     if (isDefeated) {

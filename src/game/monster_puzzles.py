@@ -126,6 +126,27 @@ class MonsterPuzzlesMixin:
 
             return False
 
+        if monster == "Basilisk":
+            bas_state = self.monster_states["Basilisk"]
+            slot = next((s for s in bas_state["temple_slots"] if s["location"] == loc and not s["filled"]), None)
+            if not slot:
+                self.add_log("Must be at an unfilled Temple location to place an item on the Basilisk's card.")
+                return False
+
+            item_id = args.get("item_id")
+            item = next((i for i in h_state["items"] if i["id"] == item_id), None)
+            if not item:
+                return False
+
+            # Kept on the card (not discarded yet) - it counts towards the Defeat total
+            # at +2 bonus strength once all four Temple slots are filled.
+            h_state["items"].remove(item)
+            slot["filled"] = True
+            slot["item"] = item
+            h_state["ap"] -= 1
+            self.add_log(f"{player_name} placed {item['name']} ({item['color']} {item['strength']}) at {loc} to weaken the Basilisk's scales.")
+            return True
+
         if monster == "Yeti":
             # Placing a Yeti Child on the mat is a second, distinct action from guiding it
             # to the True Cave: the child must already be standing there, unplaced.
@@ -382,6 +403,45 @@ class MonsterPuzzlesMixin:
             self.monster_locations["Siren"] = "Defeated"
             self._reassign_frenzy_if_needed()
             self.add_log(f"{player_name} matched the Siren's tones and silenced her song! The Siren is defeated!")
+            self.check_victory()
+            return True
+
+        if monster == "Basilisk":
+            bas_state = self.monster_states["Basilisk"]
+            all_placed = all(s["filled"] for s in bas_state["temple_slots"])
+            hero_with_basilisk = (loc == self.monster_locations["Basilisk"])
+
+            if not all_placed:
+                self.add_log("All four Temple items must be placed before the Basilisk can be defeated.")
+                return False
+            if not hero_with_basilisk:
+                self.add_log(f"Must be at the Basilisk's location ({self.monster_locations['Basilisk']}) to defeat it.")
+                return False
+
+            item_ids = args.get("item_ids", [])
+            items = [next((i for i in h_state["items"] if i["id"] == iid), None) for iid in item_ids]
+            if any(i is None for i in items):
+                return False
+
+            # The four Temple items already count towards this, each at +2 bonus strength.
+            card_value = sum(s["item"]["strength"] + 2 for s in bas_state["temple_slots"])
+            total = card_value + sum(i["strength"] for i in items)
+            if total < 30:
+                self.add_log(f"Must spend items totaling 30+ combined value, including the four Temple items (currently {total}/30).")
+                return False
+
+            for item in items:
+                h_state["items"].remove(item)
+                self.discarded_items.append(item)
+            for slot in bas_state["temple_slots"]:
+                self.discarded_items.append(slot["item"])
+
+            h_state["ap"] -= 1
+            self.active_monsters.remove("Basilisk")
+            self.defeated_monsters.append("Basilisk")
+            self.monster_locations["Basilisk"] = "Defeated"
+            self._reassign_frenzy_if_needed()
+            self.add_log(f"{player_name} spent {total} combined item value ({card_value} from the Temple offerings) to shatter the Basilisk's cursed scales!")
             self.check_victory()
             return True
 

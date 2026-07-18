@@ -324,6 +324,18 @@ class LifecycleMixin:
                     "currently_flipping": [],
                     "pending_flips": 0
                 }
+            elif monster == "Basilisk":
+                # One slot per Temple - a hero must be physically at that Temple to place
+                # an item there. Placed items stay on the card (not discarded yet) until
+                # Defeat, where they count towards the 30+ total at +2 bonus each.
+                self.monster_states["Basilisk"] = {
+                    "temple_slots": [
+                        {"id": 0, "location": self.get_safe_loc("Temple of Athena"), "filled": False, "item": None},
+                        {"id": 1, "location": self.get_safe_loc("Temple of Hades"), "filled": False, "item": None},
+                        {"id": 2, "location": self.get_safe_loc("Temple of Nyx"), "filled": False, "item": None},
+                        {"id": 3, "location": self.get_safe_loc("Temple of Zeus"), "filled": False, "item": None}
+                    ]
+                }
 
         if self.active_monsters:
             self.frenzy_marker = self.active_monsters[0]

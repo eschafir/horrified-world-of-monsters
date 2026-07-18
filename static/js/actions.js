@@ -230,6 +230,15 @@ document.getElementById("action-advance").addEventListener("click", () => {
         }
     }
 
+    if (gameState.active_monsters.includes("Basilisk")) {
+        const basState = gameState.monster_states["Basilisk"];
+        const slot = basState.temple_slots.find(s => s.location === loc && !s.filled);
+        if (slot) {
+            document.getElementById('gtab-btn-monsters').click();
+            return;
+        }
+    }
+
     if (gameState.active_monsters.includes("Siren") && loc === gameState.monster_locations["Siren"]) {
         const sirenState = gameState.monster_states["Siren"];
         if (sirenState.pending_flips > 0) {
@@ -276,6 +285,27 @@ document.getElementById("action-defeat").addEventListener("click", () => {
 
     if (!targetMonster) {
         showAlertToast("You must be at the same location as a monster (and meet its requirements) to Defeat them!");
+        return;
+    }
+
+    if (targetMonster === "Basilisk") {
+        const basState = gameState.monster_states["Basilisk"];
+        const allPlaced = basState.temple_slots.every(s => s.filled);
+        if (!allPlaced) {
+            showAlertToast("All four Temple offerings must be placed before the Basilisk can be defeated.");
+            return;
+        }
+        const cardValue = basState.temple_slots.reduce((sum, s) => sum + s.item.strength + 2, 0);
+        openItemPicker({
+            title: "Shatter the Basilisk's Scales",
+            description: `Discard items totaling 30+ combined strength. The four Temple offerings already contribute ${cardValue} (each worth its strength +2).`,
+            items: myState.items,
+            validateFn: (sel) => {
+                const total = cardValue + sel.reduce((a, i) => a + i.strength, 0);
+                return { valid: total >= 30, message: `Total value: ${total} / 30 (includes ${cardValue} from Temple offerings)` };
+            },
+            onConfirm: (ids) => sendMsg({ action: "defeat", monster: "Basilisk", args: { item_ids: ids } })
+        });
         return;
     }
 
@@ -764,6 +794,19 @@ window.flipSirenSquare = (sqId) => {
         return;
     }
     sendMsg({ action: "advance", monster: "Siren", args: { type: "flip", square_id: sqId } });
+};
+
+// The Basilisk's temple slot the hero is standing at is derived server-side from their
+// current location, so no slot id is needed here - just which item to place.
+window.advanceBasilisk = () => {
+    const myState = gameState.heroes_state[playerName];
+    openItemPicker({
+        title: "Place an Offering",
+        description: "Choose any item to place on the Basilisk's card at this Temple.",
+        items: myState.items,
+        validateFn: (sel) => ({ valid: sel.length === 1, message: sel.length ? "" : "Select one item." }),
+        onConfirm: (ids) => sendMsg({ action: "advance", monster: "Basilisk", args: { item_id: ids[0] } })
+    });
 };
 
 window.advanceJiangshi = (slotId) => {

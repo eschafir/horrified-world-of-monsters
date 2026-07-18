@@ -335,7 +335,7 @@ function updateGameUI() {
             if (pending.hero === playerName) {
                 if (lastBlockChoiceId !== pending.id) {
                     lastBlockChoiceId = pending.id;
-                    showDamageSelection(pending.hits, "finish_block_choice", `The ${pending.reason} targets you!`);
+                    showDamageSelection(pending.hits, "finish_block_choice", `The ${pending.reason} targets you!`, pending.required_color);
                 }
             } else if (lastBlockChoiceId !== pending.id) {
                 lastBlockChoiceId = pending.id;
@@ -357,21 +357,24 @@ function updateGameUI() {
         // finishAction lets this be reused for both a dice-roll's hits and a monster
         // Power that targets a single hero directly (e.g. the Yeti's Snow Blast) -
         // either way it's "select N items to block, or take the damage".
-        function showDamageSelection(hits, finishAction = "finish_dice_roll", promptPrefix = null) {
+        function showDamageSelection(hits, finishAction = "finish_dice_roll", promptPrefix = null, requiredColor = null) {
             let html = `<div style="text-align:center; padding: 10px;">`;
             html += `<h2 style="color:#ff3366; margin-top:0; text-shadow: 0 0 10px rgba(255, 51, 102, 0.5);">Take Damage</h2>`;
 
+            const colorNote = requiredColor ? ` Only ${requiredColor} items can block it.` : "";
             const desc = promptPrefix
-                ? `${promptPrefix} Select ${hits} item${hits !== 1 ? "s" : ""} to discard and block it, or take the damage.`
-                : `You took ${hits} hit${hits !== 1 ? "s" : ""}! Select ${hits} item${hits !== 1 ? "s" : ""} to discard and block it, or take the damage.`;
+                ? `${promptPrefix} Select ${hits} item${hits !== 1 ? "s" : ""} to discard and block it, or take the damage.${colorNote}`
+                : `You took ${hits} hit${hits !== 1 ? "s" : ""}! Select ${hits} item${hits !== 1 ? "s" : ""} to discard and block it, or take the damage.${colorNote}`;
 
             html += `<p style="font-size:1.05rem; color:#d4c8eb;">${desc}</p>`;
 
             const myState = gameState.heroes_state[playerName];
+            const eligibleItems = requiredColor ? myState.items.filter(i => i.color === requiredColor) : myState.items;
             let selectedIds = new Set();
 
-            if (myState.items.length === 0) {
-                html += `<p style="color: #ff3366; font-size: 1.1rem; margin:25px 0;">You have no items to block the damage!</p>`;
+            if (eligibleItems.length === 0) {
+                const label = requiredColor ? `${requiredColor} items` : "items";
+                html += `<p style="color: #ff3366; font-size: 1.1rem; margin:25px 0;">You have no ${label} to block the damage!</p>`;
             } else {
                 html += `<div id="damage-items-container" style="display:flex; flex-wrap:wrap; justify-content:center; gap:12px; margin:25px 0;"></div>`;
             }
@@ -398,12 +401,12 @@ function updateGameUI() {
                 socket.send(JSON.stringify({ action: finishAction }));
             };
 
-            if (myState.items.length > 0) {
+            if (eligibleItems.length > 0) {
                 const itemsContainer = document.getElementById("damage-items-container");
                 // Image + color-coded border, matching the item cards used everywhere
                 // else (Pick Up modal, puzzle item pickers) so items are recognizable
                 // at a glance instead of a plain colored square + text row.
-                myState.items.forEach(item => {
+                eligibleItems.forEach(item => {
                     const imgSrc = item.artwork ? `/assets/items/${item.artwork}` : "";
                     const colorHex = getItemColorHex(item.color);
 

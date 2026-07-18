@@ -1,21 +1,51 @@
 {
     "id": "basilisk",
     "name": "Basilisk",
+    "displayName": "The Basilisk",
+    "summary": "Place items at all four Temple locations, then spend 30+ combined item value (each placed item counts double) at the Basilisk's location to defeat it.",
     "origin_map": "map-greek.png",
-    "selectable": false,
+    "selectable": true,
     "complexity": "Low",
     "hasLair": false,
-    "frenzyLevel": 1,
-    "frenzySymbols": [],
-    "objective": "Defeat the Basilisk.",
+    "frenzyLevel": 2,
+    "frenzySymbols": [
+        { "symbol": "Eye", "color": "Purple" },
+        { "symbol": "Hand", "color": "Red" },
+        { "symbol": "Wrench", "color": "Blue" }
+    ],
+    "objective": "The Basilisk's scales can only be pierced by items blessed by the Gods.",
     "phases": [
         {
             "id": 1,
             "name": "Main Map",
-            "setup": [],
-            "powers": [],
-            "steps": [],
-            "notes": ["Scaffolding only - not yet implemented, not selectable in the monster picker."]
+            "setup": [
+                {
+                    "action": "PlaceMonster",
+                    "target": "Basilisk",
+                    "locations": ["Ruins"]
+                }
+            ],
+            "powers": [
+                {
+                    "name": "Petrifying Gaze",
+                    "description": "The Basilisk moves to the current player's location. That hero takes one hit, which can only be blocked with a Purple item."
+                }
+            ],
+            "steps": [
+                {
+                    "number": 1,
+                    "title": "Gods' Blessing",
+                    "type": "Advance",
+                    "description": "Place an item on the Basilisk's card while standing at each of the four Temple locations (Temple of Athena, Temple of Hades, Temple of Nyx, Temple of Zeus) - four items in total, one per Temple."
+                },
+                {
+                    "number": 2,
+                    "title": "Shatter the Scales",
+                    "type": "Defeat",
+                    "description": "Once all four Temple items are placed, spend items totaling 30+ combined strength at the Basilisk's location to defeat it. The four placed items count towards this total, each worth its strength plus 2 bonus points."
+                }
+            ],
+            "notes": []
         }
     ]
 }
