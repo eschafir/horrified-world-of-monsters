@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Horrified: World of Monsters - Online</title>
-    <link rel="stylesheet" href="style.css?v=55">
+    <link rel="stylesheet" href="style.css?v=56">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,500&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -105,7 +105,7 @@
                 <!-- LEFT SIDEBAR: permanent hero phase + monster phase -->
                 <aside class="sidebar glass">
                     <section class="sidebar-section glass-inner" id="sec-actions">
-                        <h4>Hero Phase (<span id="action-points-left">0</span> AP)</h4>
+                        <div id="turn-status-banner" class="turn-status-banner"></div>
                         <div id="ap-counter-bar" class="ap-counter-bar"></div>
                         <div class="actions-grid">
                             <button id="action-move" class="btn-action">Move</button>
@@ -327,13 +327,13 @@
          before websocket.js (websocket.js's volume-slider wiring references
          updateMusicVolume by name at top level), and zoom-pan.js last (mirrors the original
          end-of-file DOMContentLoaded bootstrap). -->
-    <script src="js/state.js?v=4"></script>
+    <script src="js/state.js?v=5"></script>
     <script src="js/audio.js?v=1"></script>
     <script src="js/websocket.js?v=1"></script>
     <script src="js/lobby.js?v=1"></script>
     <script src="js/modals.js?v=1"></script>
-    <script src="js/ui-sync.js?v=3"></script>
-    <script src="js/sidebar.js?v=6"></script>
+    <script src="js/ui-sync.js?v=4"></script>
+    <script src="js/sidebar.js?v=7"></script>
     <script src="js/notifications.js?v=2"></script>
     <script src="js/map-render.js?v=5"></script>
     <script src="js/actions.js?v=5"></script>

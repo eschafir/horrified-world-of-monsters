@@ -80,6 +80,3 @@ const elCloseModal = document.querySelector(".close-modal");
 const elBtnMainMenu = document.getElementById("btn-main-menu");
 const elGameOverOverlay = document.getElementById("game-over-overlay");
 
-// Action point display
-const elApDisplay = document.getElementById("action-points-left");
-

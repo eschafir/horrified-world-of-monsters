@@ -788,6 +788,12 @@ body {
     background: rgba(255, 255, 255, 0.1);
 }
 
+#game-turn-display.my-turn-active {
+    color: #ffd533;
+    text-shadow: 0 0 10px rgba(255, 213, 51, 0.7);
+    animation: turnBannerPulse 1.6s ease-in-out infinite;
+}
+
 .terror-hud {
     display: flex;
     align-items: center;
@@ -2037,6 +2043,79 @@ body {
 @keyframes hint-blink {
     0%, 100% { opacity: 1; }
     50%       { opacity: 0.55; }
+}
+
+/* ---------------------------------------------------------
+   TURN STATUS BANNER - sits atop the action panel (where the player is already
+   looking to act) instead of relying on the small "Turn" chip in the map's top HUD.
+   --------------------------------------------------------- */
+.turn-status-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+}
+
+.turn-status-banner.my-turn {
+    background: rgba(255, 213, 51, 0.14);
+    border: 1.5px solid rgba(255, 213, 51, 0.7);
+    box-shadow: 0 0 16px rgba(255, 213, 51, 0.35);
+    animation: turnBannerPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes turnBannerPulse {
+    0%, 100% { box-shadow: 0 0 12px rgba(255, 213, 51, 0.3); }
+    50%       { box-shadow: 0 0 22px rgba(255, 213, 51, 0.6); }
+}
+
+.turn-status-banner.my-turn .turn-status-text {
+    color: #ffd533;
+    font-weight: 800;
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+    text-shadow: 0 0 10px rgba(255, 213, 51, 0.6);
+}
+
+.turn-status-banner.my-turn .turn-status-ap {
+    color: #ffd533;
+    font-weight: 700;
+}
+
+.turn-status-banner.other-turn {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+}
+
+.turn-status-banner.other-turn .turn-status-text {
+    color: #b0a0cf;
+    font-weight: 600;
+}
+
+.turn-status-banner.other-turn .turn-status-ap {
+    color: #8a7aa8;
+}
+
+.turn-status-icon {
+    font-size: 1.1rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.turn-status-text {
+    flex: 1;
+}
+
+.turn-status-hero {
+    font-weight: 400;
+    opacity: 0.75;
+}
+
+.turn-status-ap {
+    font-size: 0.78rem;
+    white-space: nowrap;
 }
 
 /* ---------------------------------------------------------

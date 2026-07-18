@@ -58,7 +58,9 @@ function updateGameUI() {
         // Top Bar info
         document.getElementById("game-room-display").innerText = gameState.room_code;
         const turnPlayer = gameState.players[gameState.turn_player_idx].name;
-        document.getElementById("game-turn-display").innerText = turnPlayer;
+        const elTurnDisplay = document.getElementById("game-turn-display");
+        elTurnDisplay.innerText = turnPlayer;
+        elTurnDisplay.classList.toggle("my-turn-active", turnPlayer === playerName);
         document.getElementById("game-terror-val").innerText = gameState.terror_level;
         document.getElementById("terror-progress").style.width = `${gameState.terror_level * 10}%`;
         document.getElementById("game-deck-display").innerText = gameState.deck_count;
@@ -91,7 +93,6 @@ function updateGameUI() {
         // Sync Action buttons enabled/disabled
         const myTurn = (turnPlayer === playerName);
         const myState = gameState.heroes_state[playerName];
-        elApDisplay.innerText = myState ? myState.ap : 0;
 
         document.querySelectorAll(".btn-action").forEach(btn => {
             btn.disabled = !myTurn || (myState && myState.ap < 1);
@@ -425,7 +426,8 @@ function updateGameUI() {
             }
         }
 
-        // Render AP counter bar
+        // Render turn status banner (whose turn, and their remaining AP) + AP counter bar
+        renderTurnStatusBanner();
         renderApCounterBar();
 
         // Render monster phase card

@@ -615,14 +615,49 @@ window.locateMonster = (monsterName) => {
     }, 150);
 };
 
+// Prominent "whose turn is it" banner at the top of the action panel - right where the
+// player is already looking to click an action button, unlike the small HUD chip at the
+// top of the map. Shows the acting player's remaining AP either way, so watching a
+// remote player's turn isn't a black box.
+function renderTurnStatusBanner() {
+    const el = document.getElementById("turn-status-banner");
+    if (!el || !gameState || !gameState.players || !gameState.players.length) return;
+
+    const activePlayer = gameState.players[gameState.turn_player_idx];
+    if (!activePlayer) { el.innerHTML = ""; return; }
+
+    const activeState = gameState.heroes_state[activePlayer.name];
+    const maxAp = activeState ? (activeState.max_ap || 4) : 4;
+    const ap = activeState && typeof activeState.ap === "number" ? activeState.ap : maxAp;
+    const isMyTurn = activePlayer.name === playerName;
+
+    if (isMyTurn) {
+        el.className = "turn-status-banner my-turn";
+        el.innerHTML = `
+            <span class="turn-status-icon">⚡</span>
+            <span class="turn-status-text">YOUR TURN</span>
+            <span class="turn-status-ap">${ap}/${maxAp} AP</span>
+        `;
+    } else {
+        const heroClass = activeState ? activeState.hero : "";
+        el.className = "turn-status-banner other-turn";
+        el.innerHTML = `
+            <span class="turn-status-icon">⏳</span>
+            <span class="turn-status-text">${activePlayer.name}'s Turn${heroClass ? ` <span class="turn-status-hero">(${heroClass})</span>` : ""}</span>
+            <span class="turn-status-ap">${ap}/${maxAp} AP left</span>
+        `;
+    }
+}
+
 function renderApCounterBar() {
     const el = document.getElementById("ap-counter-bar");
     if (!el) return;
-    const myState = gameState.heroes_state[playerName];
-    if (!myState) { el.innerHTML = ""; return; }
+    const activePlayer = gameState.players[gameState.turn_player_idx];
+    const activeState = activePlayer ? gameState.heroes_state[activePlayer.name] : null;
+    if (!activeState) { el.innerHTML = ""; return; }
 
-    const maxAp = myState.max_ap || 4;
-    const apLeft = typeof myState.ap === "number" ? myState.ap : maxAp;
+    const maxAp = activeState.max_ap || 4;
+    const apLeft = typeof activeState.ap === "number" ? activeState.ap : maxAp;
     const used = maxAp - apLeft;
 
     el.innerHTML = "";
