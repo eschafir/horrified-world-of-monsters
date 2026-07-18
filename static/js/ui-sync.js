@@ -50,6 +50,7 @@ function updateGameUI() {
         const isHost = !!(me && me.is_host);
         elHostStartWrap.classList.toggle("hidden", !isHost);
         elHostSettings.classList.toggle("read-only", !isHost);
+        if (elBtnBackToMap) elBtnBackToMap.classList.toggle("hidden", !isHost);
     } else {
         // The game has started!
         elLobbyScreen.classList.add("hidden");

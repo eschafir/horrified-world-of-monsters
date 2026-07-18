@@ -68,6 +68,7 @@ const elHostStartWrap = document.getElementById("host-start-wrap");
 const elBtnCreate = document.getElementById("btn-create");
 const elBtnJoin = document.getElementById("btn-join");
 const elBtnStart = document.getElementById("btn-start");
+const elBtnBackToMap = document.getElementById("btn-back-to-map");
 
 const elGameMap = document.getElementById("game-map");
 const elLogBox = document.getElementById("game-log-box");

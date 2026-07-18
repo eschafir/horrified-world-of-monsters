@@ -70,7 +70,7 @@ body {
     position: absolute;
     inset: 0;
     background: url('/Images/Horrifed%20WoM%20Cover.png') center/cover no-repeat;
-    opacity: 0.25;
+    opacity: 0.45;
     z-index: 0;
     pointer-events: none;
 }
@@ -78,6 +78,15 @@ body {
 #lobby-screen > * {
     position: relative;
     z-index: 1;
+}
+
+/* Scoped to the lobby card only (name/room-code entry, hero select, monster select) so
+   the cover image shows through more - doesn't touch .glass in-game (sidebar, board
+   container, modals), which stay at their normal opacity. */
+.lobby-card.glass {
+    background: rgba(25, 17, 39, 0.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .lobby-header {
@@ -2603,7 +2612,7 @@ body.greek-theme {
 }
 body.greek-theme #lobby-screen::before {
     background: url('/Images/Horrified%20GM%20Cover.png') center/cover no-repeat;
-    opacity: 0.3;
+    opacity: 0.45;
 }
 body.greek-theme .glass-panel, body.greek-theme .glass-panel-heavy {
     background: rgba(11, 19, 43, 0.75);

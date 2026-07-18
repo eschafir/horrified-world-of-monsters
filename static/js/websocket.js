@@ -39,8 +39,40 @@ elBtnCreate.addEventListener("click", () => {
 
 elBtnConfirmMap.addEventListener("click", () => {
     elMapSelectView.classList.add("hidden");
-    setupConnection(true);
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        // Already connected - either the "Join" flow discovering it actually created a
+        // fresh room (see joinFlowNeedsMapChoice below), or the host used "Change Map"
+        // to come back here - either way just set the map on the existing connection
+        // instead of opening a second one.
+        const chosenMap = document.querySelector('input[name="map-choice"]:checked').value;
+        applyThemeForMap(chosenMap);
+        sendMsg({ action: "chat", text: `Host selected map: ${chosenMap}` });
+        sendMsg({ action: "set_map", map: chosenMap });
+        elWaitingView.classList.remove("hidden");
+    } else {
+        setupConnection(true);
+    }
 });
+
+// Host-only "Change Map" button on the waiting screen - goes back to map selection
+// without leaving the room, pre-selecting whichever map is currently active.
+if (elBtnBackToMap) {
+    elBtnBackToMap.addEventListener("click", () => {
+        elWaitingView.classList.add("hidden");
+        elMapSelectView.classList.remove("hidden");
+        const currentMap = (gameState && gameState.selected_map) || "Map.png";
+        const radio = document.querySelector(`input[name="map-choice"][value="${currentMap}"]`);
+        if (radio) radio.checked = true;
+        applyThemeForMap(currentMap);
+    });
+}
+
+// Room Codes typed into "Join" aren't validated against existing rooms client-side -
+// the server transparently creates a fresh room if the code isn't in use yet, and makes
+// this player its host. When that happens, this flag routes the first state broadcast
+// into the map-selection screen (like Create already does) instead of silently leaving
+// a new room stuck on the default map with no one ever having been asked.
+let joinFlowNeedsMapChoice = false;
 
 elBtnJoin.addEventListener("click", () => {
     playerName = elPlayerNameInput.value.trim();
@@ -48,6 +80,7 @@ elBtnJoin.addEventListener("click", () => {
         showAlertToast("Please enter your name!");
         return;
     }
+    joinFlowNeedsMapChoice = true;
     setupConnection(false);
 });
 
@@ -193,6 +226,21 @@ function setupConnection(isHost) {
         if (data.type === "state") {
             detectAndAnimatePerkCardDraws(data.state);
             gameState = data.state;
+
+            if (joinFlowNeedsMapChoice) {
+                joinFlowNeedsMapChoice = false;
+                const me = gameState.players.find(p => p.name === playerName);
+                if (me && me.is_host && !gameState.game_started) {
+                    // The room code typed into "Join" wasn't in use - this player is
+                    // actually the host of a brand-new room, so give them the same map
+                    // choice Create would have.
+                    elWaitingView.classList.add("hidden");
+                    elMapSelectView.classList.remove("hidden");
+                    const chosenMap = document.querySelector('input[name="map-choice"]:checked').value;
+                    applyThemeForMap(chosenMap);
+                }
+            }
+
             if (gameState.game_phase !== "MonsterPhase") {
                 hasDrawnThisPhase = false;
             }
@@ -233,6 +281,7 @@ function returnToMainMenu() {
     hasDrawnThisPhase = false;
     lastDrawnCardId = null;
     lastGamePhaseSeen = null;
+    joinFlowNeedsMapChoice = false;
 
     elGameOverOverlay.classList.add("hidden");
     elGameScreen.classList.add("hidden");
