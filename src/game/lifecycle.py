@@ -211,7 +211,10 @@ class LifecycleMixin:
         # of which of those two monsters are in play.
         self.lair_tokens = []
         if "Yeti" in self.active_monsters or "Jiangshi" in self.active_monsters:
-            lair_locs = ["Spindlewood Institute", "Garden of the Risen", "Thornvine Woods", "Door of the World"]
+            if self.selected_map == "map-greek.png":
+                lair_locs = ["Mount Iliad", "Statue of Talos", "Necropolis", "Gaseous Swamp"]
+            else:
+                lair_locs = ["Spindlewood Institute", "Garden of the Risen", "Thornvine Woods", "Door of the World"]
             random.shuffle(lair_locs)
             lair_types = []
             if "Yeti" in self.active_monsters:
