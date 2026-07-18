@@ -299,6 +299,7 @@ class MonsterPhaseMixin:
                     removed = self.items_on_board[target_loc]
                     self.discarded_items.extend(removed)
                     self.items_on_board[target_loc] = []
+                    self.add_item_discard_event(m, target_loc, removed)
                     msg = f"{m} sweeps through {target_loc}, removing {len(removed)} item(s)."
                     self.add_log(msg)
                     self.add_power_event(m, "Nowhere to Hide", msg)

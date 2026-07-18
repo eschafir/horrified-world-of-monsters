@@ -27,6 +27,18 @@ class BoardMixin:
         item["id"] = str(uuid.uuid4())[:8]
         return item
 
+    def _commit_item(self, monster: str, item: Dict):
+        """Marks an item as invested in a monster's Advance puzzle (a Sphinx grid cell, a
+        Jiangshi sword slot, a Cthulhu dial/bind) - it's off the hero's hand but stays out
+        of the discard pile until that monster is actually defeated, per the physical
+        game's rule that only a defeated monster's mat gets swept into the discard."""
+        self.committed_items.setdefault(monster, []).append(item)
+
+    def _sweep_committed_items(self, monster: str):
+        """Moves every item committed to a monster's puzzle into the discard pile - called
+        once that monster is defeated."""
+        self.discarded_items.extend(self.committed_items.pop(monster, []))
+
     def get_safe_loc(self, loc: str) -> str:
         if not self.adjacency_list:
             return loc
@@ -73,6 +85,7 @@ class BoardMixin:
             "power_events": self.power_events,
             "citizen_events": self.citizen_events,
             "citizen_attack_events": self.citizen_attack_events,
+            "item_discard_events": self.item_discard_events,
             "heroes_state": self.heroes_state,
             "items_on_board": self.items_on_board,
             "discarded_items": self.discarded_items,

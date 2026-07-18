@@ -36,6 +36,7 @@ let knownDefeatedMonsters = null; // Set of monster names already seen in defeat
 let knownPowerEventIds = null; // Set of power_event ids already shown as a toast, to fire each one only once
 let knownCitizenEventIds = null; // Set of citizen_event ids already shown as a toast, to fire each one only once
 let knownCitizenAttackEventIds = null; // Set of citizen_attack_event ids already shown as an on-map marker, to fire each one only once
+let knownItemDiscardEventIds = null; // Set of item_discard_event ids already animated flying to the discard pile, to fire each one only once
 
 // Map Zoom & Pan State
 let zoomLevel = 1.0;

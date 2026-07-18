@@ -19,6 +19,7 @@ class LifecycleMixin:
         self.deck: List[Dict] = []
         self.discard: List[Dict] = []
         self.discarded_items: List[Dict] = []
+        self.committed_items: Dict[str, List[Dict]] = {}  # monster -> items invested in its Advance puzzle, not yet discarded
         self.item_bag: List[Dict] = []
         self.perk_deck: List[Dict] = []
         self.active_monsters: List[str] = []
@@ -50,6 +51,7 @@ class LifecycleMixin:
         self.power_events: List[Dict] = []  # rolling feed of resolved monster Powers, for client-side toast notifications
         self.citizen_events: List[Dict] = []  # rolling feed of citizen spawns, for client-side toast notifications
         self.citizen_attack_events: List[Dict] = []  # rolling feed of monster-vs-citizen dice rolls, for an on-map marker
+        self.item_discard_events: List[Dict] = []  # rolling feed of a monster clearing items off the map, for a fly-to-discard-pile animation
 
     def add_log(self, msg: str):
         self.log.append(msg)
@@ -95,6 +97,18 @@ class LifecycleMixin:
         if len(self.citizen_attack_events) > 20:
             self.citizen_attack_events.pop(0)
 
+    def add_item_discard_event(self, monster: str, location: str, items: list):
+        """Records a monster sweeping items off a board space straight into the discard
+        pile, so the client can animate them flying there instead of just vanishing."""
+        self.item_discard_events.append({
+            "id": str(uuid.uuid4())[:8],
+            "monster": monster,
+            "location": location,
+            "items": items,
+        })
+        if len(self.item_discard_events) > 20:
+            self.item_discard_events.pop(0)
+
     def _get_monster_home_location(self, monster: str) -> Optional[str]:
         """The monster's own starting location, in its origin map's terms, read from its
         catalog's phase-1 PlaceMonster setup step (falls back to None if absent, e.g. a
@@ -122,6 +136,7 @@ class LifecycleMixin:
         self.item_bag = copy.deepcopy(ITEMS_POOL)
         random.shuffle(self.item_bag)
         self.discarded_items = []
+        self.committed_items = {}
 
         # Set up decks
         self.deck = copy.deepcopy(MONSTER_CARDS)
@@ -267,6 +282,7 @@ class LifecycleMixin:
                 grid = [{"id": i, "filled": False, "item": None, "locked": False} for i in range(6)]
                 if starter_item:
                     grid[0] = {"id": 0, "filled": True, "item": starter_item, "locked": True}
+                    self._commit_item("Sphinx", starter_item)
                 self.monster_states["Sphinx"] = {
                     "grid": grid,
                     "row_targets": [11, 10],

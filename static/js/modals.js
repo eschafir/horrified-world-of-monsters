@@ -236,6 +236,43 @@ function showNodeInfo(locName) {
     elModalContainer.classList.remove("hidden");
 }
 
+// Read-only browse of every item that's actually hit the discard pile - block-choice
+// blocks, monster-Power/Perk costs, Defeat costs, and Advance costs. Items still sitting
+// in a monster's Advance puzzle (a Sphinx grid cell, a Jiangshi sword slot, ...) don't
+// show up here until that monster is defeated and its committed items get swept in.
+function showDiscardPileModal() {
+    const items = gameState.discarded_items || [];
+
+    let html = `<div style="text-align:center;">`;
+    html += `<h3>Discard Pile</h3><p style="font-size:0.8rem; color:#b0a0cf;">${items.length} item${items.length !== 1 ? "s" : ""} used or removed from play.</p><hr style="border-color: rgba(255,255,255,0.05); margin: 10px 0;">`;
+
+    if (items.length > 0) {
+        html += `<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; max-height:360px; overflow-y:auto;">`;
+        items.forEach(item => {
+            const imgSrc = item.artwork ? `/assets/items/${item.artwork}` : "";
+            const colorHex = getItemColorHex(item.color);
+            html += `
+                <div style="width:84px; text-align:center;">
+                    <div style="width:64px; height:64px; margin:0 auto 6px; border-radius:8px; overflow:hidden; background:rgba(255,255,255,0.05); border:3px solid ${colorHex}; box-shadow: 0 0 6px ${colorHex}66; display:flex; align-items:center; justify-content:center;">
+                        ${imgSrc ? `<img src="${imgSrc}" alt="${item.name}" style="width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.style.visibility='hidden'">` : ''}
+                    </div>
+                    <div style="font-size:0.68rem; color:#e5d9c8; line-height:1.2;">${item.name}</div>
+                    <div style="font-size:0.65rem; color:#a491c3;"><strong>${item.strength}</strong></div>
+                </div>
+            `;
+        });
+        html += `</div>`;
+    } else {
+        html += `<p style="color:#a491c3; font-style:italic;">The discard pile is empty.</p>`;
+    }
+
+    html += `<hr style="border-color: rgba(255,255,255,0.05); margin: 15px 0 10px 0;">`;
+    html += `<button class="btn btn-secondary btn-small" onclick="elModalContainer.classList.add('hidden')">Close</button>`;
+    html += `</div>`;
+    elModalBody.innerHTML = html;
+    elModalContainer.classList.remove("hidden");
+}
+
 function showCitizenInfo(citName, safeHaven, portrait) {
     const imgSrc = `/Images/Citizens/${portrait || `${citName}.png`}`;
     elModalBody.innerHTML = `

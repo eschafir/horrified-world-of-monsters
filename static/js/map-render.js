@@ -43,6 +43,65 @@ function drawMovementTrail(fromX, fromY, toX, toY) {
     }
 }
 
+// Mirrors animateItemFly, but flies to the Discard Pile panel instead of the hero's
+// inventory tab - used when a monster Card sweeps items off a board space (e.g. the
+// Green monster's "Nowhere to Hide") straight into the discard.
+function animateItemFlyToDiscard(fromLoc, item) {
+    const coord = gameState.node_coordinates[fromLoc];
+    if (!coord) return;
+
+    const screenStart = getScreenCoordsOfSVGPoint(coord.x, coord.y);
+    const discardPanel = document.getElementById("discard-pile-stack");
+    if (!discardPanel) return;
+    const screenEnd = discardPanel.getBoundingClientRect();
+
+    const circleColor = getItemColorHex(item.color);
+
+    const fly = document.createElement("div");
+    fly.className = "flying-item-token";
+    fly.style.cssText = `
+        position: fixed;
+        left: ${screenStart.left - 12}px;
+        top: ${screenStart.top - 12}px;
+        width: 24px;
+        height: 24px;
+        background: ${circleColor};
+        border: 2px solid #fff;
+        border-radius: 50%;
+        z-index: 10000;
+        pointer-events: none;
+        box-shadow: 0 0 12px ${circleColor}, 0 4px 10px rgba(0,0,0,0.5);
+        transition: left 0.7s cubic-bezier(0.25, 1, 0.5, 1),
+                    top 0.7s cubic-bezier(0.25, 1, 0.5, 1),
+                    transform 0.7s cubic-bezier(0.25, 1, 0.5, 1),
+                    opacity 0.7s ease;
+    `;
+
+    document.body.appendChild(fly);
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        fly.style.left = `${screenEnd.left + screenEnd.width / 2 - 12}px`;
+        fly.style.top = `${screenEnd.top + screenEnd.height / 2 - 12}px`;
+        fly.style.transform = "scale(0.4) rotate(180deg)";
+        fly.style.opacity = "0.3";
+    }));
+
+    fly.addEventListener("transitionend", () => {
+        fly.remove();
+        discardPanel.style.transition = "box-shadow 0.3s";
+        discardPanel.style.boxShadow = `0 0 25px ${circleColor}`;
+        setTimeout(() => { discardPanel.style.boxShadow = ""; }, 500);
+    }, { once: true });
+}
+
+// A monster can sweep multiple items off one space at once - stagger them slightly so
+// they read as separate items flying rather than one blurred blob.
+function showItemDiscardFlyAnimation(evt) {
+    (evt.items || []).forEach((item, idx) => {
+        setTimeout(() => animateItemFlyToDiscard(evt.location, item), idx * 180);
+    });
+}
+
 function getScreenCoordsOfSVGPoint(svgX, svgY) {
     const svgEl = document.getElementById("game-map");
     if (!svgEl) return { left: 0, top: 0 };

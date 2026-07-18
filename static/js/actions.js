@@ -2,6 +2,10 @@
 // PLAYER ACTION TRIGGERS
 // ---------------------------------------------------------
 
+document.getElementById("discard-pile-stack").addEventListener("click", () => {
+    showDiscardPileModal();
+});
+
 document.getElementById("action-move").addEventListener("click", () => {
     selectedAction = "move";
     gameState.log.push(">>> Click on adjacent node to Move!");
@@ -388,20 +392,25 @@ document.getElementById("action-special").addEventListener("click", () => {
             showAlertToast("The discard pile is currently empty! Use Investigator power once some items are discarded.");
             return;
         }
-        let html = `<h3>The Investigator: Item Swap</h3><p>Discard 2 items from hand to retrieve 1 item from the discard pile (0 AP).</p><hr style="border-color:rgba(255,255,255,0.05); margin:10px 0;">`;
-        html += `<h5>1. Select 2 items to discard:</h5>`;
-        myState.items.forEach(item => {
-            html += `<label style="display:block; margin:6px 0;"><input type="checkbox" class="investigator-discard" value="${item.id}"> ${item.name} (${item.color} ${item.strength})</label>`;
+        openItemPicker({
+            title: "The Investigator",
+            description: "Select exactly 2 items from your hand to discard.",
+            items: myState.items,
+            validateFn: (sel) => ({ valid: sel.length === 2, message: sel.length === 2 ? "" : `Select 2 items (${sel.length}/2).` }),
+            confirmLabel: "Next: Choose Item to Retrieve",
+            onConfirm: (discardIds) => {
+                openItemPicker({
+                    title: "The Investigator",
+                    description: "Select 1 item from the discard pile to retrieve.",
+                    items: gameState.discarded_items || [],
+                    validateFn: (sel) => ({ valid: sel.length === 1, message: sel.length === 1 ? "" : "Select exactly 1 item." }),
+                    confirmLabel: "Retrieve Item",
+                    onConfirm: (claimIds) => {
+                        sendMsg({ action: "special", args: { discard1_id: discardIds[0], discard2_id: discardIds[1], claim_id: claimIds[0] } });
+                    }
+                });
+            }
         });
-        html += `<h5 style="margin-top:15px;">2. Select 1 item to retrieve:</h5>`;
-        html += `<select id="investigator-claim" style="width:100%; margin-bottom:15px; background:#1b152d; color:#fff; border:1px solid #4a3b70; padding:6px; border-radius:4px;">`;
-        discList.forEach(item => {
-            html += `<option value="${item.id}">${item.name} (${item.color} ${item.strength})</option>`;
-        });
-        html += `</select>`;
-        html += `<button class="btn btn-primary" onclick="confirmInvestigatorSwap()" style="width:100%;">Perform Swap</button>`;
-        elModalBody.innerHTML = html;
-        elModalContainer.classList.remove("hidden");
 
     } else if (myState.hero === "The Buccaneer") {
         if (myState.items.length === 0) {
@@ -522,16 +531,6 @@ window.confirmGuardianGuide = () => {
     const targetHero = document.getElementById("guardian-target-hero").value;
     const targetLoc = document.getElementById("guardian-target-loc").value;
     sendMsg({ action: "special", args: { target_hero: targetHero, target_location: targetLoc } });
-    elModalContainer.classList.add("hidden");
-};
-window.confirmInvestigatorSwap = () => {
-    const checked = Array.from(document.querySelectorAll(".investigator-discard:checked")).map(el => el.value);
-    if (checked.length !== 2) {
-        showAlertToast("You must select exactly 2 items to discard!");
-        return;
-    }
-    const claimId = document.getElementById("investigator-claim").value;
-    sendMsg({ action: "special", args: { discard1_id: checked[0], discard2_id: checked[1], claim_id: claimId } });
     elModalContainer.classList.add("hidden");
 };
 window.confirmBuccaneerDiscard = () => {

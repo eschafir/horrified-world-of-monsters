@@ -199,6 +199,22 @@ function detectAndShowCitizenAttackMarkers() {
     });
 }
 
+// Diff-detects a monster sweeping items off a board space (server-side
+// item_discard_events feed) and animates them flying to the Discard Pile panel.
+function detectAndShowItemDiscardAnimations() {
+    const events = (gameState && gameState.item_discard_events) || [];
+    if (!knownItemDiscardEventIds) {
+        knownItemDiscardEventIds = new Set(events.map(e => e.id));
+        return;
+    }
+    events.forEach(evt => {
+        if (!knownItemDiscardEventIds.has(evt.id)) {
+            knownItemDiscardEventIds.add(evt.id);
+            showItemDiscardFlyAnimation(evt);
+        }
+    });
+}
+
 function showEventToast({ portraitSrc, alt, borderColor, glowColor, title, text, icon }) {
     const toast = document.createElement("div");
     toast.className = "monster-power-toast";

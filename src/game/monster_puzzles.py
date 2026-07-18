@@ -167,7 +167,7 @@ class MonsterPuzzlesMixin:
                 return False
 
             h_state["items"].remove(item)
-            self.discarded_items.append(item)
+            self._commit_item("Jiangshi", item)
             slot["filled"] = True
             slot["item"] = item
             h_state["ap"] -= 1
@@ -191,6 +191,7 @@ class MonsterPuzzlesMixin:
                 if not item:
                     return False
                 h_state["items"].remove(item)
+                self._commit_item("Sphinx", item)
                 cell["filled"] = True
                 cell["item"] = item
                 h_state["ap"] -= 1
@@ -220,6 +221,11 @@ class MonsterPuzzlesMixin:
                     dest_cell["filled"] = True
                     dest_cell["item"] = moved_item
                 else:
+                    # Back to the hero's hand - no longer "on the Sphinx's tab", so it
+                    # must not be swept into the discard pile when the Sphinx is defeated.
+                    committed = self.committed_items.get("Sphinx", [])
+                    if moved_item in committed:
+                        committed.remove(moved_item)
                     h_state["items"].append(moved_item)
 
                 h_state["ap"] -= 1
@@ -282,7 +288,7 @@ class MonsterPuzzlesMixin:
                     return False
 
                 h_state["items"].remove(item)
-                self.discarded_items.append(item)
+                self._commit_item("Cthulhu", item)
                 dial["progress"] += item["strength"]
                 h_state["ap"] -= 1
                 self.add_log(f"{player_name} rotated the {color} dial to {dial['progress']}/{dial['target']}.")
@@ -310,7 +316,7 @@ class MonsterPuzzlesMixin:
                     progress = {"color": color, "progress": 0}
 
                 h_state["items"].remove(item)
-                self.discarded_items.append(item)
+                self._commit_item("Cthulhu", item)
                 progress["progress"] += item["strength"]
                 h_state["ap"] -= 1
 
@@ -368,6 +374,7 @@ class MonsterPuzzlesMixin:
             for item in items:
                 h_state["items"].remove(item)
                 self.discarded_items.append(item)
+            self._sweep_committed_items("Siren")
 
             h_state["ap"] -= 1
             self.active_monsters.remove("Siren")
@@ -396,6 +403,7 @@ class MonsterPuzzlesMixin:
             for item in items:
                 h_state["items"].remove(item)
                 self.discarded_items.append(item)
+            self._sweep_committed_items("Yeti")
             self.active_monsters.remove("Yeti")
             self.defeated_monsters.append("Yeti")
             self._reassign_frenzy_if_needed()
@@ -426,6 +434,7 @@ class MonsterPuzzlesMixin:
             for item in items:
                 h_state["items"].remove(item)
                 self.discarded_items.append(item)
+            self._sweep_committed_items("Jiangshi")
             self.active_monsters.remove("Jiangshi")
             self.defeated_monsters.append("Jiangshi")
             self._reassign_frenzy_if_needed()
@@ -455,6 +464,7 @@ class MonsterPuzzlesMixin:
             for item in items:
                 h_state["items"].remove(item)
                 self.discarded_items.append(item)
+            self._sweep_committed_items("Sphinx")
             self.active_monsters.remove("Sphinx")
             self.defeated_monsters.append("Sphinx")
             self._reassign_frenzy_if_needed()
@@ -487,6 +497,7 @@ class MonsterPuzzlesMixin:
             for item in items:
                 h_state["items"].remove(item)
                 self.discarded_items.append(item)
+            self._sweep_committed_items("Cthulhu")
             self.active_monsters.remove("Cthulhu")
             self.defeated_monsters.append("Cthulhu")
             self._reassign_frenzy_if_needed()

@@ -79,6 +79,11 @@ function updateGameUI() {
             elHudDeckCount.innerText = gameState.deck_count;
         }
 
+        const elHudDiscardCount = document.getElementById("hud-discard-count");
+        if (elHudDiscardCount) {
+            elHudDiscardCount.innerText = (gameState.discarded_items || []).length;
+        }
+
         const elMonsterStack = document.querySelector(".monsters-stack");
         if (elMonsterStack) {
             if (gameState.deck_count === 0) {
@@ -96,7 +101,11 @@ function updateGameUI() {
         const myState = gameState.heroes_state[playerName];
 
         document.querySelectorAll(".btn-action").forEach(btn => {
-            btn.disabled = !myTurn || (myState && myState.ap < 1);
+            // Special Power is always 0 AP (Guardian/Investigator/Buccaneer/Fortune
+            // Teller/Parapsychologist all say so in their own ability text) - it must
+            // stay usable even at 0 AP, unlike every other action here.
+            const requiresAp = btn.id !== "action-special";
+            btn.disabled = !myTurn || (requiresAp && myState && myState.ap < 1);
         });
         document.getElementById("action-end-turn").disabled = !myTurn;
 
@@ -131,6 +140,10 @@ function updateGameUI() {
         // Small on-map marker showing the actual dice roll wherever a monster just
         // attacked a citizen, so a vanished citizen / Terror bump isn't unexplained.
         detectAndShowCitizenAttackMarkers();
+
+        // Items a monster sweeps off a board space fly to the Discard Pile instead of
+        // just vanishing from items_on_board.
+        detectAndShowItemDiscardAnimations();
 
         // Game Over banner (Defeat or Victory)
         if (elGameOverOverlay) {
