@@ -168,6 +168,13 @@ function updateGameUI() {
         }
         lastGamePhaseSeen = gameState.game_phase;
 
+        // The Monster Attack / block-choice modal keeps the map visible behind it
+        // (no blur) so the player can see where the attack is actually happening,
+        // unlike every other modal (item pickers, info panels, ...) which still blur
+        // the board. Re-evaluated every render so it never leaks onto an unrelated
+        // modal that opens after this one closes.
+        elModalContainer.classList.toggle("modal-no-blur", !!(gameState.pending_dice_roll || gameState.pending_block_choice));
+
         // Handle Interactive Dice Roll. The permanent sidebar dice (#perm-die-0/1/2)
         // stay showing the last roll's result for the rest of the turn - only cleared
         // when the turn actually changes - instead of disappearing once a blocking

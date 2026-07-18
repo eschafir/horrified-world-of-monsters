@@ -118,7 +118,7 @@ class SpecialAbilitiesMixin:
         return False
 
     def execute_play_perk(self, player_name: str, perk_id: str, args: Dict) -> bool:
-        if self.game_phase not in ["HeroPhase", "MonsterPhase"]:
+        if self.game_phase != "HeroPhase":
             return False
 
         player_state = self.heroes_state.get(player_name)

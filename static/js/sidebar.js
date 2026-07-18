@@ -394,13 +394,14 @@ function renderPlayerPanel() {
             const itemsHtml = buildItemChipsHtml(myState.items, { selectable: true, selectedIds: selectedItemsForAction });
 
             let perksHtml = "";
+            const canPlayPerks = gameState.game_phase === "HeroPhase";
             if (myState.perks && myState.perks.length > 0) {
                 myState.perks.forEach(perk => {
                     perksHtml += `
                         <div class="item-row perk-row" style="background: rgba(153, 51, 255, 0.15); border-left: 3px solid #9933ff; flex-direction: column; align-items: flex-start; gap: 4px; padding: 6px; width: 100%; margin: 3px 0;">
                             <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
                                 <strong style="color: #ffd533; font-size: 0.8rem; letter-spacing: 0.5px;">${perk.name}</strong>
-                                <button class="btn-hud" style="font-size: 0.65rem; padding: 2px 6px; cursor: pointer;" onclick="playPerkCard('${perk.id}', '${perk.name}')">Play</button>
+                                <button class="btn-hud" style="font-size: 0.65rem; padding: 2px 6px; cursor: ${canPlayPerks ? "pointer" : "not-allowed"};" ${canPlayPerks ? "" : "disabled title=\"Perks can only be played during the Hero Phase\""} onclick="playPerkCard('${perk.id}', '${perk.name}')">Play</button>
                             </div>
                             <div style="font-size: 0.7rem; color: #e0d0ff; line-height: 1.2;">${perk.text}</div>
                         </div>
