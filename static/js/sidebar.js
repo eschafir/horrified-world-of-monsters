@@ -669,13 +669,13 @@ function renderApCounterBar() {
     }
 }
 
-function buildCardHTML(card, alreadyFlipped) {
+function buildCardHTML(card, alreadyFlipped, innerId = "mp-card-inner") {
     const attack = card.monster_attack || {};
     const symbolColor = attack.symbol ? getSymbolColorHex(SYMBOL_TO_COLOR[attack.symbol]) : null;
 
     return `
         <div class="mp-flip-container">
-            <div class="mp-card-inner${alreadyFlipped ? " flipped" : ""}" id="mp-card-inner">
+            <div class="mp-card-inner${alreadyFlipped ? " flipped" : ""}" id="${innerId}">
                 <div class="mp-card-back">
                     <img src="/Images/Monster_Card.png" alt="Monster Card">
                 </div>
@@ -710,6 +710,43 @@ function buildCardHTML(card, alreadyFlipped) {
                 </div>
             </div>
         </div>`;
+}
+
+// The Fortune Teller's peek: flips the top Monster Card face-up right at the deck
+// itself (not the Monster Phase panel - this card hasn't actually been drawn) and
+// stays face-up - no auto-dismiss, no click-to-dismiss. It only flips back down once
+// the Monster Phase actually begins (see dismissFortuneTellerPeek, called from
+// updateGameUI). Doesn't touch gameState/current_card at all, since the peek never
+// advances the deck.
+function showFortuneTellerPeekCard(card) {
+    const deckEl = document.querySelector(".monsters-stack");
+    if (!deckEl) return;
+    const rect = deckEl.getBoundingClientRect();
+
+    // Only one peek card at a time.
+    dismissFortuneTellerPeek();
+
+    const overlay = document.createElement("div");
+    overlay.className = "ft-peek-overlay";
+    overlay.style.left = `${rect.left + rect.width / 2}px`;
+    overlay.style.top = `${rect.top + rect.height / 2}px`;
+    overlay.innerHTML = buildCardHTML(card, false, "ft-peek-card-inner");
+    document.body.appendChild(overlay);
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        const inner = document.getElementById("ft-peek-card-inner");
+        if (inner) inner.classList.add("flipped");
+    }));
+}
+
+// Flips the peeked card back down and removes it - called once the Monster Phase
+// begins (or immediately, if a second peek somehow starts before the first was closed).
+function dismissFortuneTellerPeek() {
+    const overlay = document.querySelector(".ft-peek-overlay");
+    if (!overlay) return;
+    const inner = document.getElementById("ft-peek-card-inner");
+    if (inner) inner.classList.remove("flipped");
+    setTimeout(() => overlay.remove(), 650);
 }
 
 function renderMonsterPhasePanel() {
@@ -837,6 +874,13 @@ function animateCardFly(sourceEl, targetEl, onComplete) {
 
 // ---- Monster Deck click: draw during Monster Phase ----
 document.querySelector(".deck-right").addEventListener("click", () => {
+    if (fortuneTellerPeekActive) {
+        fortuneTellerPeekActive = false;
+        document.querySelector(".monsters-stack")?.classList.remove("fortune-teller-glow");
+        sendMsg({ action: "special", args: {} });
+        return;
+    }
+
     if (!gameState || gameState.game_phase !== "MonsterPhase") return;
 
     // Only the player whose turn just ended is allowed to draw the monster card!

@@ -119,6 +119,10 @@ function updateGameUI() {
             } else if (gameState.game_phase === "MonsterPhase") {
                 secActions.classList.remove("active-phase");
                 secMonsterPhase.classList.add("active-phase");
+                // The Fortune Teller's peeked card (if any) stays face-up for the rest
+                // of the Hero Phase, and only flips back down once the Monster Phase
+                // it was peeking ahead of actually begins.
+                dismissFortuneTellerPeek();
             } else {
                 secActions.classList.remove("active-phase");
                 secMonsterPhase.classList.remove("active-phase");

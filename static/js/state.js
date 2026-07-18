@@ -22,6 +22,7 @@ let mapEntityPickerNames = null; // array of eligible hero/monster names
 let mapEntityPickerCallback = null; // (name) => void, single-select; (names[]) => void, multi-select
 let mapEntityPickerMultiSelect = false;
 let mapEntityPickerSelected = null; // Set of currently-toggled names, only used when multi-select
+let fortuneTellerPeekActive = false; // true between clicking Special Action and clicking the glowing Monster Deck
 let chosenHero = "The Guardian";
 let dragType = null;
 let dragLocName = null;

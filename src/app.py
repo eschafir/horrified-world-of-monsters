@@ -164,7 +164,12 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_name: 
 
             elif action == "special":
                 args = msg.get("args", {})
-                room.execute_special(player_name, args)
+                hero_class = room.heroes_state.get(player_name, {}).get("hero")
+                ok = room.execute_special(player_name, args)
+                if ok and hero_class == "The Fortune Teller" and room.deck:
+                    # Sent only to this player's own socket (not broadcast) - the peeked
+                    # card is private, unlike the rest of the room-wide state.
+                    await websocket.send_text(json.dumps({"type": "fortune_teller_peek", "card": room.deck[-1]}))
 
             elif action == "play_perk":
                 perk_id = msg.get("perk_id")

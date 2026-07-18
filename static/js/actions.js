@@ -428,10 +428,20 @@ document.getElementById("action-special").addEventListener("click", () => {
         elModalContainer.classList.remove("hidden");
 
     } else if (myState.hero === "The Fortune Teller") {
-        // Peak card is simple: send directly
-        if (confirm("Would you like to use your Fortune Teller ability to peak at the top Monster card? (0 AP)")) {
-            sendMsg({ action: "special", args: {} });
+        if (myState.ability_used) {
+            showAlertToast("Special ability already used this turn.");
+            return;
         }
+        if (!gameState.deck_count) {
+            showAlertToast("No cards left in the Monster deck.");
+            return;
+        }
+        // No modal here - illuminate the Monster Deck and wait for the player to click
+        // it themselves (see the .deck-right click handler in sidebar.js), so the
+        // reveal happens right where the card actually lives instead of a popup.
+        fortuneTellerPeekActive = true;
+        document.querySelector(".monsters-stack")?.classList.add("fortune-teller-glow");
+        showAlertToast("The Monster Deck glows - click it to peek at the top card!");
 
     } else if (myState.hero === "The Parapsychologist") {
         if (myState.items.length === 0) {

@@ -250,6 +250,8 @@ function setupConnection(isHost) {
             if (data.player !== playerName) {
                 animateRemoteItemPickup(data.player, data.location, data.items);
             }
+        } else if (data.type === "fortune_teller_peek") {
+            showFortuneTellerPeekCard(data.card);
         } else if (data.type === "room_closed") {
             intentionalDisconnect = true;
             returnToMainMenu();

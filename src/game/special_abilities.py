@@ -107,8 +107,10 @@ class SpecialAbilitiesMixin:
 
         elif hero_class == "The Fortune Teller":
             if self.deck:
-                top_card = self.deck[-1]
-                self.add_log(f"[The Fortune Teller] Peaked at the top Monster Card: {top_card['name']} (Spawns {top_card['spawn']} items).")
+                # The card's identity is sent privately to this player only (see the
+                # "special" websocket handler) - the shared log deliberately doesn't
+                # name it, so the peek stays a secret from the rest of the room.
+                self.add_log(f"{player_name} peeked at the top Monster Card.")
                 h_state["ability_used"] = True
                 return True
             else:
