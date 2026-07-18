@@ -1,22 +1,54 @@
-# Horrified: World of Monsters - Online
+<p align="center">
+  <img src="Images/Horrifed%20WoM%20Cover.png" alt="Horrified: World of Monsters" width="100%">
+</p>
 
-A web-based multiplayer digital implementation of the board game **Horrified: World of Monsters**, built for seamless zero-install online play with friends.
+<h1 align="center">Horrified: World of Monsters — Online</h1>
+
+<p align="center">
+  A web-based multiplayer digital implementation of the board game <strong>Horrified</strong>,
+  built for zero-install online play with friends — just open a link and go.
+</p>
+
+<p align="center">
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white">
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-WebSockets-009688?logo=fastapi&logoColor=white">
+  <img alt="No build step" src="https://img.shields.io/badge/Frontend-Vanilla%20JS%2FHTML%2FCSS-F7DF1E?logo=javascript&logoColor=black">
+</p>
 
 ---
 
 ## 🌟 Key Features
 
-* **Interactive Full-Screen Board**: High-resolution SVG map container overlaid with click-to-move locations and detail-modals.
-* **Cinematic Lobby Backdrop**: The name/room-code screen is framed by the official cover art, faded to a subtle backdrop so the join form stays fully legible.
-* **Procedural Ambient Soundtrack**: Smooth, spooky background music synthesized in real-time using the browser's native **HTML5 Web Audio API**—no heavy audio assets required!
-* **Consonant Hover Melodies**: Interacting with map locations triggers custom synthesized chimes dynamically tuned to G4 (`392Hz`) with a soft `25ms` attack peak for satisfying tactile feedback.
-* **Layered Sound Effects**: Dedicated audio cues (item pickup, Monster Card draw, defeat) play from bundled assets in `Music/` and are synchronized across every client in the room, not just the player who triggered them.
-* **Glow & Zoom Boss Markers**: High-fidelity custom circles for the **Yeti** and **Sphinx** containing circular crops of official artwork, which smoothly scale up to `2.2x` on hover with drop-shadow glows.
-* **3D Stacked Card Decks**: Large, realistic portrait decks for both Perks and Monsters with real-time remaining-count badges and automated opacity dimming when empty.
-* **Live Remote Pickup Animation**: When any hero picks up an item, every connected client sees it visibly fly from its exact map position to that hero's token.
-* **Exclusive Hero Selection**: In the waiting room, a hero claimed by one player is instantly disabled for everyone else, live-updated as picks change.
-* **Game Over Banner & Room Teardown**: Losing the game surfaces a full-screen defeat banner; its "Main Menu" button authoritatively destroys the room on the server and returns every player to the lobby.
-* **FastAPI Backend**: Authoritative Python game server driving synchronized turns, actions, item bags, and chat logs over WebSockets.
+* **Fully Server-Authoritative** — a Python/FastAPI game server owns all rules and state; every client is a thin render layer that re-renders from the server's snapshot after each action, keeping every player's screen perfectly in sync.
+* **Two Playable Maps** — the original **World of Monsters** board (Yeti, Sphinx, Jiangshi, Cthulhu) and a **Greek Monsters** expansion board (Siren, plus guest appearances from Basilisk, Cerberus, Chimera, Medusa, and Minotaur), switchable from the lobby.
+* **12 Heroes, 30 Monster Cards, 10 Perks** — the full card-driven Monster Deck and Perk Deck (each perk duplicated to 20 physical cards, exactly like the tabletop version), all resolved server-side.
+* **On-Map, No-Popup Interactions** — Move, Guide, and every Perk that targets a Hero or Monster resolve by clicking glowing tokens directly on the board, instead of dropdown menus or `prompt()` dialogs.
+* **Interactive Full-Screen SVG Board** — click-to-move locations, zoom & pan, and detail modals for every location, hero, monster, and item.
+* **Real-Time Visual Feedback** — dice-roll markers pop up right where an attack happens, monster Powers get toast notifications, and a prominent turn banner makes it obvious whose turn it is and how many actions they have left.
+* **Procedural Ambient Soundtrack** — spooky background music synthesized live via the Web Audio API, no audio files required.
+* **Live Remote Animations** — item pickups, card draws, and Perk plays animate in real time for every connected player, not just the one who triggered them.
+* **Live Layout Calibrator** — press `D` in-game (or use the standalone `static/editor.html`) to drag/resize map hitboxes and persist the new coordinates on the fly.
+
+---
+
+## 🖼️ Gallery
+
+<table>
+<tr>
+<td width="50%" align="center"><b>World of Monsters</b><br><img src="Images/Map.png" width="100%"></td>
+<td width="50%" align="center"><b>Greek Monsters</b><br><img src="Images/map-greek.png" width="100%"></td>
+</tr>
+</table>
+
+<table>
+<tr>
+<td align="center"><img src="Images/Monsters/Yeti.png" width="100%"><br><b>Yeti</b></td>
+<td align="center"><img src="Images/Monsters/Sphinx.png" width="100%"><br><b>Sphinx</b></td>
+<td align="center"><img src="Images/Monsters/Jiangshi.png" width="100%"><br><b>Jiangshi</b></td>
+<td align="center"><img src="Images/Monsters/Cthulhu.png" width="100%"><br><b>Cthulhu</b></td>
+<td align="center"><img src="Images/Monsters/Siren.png" width="100%"><br><b>Siren</b></td>
+</tr>
+</table>
 
 ---
 
@@ -45,16 +77,45 @@ Once Uvicorn starts, open your web browser and navigate to:
 ```url
 http://localhost:8000
 ```
-Enter your name, create or join a room code, and start playing!
+Enter your name, create or join a room code, pick a map, and start playing!
 
 ---
 
 ## ⚙️ Layout Calibration (Debug Mode)
 
-The client includes a built-in real-time coordinate calibrator to align SVG hitboxes to any new background illustration layout:
+The client includes a built-in real-time coordinate calibrator to align SVG hitboxes to any map background illustration:
 
 1. Press **`D`** on your keyboard to toggle **Debug Mode** (lights up hitboxes in semi-transparent green/red).
 2. **Move**: Click and drag any circle (platform) or rectangle (banner) to position it.
 3. **Resize Circle**: Hover over a green circle and **scroll the mouse wheel** to adjust the radius (`r`).
 4. **Resize Rectangle**: Hover over a red rectangle and **scroll the mouse wheel** to adjust the width (`rw`). Hold **`Shift` + scroll** to adjust the height (`rh`).
-5. **Auto-Save**: The updated layout automatically broadcasts to the server on mouse release and saves to `static/new_coordinates.json`.
+5. **Auto-Save**: The updated layout automatically broadcasts to the server on mouse release and saves to `data/board/coordinates_{map}.json`.
+
+A standalone version of the same calibrator is also available at `static/editor.html`, hitting the same `/api/map` endpoints without needing a live game room.
+
+---
+
+## 🧩 Project Structure
+
+```
+Horrified/
+├── server.py            # thin entrypoint - runs src/app.py via uvicorn
+├── src/
+│   ├── app.py            # FastAPI app + the single WebSocket route
+│   ├── room_manager.py   # one GameRoom per room code, broadcasts state
+│   ├── data_loader.py    # loads every game constant from data/*.json
+│   ├── pathfinding.py    # shared BFS for monster/citizen movement
+│   └── game/              # GameRoom, assembled from concern-based mixins
+│       (lifecycle, board, hero_actions, monster_puzzles,
+│        special_abilities, monster_phase, combat, frenzy)
+├── data/                 # heroes, monster cards, perks, board layouts, monster catalogs
+├── static/
+│   ├── index.html
+│   ├── style.css
+│   └── js/                # one file per client concern, no bundler
+└── Images/ · Music/ · assets/   # served directly, no build step
+```
+
+---
+
+<p align="center"><i>Built for game nights that don't need anyone to install anything.</i></p>
