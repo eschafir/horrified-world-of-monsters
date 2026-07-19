@@ -1175,7 +1175,8 @@ function renderMonstersStatusPanel() {
         const allRemoved = cer_state.door_tokens.every(t => t.removed);
         const roll = cer_state.current_roll;
         const isMyRoll = roll && roll.hero === playerName;
-        const glyphIcon = (g) => ({ "Hit": "⚔️", "Power": "❗", "Blank": "—" }[g] || g);
+        // Matches the regular combat dice's icons exactly (ui-sync.js's showDamageSelection).
+        const glyphIcon = (g) => ({ "Hit": "💥", "Power": "❗", "Blank": "—" }[g] || g);
 
         details += `<p style="font-size: 0.72rem; color: #a491c3;">Reveal the Underworld Door among the Lair tokens, then discard a Blue item there to roll 3 dice. Discard Green items to reroll dice (up to the item's strength each). Remove a token once your roll covers its glyphs.</p>`;
 
