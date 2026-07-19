@@ -66,10 +66,11 @@ function updateGameUI() {
         document.getElementById("terror-progress").style.width = `${gameState.terror_level * 10}%`;
         document.getElementById("game-deck-display").innerText = gameState.deck_count;
 
-        // Terror Level increase: play a sting and queue a slide transition for the map's neon ring
+        // Terror Level increase: play a sting and start a timed crossfade transition
         if (lastTerrorLevel !== null && gameState.terror_level > lastTerrorLevel) {
             playTerrorIncreaseSound();
-            pendingTerrorTransitionFrom = lastTerrorLevel;
+            terrorTransitionFrom = lastTerrorLevel;
+            terrorTransitionStartTime = performance.now();
         }
         lastTerrorLevel = gameState.terror_level;
 

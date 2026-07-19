@@ -1274,6 +1274,16 @@ function renderSVGMap() {
         const trackY = 60;
         const terrorCoords = gameState.terror_track_coordinates;
 
+        // Compute how far into the crossfade animation we are (survives multiple re-renders).
+        const terrorElapsed = terrorTransitionFrom !== null
+            ? performance.now() - terrorTransitionStartTime
+            : Infinity;
+        const terrorXfadeActive = terrorTransitionFrom !== null
+            && terrorTransitionFrom !== gameState.terror_level
+            && terrorElapsed < TERROR_ANIM_MS;
+        // Negative animation-delay resumes the CSS animation mid-stream on re-render.
+        const terrorAnimDelay = terrorXfadeActive ? `-${Math.floor(terrorElapsed)}ms` : "0ms";
+
         for (let i = 0; i <= 7; i++) {
             const slot = terrorCoords && terrorCoords[i];
             const slotX = slot ? slot.x : (trackStartX + i * slotSpacing);
@@ -1287,23 +1297,20 @@ function renderSVGMap() {
             // leaving the center hollow so the level number underneath stays visible.
             if (gameState.terror_level === i) {
                 const ring = createNeonRing(slotX, slotY, slotR, slotPoints);
-
-                // If the Terror Level just increased, slide the ring in from its previous
-                // slot (plus a glowing movement trail) instead of just popping into place.
-                if (pendingTerrorTransitionFrom !== null && pendingTerrorTransitionFrom !== i) {
-                    const fromSlot = terrorCoords && terrorCoords[pendingTerrorTransitionFrom];
-                    if (fromSlot) {
-                        const dx = fromSlot.x - slotX, dy = fromSlot.y - slotY;
-                        ring.style.transform = `translate(${dx}px, ${dy}px)`;
-                        requestAnimationFrame(() => requestAnimationFrame(() => {
-                            ring.style.transition = "transform 0.8s cubic-bezier(0.25, 1, 0.3, 1)";
-                            ring.style.transform = "translate(0px, 0px)";
-                        }));
-                        drawMovementTrail(fromSlot.x, fromSlot.y, slotX, slotY);
-                    }
+                if (terrorXfadeActive) {
+                    ring.classList.add("neon-ring-entering");
+                    ring.style.animationDelay = terrorAnimDelay;
                 }
-
                 terrorTrackG.appendChild(ring);
+            }
+
+            // Old ring: fades out while the new ring fades in; persists across re-renders
+            // for the full TERROR_ANIM_MS window using the elapsed-time offset.
+            if (terrorXfadeActive && terrorTransitionFrom === i) {
+                const oldRing = createNeonRing(slotX, slotY, slotR, slotPoints);
+                oldRing.classList.add("neon-ring-leaving");
+                oldRing.style.animationDelay = terrorAnimDelay;
+                terrorTrackG.appendChild(oldRing);
             }
             
             // Add a draggable hitbox for the terror track slot
@@ -1331,7 +1338,6 @@ function renderSVGMap() {
             });
             terrorTrackG.appendChild(hitbox);
         }
-        pendingTerrorTransitionFrom = null;
         elGameMap.appendChild(terrorTrackG);
     }
 }
