@@ -643,8 +643,8 @@ function renderSVGMap() {
     const bgImage = document.createElementNS("http://www.w3.org/2000/svg", "image");
     bgImage.setAttribute("id", "game-map-image");
     const mapFile = gameState.selected_map || "Map.png";
-    bgImage.setAttribute("href", `/Images/${mapFile}?v=2`);
-    bgImage.setAttributeNS("http://www.w3.org/1999/xlink", "href", `/Images/${mapFile}?v=2`);
+    bgImage.setAttribute("href", `/Images/Maps/${mapFile}?v=2`);
+    bgImage.setAttributeNS("http://www.w3.org/1999/xlink", "href", `/Images/Maps/${mapFile}?v=2`);
     bgImage.setAttribute("x", "0");
     bgImage.setAttribute("y", "0");
     bgImage.setAttribute("width", "1304");

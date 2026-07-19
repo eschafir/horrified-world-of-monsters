@@ -36,14 +36,14 @@
                     <h2>Select a Map</h2>
                     <div class="map-options-grid" style="display: flex; gap: 30px; justify-content: center; margin-bottom: 25px;">
                         <label class="map-select-card" style="cursor: pointer; text-align: center; padding: 15px; border: 2px solid #555; border-radius: 8px; transition: transform 0.2s; background: rgba(0,0,0,0.3);">
-                            <img src="/Images/Map.png" alt="World of Monsters Map" style="width: 350px; height: 350px; object-fit: contain; border-radius: 8px; margin-bottom: 12px; display: block;">
+                            <img src="/Images/Maps/Map.png" alt="World of Monsters Map" style="width: 350px; height: 350px; object-fit: contain; border-radius: 8px; margin-bottom: 12px; display: block;">
                             <div style="font-size: 18px; font-weight: bold;">
                                 <input type="radio" name="map-choice" value="Map.png" checked style="margin-right: 8px; cursor: pointer; transform: scale(1.2);">
                                 World of Monsters
                             </div>
                         </label>
                         <label class="map-select-card" style="cursor: pointer; text-align: center; padding: 15px; border: 2px solid #555; border-radius: 8px; transition: transform 0.2s; background: rgba(0,0,0,0.3);">
-                            <img src="/Images/map-greek.png" alt="Greek Monsters Map" style="width: 350px; height: 350px; object-fit: contain; border-radius: 8px; margin-bottom: 12px; display: block;">
+                            <img src="/Images/Maps/map-greek.png" alt="Greek Monsters Map" style="width: 350px; height: 350px; object-fit: contain; border-radius: 8px; margin-bottom: 12px; display: block;">
                             <div style="font-size: 18px; font-weight: bold;">
                                 <input type="radio" name="map-choice" value="map-greek.png" style="margin-right: 8px; cursor: pointer; transform: scale(1.2);">
                                 Greek Monsters
@@ -262,7 +262,7 @@
                                 </linearGradient>
                             </defs>
                             <!-- Background Map Image -->
-                            <image id="game-map-image" href="/Images/Map.png?v=2" x="0" y="0" width="1304" height="1206" />
+                            <image id="game-map-image" href="/Images/Maps/Map.png?v=2" x="0" y="0" width="1304" height="1206" />
                             <!-- Paths, nodes, characters, and items will be rendered dynamically here -->
                         </svg>
 
@@ -337,10 +337,10 @@
     <script src="js/websocket.js?v=4"></script>
     <script src="js/lobby.js?v=1"></script>
     <script src="js/modals.js?v=2"></script>
-    <script src="js/ui-sync.js?v=9"></script>
+    <script src="js/ui-sync.js?v=10"></script>
     <script src="js/sidebar.js?v=10"></script>
     <script src="js/notifications.js?v=3"></script>
-    <script src="js/map-render.js?v=6"></script>
+    <script src="js/map-render.js?v=7"></script>
     <script src="js/actions.js?v=8"></script>
     <script src="js/zoom-pan.js?v=1"></script>
 </body>

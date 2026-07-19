@@ -9,8 +9,8 @@ function updateGameUI() {
         applyThemeForMap(gameState.selected_map);
         const mapImage = document.getElementById("game-map-image");
         if (mapImage) {
-            mapImage.setAttribute("href", `/Images/${gameState.selected_map}?v=2`);
-            mapImage.setAttributeNS("http://www.w3.org/1999/xlink", "href", `/Images/${gameState.selected_map}?v=2`);
+            mapImage.setAttribute("href", `/Images/Maps/${gameState.selected_map}?v=2`);
+            mapImage.setAttributeNS("http://www.w3.org/1999/xlink", "href", `/Images/Maps/${gameState.selected_map}?v=2`);
         }
     }
 

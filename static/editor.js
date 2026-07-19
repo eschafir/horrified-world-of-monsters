@@ -28,12 +28,12 @@ elBtnLoad.addEventListener("click", loadMap);
 elBtnSave.addEventListener("click", saveMap);
 elMapSelect.addEventListener("change", () => {
     selectedMap = elMapSelect.value;
-    elMapImage.setAttribute("href", `/Images/${selectedMap}?v=2`);
+    elMapImage.setAttribute("href", `/Images/Maps/${selectedMap}?v=2`);
 });
 
 async function loadMap() {
     selectedMap = elMapSelect.value;
-    elMapImage.setAttribute("href", `/Images/${selectedMap}?v=2`);
+    elMapImage.setAttribute("href", `/Images/Maps/${selectedMap}?v=2`);
     try {
         const res = await fetch(`/api/map?map=${encodeURIComponent(selectedMap)}`);
         mapData = await res.json();
