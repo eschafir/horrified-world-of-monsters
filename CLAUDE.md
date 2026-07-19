@@ -60,7 +60,7 @@ Every hardcoded game constant lives in JSON here instead of Python literals, loa
 
   Each `execute_*` method starts with `check_turn()` to enforce turn/phase ownership before mutating state. Nearly every async monster-phase method threads an optional `broadcast_fn` callback down from `src/app.py`'s websocket handler — keep that parameter consistent if you touch these methods.
 
-- Combat dice faces are `Hit`/`Hit`/`Power`/`Blank`/`Blank`/`Blank`. Rolling `Power` during a monster's own attack moves `frenzy_marker` to that monster and calls `trigger_monster_power`.
+- Combat dice faces are `Hit`/`Hit`/`Hit`/`Blank`/`Blank`/`Power`. Rolling `Power` during a monster's own attack moves `frenzy_marker` to that monster and calls `trigger_monster_power`.
 - The monster turn (`run_monster_phase` → `resolve_event` → `activate_monster` → `perform_attack`/`perform_attack_citizen`) is async and uses `asyncio.sleep()` between steps purely so the client has time to animate each step; a `monster_phase_running` flag on the room (set in `src/app.py`) guards against a double-draw race from the client.
 
 ### Client (`static/js/*.js`)

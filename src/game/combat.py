@@ -216,7 +216,7 @@ class CombatMixin:
         powers = 0
 
         for _ in range(dice):
-            roll = random.choice(["Hit", "Hit", "Power", "Blank", "Blank", "Blank"])
+            roll = random.choice(["Hit", "Hit", "Hit", "Blank", "Blank", "Power"])
             self.combat_rolls.append(roll)
             if roll == "Hit":
                 hits += 1
@@ -285,7 +285,7 @@ class CombatMixin:
         powers = 0
         rolls = []
         for _ in range(dice):
-            roll = random.choice(["Hit", "Hit", "Power", "Blank", "Blank", "Blank"])
+            roll = random.choice(["Hit", "Hit", "Hit", "Blank", "Blank", "Power"])
             rolls.append(roll)
             if roll == "Hit":
                 hits += 1
