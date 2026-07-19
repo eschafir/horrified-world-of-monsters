@@ -152,6 +152,16 @@ class CombatMixin:
                 self.add_log(msg)
                 self.add_power_event("Basilisk", "Petrifying Gaze", msg)
 
+        elif monster == "Cerberus":
+            if self.deck:
+                discarded = self.deck.pop()
+                self.discard.append(discarded)
+                msg = f"Infernal Howl! Cerberus bays at the gates - the top Monster Card ({discarded['name']}) is discarded."
+            else:
+                msg = "Infernal Howl! Cerberus bays at the gates, but the Monster deck is already empty."
+            self.add_log(msg)
+            self.add_power_event("Cerberus", "Infernal Howl", msg)
+
         elif monster == "Jiangshi" and self.players:
             next_idx = (self.turn_player_idx + 1) % len(self.players)
             next_player = self.players[next_idx]["name"]

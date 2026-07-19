@@ -239,6 +239,18 @@ document.getElementById("action-advance").addEventListener("click", () => {
         }
     }
 
+    if (gameState.active_monsters.includes("Cerberus")) {
+        const cerState = gameState.monster_states["Cerberus"];
+        const doorToken = (gameState.lair_tokens || []).find(t => t.type === "cerberus" && t.revealed);
+        const atDoor = doorToken && loc === doorToken.location;
+        const allRemoved = cerState.door_tokens.every(t => t.removed);
+        const atCerberus = allRemoved && loc === gameState.monster_locations["Cerberus"];
+        if (atDoor || atCerberus) {
+            document.getElementById('gtab-btn-monsters').click();
+            return;
+        }
+    }
+
     if (gameState.active_monsters.includes("Siren") && loc === gameState.monster_locations["Siren"]) {
         const sirenState = gameState.monster_states["Siren"];
         if (sirenState.pending_flips > 0) {
@@ -285,6 +297,18 @@ document.getElementById("action-defeat").addEventListener("click", () => {
 
     if (!targetMonster) {
         showAlertToast("You must be at the same location as a monster (and meet its requirements) to Defeat them!");
+        return;
+    }
+
+    if (targetMonster === "Cerberus") {
+        const cerState = gameState.monster_states["Cerberus"];
+        const allRemoved = cerState.door_tokens.every(t => t.removed);
+        if (!allRemoved) {
+            showAlertToast("All five door tokens must be removed before Cerberus can be defeated.");
+            return;
+        }
+        // No item cost - luring him to the door (via the Monsters panel) already paid the price.
+        sendMsg({ action: "defeat", monster: "Cerberus", args: {} });
         return;
     }
 
@@ -806,6 +830,62 @@ window.advanceBasilisk = () => {
         items: myState.items,
         validateFn: (sel) => ({ valid: sel.length === 1, message: sel.length ? "" : "Select one item." }),
         onConfirm: (ids) => sendMsg({ action: "advance", monster: "Basilisk", args: { item_id: ids[0] } })
+    });
+};
+
+window.rollCerberusDoor = () => {
+    const myState = gameState.heroes_state[playerName];
+    openItemPicker({
+        title: "Roll the Underworld Door",
+        description: "Discard a Blue item to roll 3 dice.",
+        items: myState.items.filter(i => i.color === "Blue"),
+        validateFn: (sel) => ({ valid: sel.length === 1, message: sel.length ? "" : "Select one Blue item." }),
+        onConfirm: (ids) => sendMsg({ action: "advance", monster: "Cerberus", args: { type: "roll", item_id: ids[0] } })
+    });
+};
+
+// Which dice the hero has tentatively picked to reroll - purely local UI state until
+// they commit to spending a Green item on it (see rerollCerberusDice below).
+window.cerberusDieSelection = window.cerberusDieSelection || new Set();
+
+window.toggleCerberusDie = (idx) => {
+    if (window.cerberusDieSelection.has(idx)) window.cerberusDieSelection.delete(idx);
+    else window.cerberusDieSelection.add(idx);
+    renderMonstersStatusPanel();
+};
+
+window.rerollCerberusDice = () => {
+    const sel = Array.from(window.cerberusDieSelection);
+    if (sel.length === 0) {
+        showAlertToast("Select at least one die to reroll first (click a die above).");
+        return;
+    }
+    const myState = gameState.heroes_state[playerName];
+    openItemPicker({
+        title: "Reroll Dice",
+        description: `Discard a Green item with strength ${sel.length}+ to reroll ${sel.length} selected di${sel.length !== 1 ? "ce" : "e"}.`,
+        items: myState.items.filter(i => i.color === "Green" && i.strength >= sel.length),
+        validateFn: (s) => ({ valid: s.length === 1, message: s.length ? "" : "Select one Green item." }),
+        onConfirm: (ids) => {
+            sendMsg({ action: "advance", monster: "Cerberus", args: { type: "reroll", item_id: ids[0], die_indices: sel } });
+            window.cerberusDieSelection = new Set();
+        }
+    });
+};
+
+window.removeCerberusToken = (tokenId) => {
+    sendMsg({ action: "advance", monster: "Cerberus", args: { type: "remove_token", token_id: tokenId } });
+    window.cerberusDieSelection = new Set();
+};
+
+window.lureCerberus = () => {
+    const myState = gameState.heroes_state[playerName];
+    openItemPicker({
+        title: "Lure Cerberus to the Door",
+        description: "Discard a Green item to move Cerberus a number of spaces equal to its strength.",
+        items: myState.items.filter(i => i.color === "Green"),
+        validateFn: (sel) => ({ valid: sel.length === 1, message: sel.length ? "" : "Select one Green item." }),
+        onConfirm: (ids) => sendMsg({ action: "advance", monster: "Cerberus", args: { type: "lure", item_id: ids[0] } })
     });
 };
 

@@ -96,8 +96,20 @@ const MONSTER_ACCENT_MAP = {
     "Jiangshi": { border: "rgba(255,51,102,0.6)",  glow: "rgba(255,51,102,0.3)"  },
     "Cthulhu":  { border: "rgba(153,51,255,0.6)",  glow: "rgba(153,51,255,0.3)"  },
     "Siren":    { border: "rgba(51,255,204,0.6)",  glow: "rgba(51,255,204,0.3)"  },
-    "Basilisk": { border: "rgba(107,168,60,0.6)",  glow: "rgba(107,168,60,0.3)"  }
+    "Basilisk": { border: "rgba(107,168,60,0.6)",  glow: "rgba(107,168,60,0.3)"  },
+    "Cerberus": { border: "rgba(153,51,51,0.6)",   glow: "rgba(153,51,51,0.3)"   }
 };
+
+// Client-side mirror of the server's _roll_satisfies_glyphs (Cerberus) - purely cosmetic
+// here (highlighting which door tokens look removable right now); the server is still
+// the sole authority on whether a remove_token action actually succeeds.
+function rollSatisfiesGlyphs(rolled, required) {
+    const counts = {};
+    rolled.forEach(g => counts[g] = (counts[g] || 0) + 1);
+    const reqCounts = {};
+    required.forEach(g => reqCounts[g] = (reqCounts[g] || 0) + 1);
+    return Object.keys(reqCounts).every(g => (counts[g] || 0) >= reqCounts[g]);
+}
 
 // Generic multi-select item-card modal used for monster puzzle/defeat item costs
 // (Yeti's one-of-each-color, Sphinx/Jiangshi's combined-strength thresholds, single-item
@@ -1156,6 +1168,67 @@ function renderMonstersStatusPanel() {
         });
         details += `</div>`;
         details += `<p style="font-size: 0.68rem; color: #a491c3; margin-top:6px;">Temple offering value so far: <strong>${cardValue}</strong> (each item's strength +2, counts towards the 30+ Defeat total).</p>`;
+    } else if (m === "Cerberus") {
+        const cer_state = gameState.monster_states["Cerberus"];
+        const myLoc = gameState.heroes_state[playerName] ? gameState.heroes_state[playerName].location : null;
+        const doorToken = (gameState.lair_tokens || []).find(t => t.type === "cerberus" && t.revealed);
+        const allRemoved = cer_state.door_tokens.every(t => t.removed);
+        const roll = cer_state.current_roll;
+        const isMyRoll = roll && roll.hero === playerName;
+        const glyphIcon = (g) => ({ "Hit": "⚔️", "Power": "❗", "Blank": "—" }[g] || g);
+
+        details += `<p style="font-size: 0.72rem; color: #a491c3;">Reveal the Underworld Door among the Lair tokens, then discard a Blue item there to roll 3 dice. Discard Green items to reroll dice (up to the item's strength each). Remove a token once your roll covers its glyphs.</p>`;
+
+        if (!doorToken) {
+            details += `<p style="font-size: 0.7rem; color: #ffd533;">The Underworld Door hasn't been revealed yet.</p>`;
+        } else {
+            details += `<p style="font-size: 0.72rem; color: #b0a0cf;">Underworld Door: <strong>${doorToken.location}</strong></p>`;
+        }
+
+        details += `<div class="monster-puzzle-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">`;
+        cer_state.door_tokens.forEach(token => {
+            const canRemove = isMyRoll && !token.removed && rollSatisfiesGlyphs(roll.dice, token.glyphs);
+            details += `
+                <div class="puzzle-slot ${token.removed ? 'filled' : ''}" style="height:50px; flex-direction:column; gap:2px; font-size:0.6rem; cursor:${canRemove ? 'pointer' : 'default'};" ${canRemove ? `onclick="removeCerberusToken(${token.id})"` : ''}>
+                    <span>${token.glyphs.map(glyphIcon).join(' ')}</span>
+                    ${token.removed ? `<span style="color:#33ff66;">Removed</span>` : (canRemove ? `<span style="color:#ffd533;">Remove!</span>` : '')}
+                </div>
+            `;
+        });
+        details += `</div>`;
+
+        if (doorToken && myLoc === doorToken.location) {
+            if (!roll) {
+                details += `<button class="btn btn-secondary btn-small" style="width:100%; margin-top:8px;" onclick="rollCerberusDoor()">Discard a Blue item to roll 3 dice</button>`;
+            } else if (isMyRoll) {
+                details += `
+                    <div style="margin-top:8px;">
+                        <p style="font-size:0.68rem; color:#a491c3; margin-bottom:4px;">Current roll (click dice to select for reroll):</p>
+                        <div style="display:flex; gap:8px; justify-content:center;">
+                            ${roll.dice.map((d, idx) => `
+                                <div class="die-button ${window.cerberusDieSelection && window.cerberusDieSelection.has(idx) ? 'rolled' : ''}" style="width:44px; height:44px; font-size:1.1rem;" onclick="toggleCerberusDie(${idx})">${glyphIcon(d)}</div>
+                            `).join('')}
+                        </div>
+                        <button class="btn btn-secondary btn-small" style="width:100%; margin-top:6px;" onclick="rerollCerberusDice()">Discard a Green item to reroll selected dice</button>
+                    </div>
+                `;
+            } else {
+                details += `<p style="font-size:0.68rem; color:#a491c3; margin-top:6px;">${roll.hero} has a pending roll here.</p>`;
+            }
+        }
+
+        if (allRemoved) {
+            const cerLoc = gameState.monster_locations["Cerberus"];
+            if (cerLoc === "Defeated") {
+                // handled by the isDefeated banner below
+            } else if (doorToken && cerLoc === doorToken.location) {
+                details += `<p style="font-size:0.7rem; color:#33ff66; margin-top:8px;">Cerberus is at the Underworld Door - use a Defeat action to return him to Hades!</p>`;
+            } else if (myLoc === cerLoc) {
+                details += `<button class="btn btn-secondary btn-small" style="width:100%; margin-top:8px;" onclick="lureCerberus()">Discard a Green item to lure Cerberus towards the door</button>`;
+            } else {
+                details += `<p style="font-size:0.68rem; color:#a491c3; margin-top:8px;">All tokens removed! Get to Cerberus's location (<strong>${cerLoc}</strong>) to lure him back to the door.</p>`;
+            }
+        }
     }
 
     if (isDefeated) {

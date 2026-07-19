@@ -1,21 +1,51 @@
 {
     "id": "cerberus",
     "name": "Cerberus",
+    "displayName": "Cerberus",
+    "summary": "Reveal the Underworld Door, roll dice to remove its 5 tokens, then lure Cerberus back to the door with Green items to defeat him.",
     "origin_map": "map-greek.png",
-    "selectable": false,
+    "selectable": true,
     "complexity": "Low",
-    "hasLair": false,
+    "hasLair": true,
     "frenzyLevel": 1,
-    "frenzySymbols": [],
-    "objective": "Defeat Cerberus.",
+    "frenzySymbols": [
+        { "symbol": "Dagger", "color": "Orange" },
+        { "symbol": "Ghost", "color": "Yellow" },
+        { "symbol": "Gear", "color": "Brown" }
+    ],
+    "objective": "Cerberus has escaped from the underworld! You must unlock the door to the underworld and return him to his master, Hades.",
     "phases": [
         {
             "id": 1,
             "name": "Main Map",
-            "setup": [],
-            "powers": [],
-            "steps": [],
-            "notes": ["Scaffolding only - not yet implemented, not selectable in the monster picker."]
+            "setup": [
+                {
+                    "action": "PlaceMonster",
+                    "target": "Cerberus",
+                    "locations": ["Bay of Ghosts"]
+                }
+            ],
+            "powers": [
+                {
+                    "name": "Infernal Howl",
+                    "description": "The top Monster Card is discarded."
+                }
+            ],
+            "steps": [
+                {
+                    "number": 1,
+                    "title": "Unlock the Underworld Door",
+                    "type": "Advance",
+                    "description": "Reveal the Underworld Door (hidden among the Lair tokens). At its location, discard a Blue item to roll 3 dice. You may discard Green items to reroll any of those dice, up to the item's strength each. Remove a door token once your roll contains the glyphs it needs. Five door tokens guard the way."
+                },
+                {
+                    "number": 2,
+                    "title": "Return Him to Hades",
+                    "type": "Defeat",
+                    "description": "Once all five door tokens are removed, at Cerberus's location discard a Green item to move him towards the Underworld Door a number of spaces equal to the item's strength. Once Cerberus is at the door, use a Defeat action to return him to the underworld."
+                }
+            ],
+            "notes": []
         }
     ]
 }

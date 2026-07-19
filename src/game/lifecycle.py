@@ -206,11 +206,13 @@ class LifecycleMixin:
 
         # Lair Tokens: a single shared pool of 4 fixed board locations. Exactly one hides
         # the true Yeti Cave (if Yeti is active), one hides the true Jiangshi Moon Shrine
-        # (if Jiangshi is active), and the rest are blank decoys - matching the physical
-        # Lair Token art (yeti/jiangshi/blank backs). Only ever 4 tokens total, regardless
-        # of which of those two monsters are in play.
+        # (if Jiangshi is active), one hides Cerberus's Underworld Door (if Cerberus is
+        # active), and the rest are blank decoys - matching the physical Lair Token art
+        # (yeti/jiangshi/blank backs; Cerberus reuses the same reveal mechanic). Only ever
+        # 4 tokens total, regardless of how many of those three monsters are in play.
         self.lair_tokens = []
-        if "Yeti" in self.active_monsters or "Jiangshi" in self.active_monsters:
+        lair_hiding_monsters = ("Yeti", "Jiangshi", "Cerberus")
+        if any(m in self.active_monsters for m in lair_hiding_monsters):
             if self.selected_map == "map-greek.png":
                 lair_locs = ["Mount Iliad", "Statue of Talos", "Necropolis", "Gaseous Swamp"]
             else:
@@ -221,6 +223,8 @@ class LifecycleMixin:
                 lair_types.append("yeti")
             if "Jiangshi" in self.active_monsters:
                 lair_types.append("jiangshi")
+            if "Cerberus" in self.active_monsters:
+                lair_types.append("cerberus")
             while len(lair_types) < 4:
                 lair_types.append("blank")
             random.shuffle(lair_types)
@@ -335,6 +339,22 @@ class LifecycleMixin:
                         {"id": 2, "location": self.get_safe_loc("Temple of Nyx"), "filled": False, "item": None},
                         {"id": 3, "location": self.get_safe_loc("Temple of Zeus"), "filled": False, "item": None}
                     ]
+                }
+            elif monster == "Cerberus":
+                # 5 door tokens, escalating rarity: a lone "!" is the easiest (any one of
+                # 3 dice), the two-glyph token needs 2 Hits, and the three 3-glyph tokens
+                # need an exact triple - "Hit"/"Power" match the combat die's own
+                # vocabulary (2 Hit, 1 Power, 3 Blank faces), since these are the same
+                # dice, just described as "Strike"/"!"/"Blank" in the rules text.
+                self.monster_states["Cerberus"] = {
+                    "door_tokens": [
+                        {"id": 0, "glyphs": ["Power"], "removed": False},
+                        {"id": 1, "glyphs": ["Hit", "Hit"], "removed": False},
+                        {"id": 2, "glyphs": ["Hit", "Hit", "Power"], "removed": False},
+                        {"id": 3, "glyphs": ["Blank", "Blank", "Power"], "removed": False},
+                        {"id": 4, "glyphs": ["Hit", "Hit", "Hit"], "removed": False}
+                    ],
+                    "current_roll": None  # {"dice": [...], "hero": player_name} while a roll is pending a reroll/token removal
                 }
 
         if self.active_monsters:

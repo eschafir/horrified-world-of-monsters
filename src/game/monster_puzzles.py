@@ -1,12 +1,23 @@
 """Per-monster Advance (puzzle progress) and Defeat logic. Each monster's mini-puzzle
 and defeat condition is a completely different shape - read the relevant branch fully
 before touching monster logic, don't assume symmetry between monsters."""
-from typing import Dict
+import random
+from collections import Counter
+from typing import Dict, List
 
 from src.pathfinding import find_shortest_path
 
+DIE_FACES = ["Hit", "Hit", "Power", "Blank", "Blank", "Blank"]
+
 
 class MonsterPuzzlesMixin:
+    def _roll_satisfies_glyphs(self, rolled: List[str], required: List[str]) -> bool:
+        """True if `rolled` contains at least as many of each glyph as `required` -
+        extra dice beyond what a door token needs don't prevent removing it."""
+        rolled_counts = Counter(rolled)
+        required_counts = Counter(required)
+        return all(rolled_counts[g] >= n for g, n in required_counts.items())
+
     def _check_sphinx_solved(self, sp_state: Dict):
         grid = sp_state["grid"]
         if not all(c["filled"] for c in grid):
@@ -38,7 +49,11 @@ class MonsterPuzzlesMixin:
             return False
 
         h_state = self.heroes_state[player_name]
-        if h_state["ap"] < 1:
+        # Cerberus's reroll/remove_token sub-steps continue a roll already paid for by
+        # the initial "roll" sub-step (which does spend 1 AP) - they're part of resolving
+        # that same action, not a fresh one, so they're exempt from this gate.
+        is_free_cerberus_substep = (monster == "Cerberus" and args.get("type") in ("reroll", "remove_token"))
+        if not is_free_cerberus_substep and h_state["ap"] < 1:
             return False
 
         loc = h_state["location"]
@@ -61,7 +76,7 @@ class MonsterPuzzlesMixin:
             h_state["ap"] -= 1
             total = sum(i["strength"] for i in items)
             names = ", ".join(i["name"] for i in items)
-            label = {"yeti": "the TRUE Yeti Cave!", "jiangshi": "the TRUE Moon Shrine!", "blank": "a false trail."}[token["type"]]
+            label = {"yeti": "the TRUE Yeti Cave!", "jiangshi": "the TRUE Moon Shrine!", "cerberus": "the TRUE Underworld Door!", "blank": "a false trail."}[token["type"]]
             self.add_log(f"{player_name} discarded {names} (strength {total}) to reveal the Lair token at {loc}. It is {label}")
             return True
 
@@ -146,6 +161,98 @@ class MonsterPuzzlesMixin:
             h_state["ap"] -= 1
             self.add_log(f"{player_name} placed {item['name']} ({item['color']} {item['strength']}) at {loc} to weaken the Basilisk's scales.")
             return True
+
+        if monster == "Cerberus":
+            cer_state = self.monster_states["Cerberus"]
+            action_type = args.get("type")
+
+            if action_type == "lure":
+                if not all(t["removed"] for t in cer_state["door_tokens"]):
+                    self.add_log("All five door tokens must be removed before Cerberus can be lured to the door.")
+                    return False
+                if loc != self.monster_locations["Cerberus"]:
+                    self.add_log("Must be at Cerberus's location to lure him.")
+                    return False
+                item_id = args.get("item_id")
+                item = next((i for i in h_state["items"] if i["id"] == item_id), None)
+                if not item or item["color"] != "Green":
+                    self.add_log("Luring Cerberus towards the Underworld Door requires a Green item.")
+                    return False
+                door_loc = self._get_true_lair_location("cerberus")
+                h_state["items"].remove(item)
+                self.discarded_items.append(item)
+                h_state["ap"] -= 1
+                remaining = item["strength"]
+                cur = self.monster_locations["Cerberus"]
+                while remaining > 0 and cur != door_loc and door_loc is not None:
+                    nxt = find_shortest_path(cur, {door_loc}, self.adjacency_list)
+                    if not nxt or nxt == cur:
+                        break
+                    cur = nxt
+                    remaining -= 1
+                self.monster_locations["Cerberus"] = cur
+                self.add_log(f"{player_name} discarded {item['name']} to lure Cerberus to {cur}.")
+                return True
+
+            # The remaining sub-actions all require being at the revealed Underworld Door.
+            door_token = next((t for t in self.lair_tokens if t["type"] == "cerberus" and t["revealed"]), None)
+            if not door_token or loc != door_token["location"]:
+                self.add_log("Must be at the revealed Underworld Door to work its tokens.")
+                return False
+
+            if action_type == "roll":
+                item_id = args.get("item_id")
+                item = next((i for i in h_state["items"] if i["id"] == item_id), None)
+                if not item or item["color"] != "Blue":
+                    self.add_log("Must discard a Blue item to roll the door's dice.")
+                    return False
+                h_state["items"].remove(item)
+                self.discarded_items.append(item)
+                h_state["ap"] -= 1
+                dice = [random.choice(DIE_FACES) for _ in range(3)]
+                cer_state["current_roll"] = {"dice": dice, "hero": player_name}
+                self.add_log(f"{player_name} discarded {item['name']} to roll the Underworld Door's dice: {', '.join(dice)}.")
+                return True
+
+            elif action_type == "reroll":
+                roll = cer_state.get("current_roll")
+                if not roll or roll["hero"] != player_name:
+                    self.add_log("Roll the dice first before rerolling.")
+                    return False
+                item_id = args.get("item_id")
+                die_indices = args.get("die_indices", [])
+                item = next((i for i in h_state["items"] if i["id"] == item_id), None)
+                if not item or item["color"] != "Green":
+                    self.add_log("Must discard a Green item to reroll dice.")
+                    return False
+                if not die_indices or len(die_indices) > item["strength"] or any(idx < 0 or idx >= len(roll["dice"]) for idx in die_indices):
+                    self.add_log(f"Select up to {item['strength']} dice to reroll (this item's strength).")
+                    return False
+                h_state["items"].remove(item)
+                self.discarded_items.append(item)
+                for idx in die_indices:
+                    roll["dice"][idx] = random.choice(DIE_FACES)
+                self.add_log(f"{player_name} discarded {item['name']} to reroll {len(die_indices)} di(c)e: {', '.join(roll['dice'])}.")
+                return True
+
+            elif action_type == "remove_token":
+                roll = cer_state.get("current_roll")
+                if not roll or roll["hero"] != player_name:
+                    self.add_log("Roll the dice first before removing a token.")
+                    return False
+                token_id = args.get("token_id")
+                token = next((t for t in cer_state["door_tokens"] if t["id"] == token_id and not t["removed"]), None)
+                if not token:
+                    return False
+                if not self._roll_satisfies_glyphs(roll["dice"], token["glyphs"]):
+                    self.add_log("That roll doesn't match this token's glyphs.")
+                    return False
+                token["removed"] = True
+                cer_state["current_roll"] = None
+                self.add_log(f"{player_name} matched the roll and tore a door token free!")
+                return True
+
+            return False
 
         if monster == "Yeti":
             # Placing a Yeti Child on the mat is a second, distinct action from guiding it
@@ -442,6 +549,32 @@ class MonsterPuzzlesMixin:
             self.monster_locations["Basilisk"] = "Defeated"
             self._reassign_frenzy_if_needed()
             self.add_log(f"{player_name} spent {total} combined item value ({card_value} from the Temple offerings) to shatter the Basilisk's cursed scales!")
+            self.check_victory()
+            return True
+
+        if monster == "Cerberus":
+            cer_state = self.monster_states["Cerberus"]
+            door_loc = self._get_true_lair_location("cerberus")
+            all_removed = all(t["removed"] for t in cer_state["door_tokens"])
+            cerberus_at_door = (door_loc is not None and self.monster_locations["Cerberus"] == door_loc)
+            hero_with_cerberus = (loc == self.monster_locations["Cerberus"])
+
+            if not all_removed:
+                self.add_log("All five door tokens must be removed before Cerberus can be defeated.")
+                return False
+            if not cerberus_at_door:
+                self.add_log(f"Cerberus must be lured back to the Underworld Door ({door_loc}) before he can be defeated.")
+                return False
+            if not hero_with_cerberus:
+                self.add_log("Must be at Cerberus's location to defeat him.")
+                return False
+
+            h_state["ap"] -= 1
+            self.active_monsters.remove("Cerberus")
+            self.defeated_monsters.append("Cerberus")
+            self.monster_locations["Cerberus"] = "Defeated"
+            self._reassign_frenzy_if_needed()
+            self.add_log(f"{player_name} returns Cerberus through the Underworld Door to his master, Hades! Cerberus is defeated!")
             self.check_victory()
             return True
 
