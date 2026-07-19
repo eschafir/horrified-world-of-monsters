@@ -1274,15 +1274,13 @@ function renderSVGMap() {
         const trackY = 60;
         const terrorCoords = gameState.terror_track_coordinates;
 
-        // Compute how far into the crossfade animation we are (survives multiple re-renders).
+        // Compute how far into the slide animation we are (survives multiple re-renders).
         const terrorElapsed = terrorTransitionFrom !== null
             ? performance.now() - terrorTransitionStartTime
             : Infinity;
-        const terrorXfadeActive = terrorTransitionFrom !== null
+        const terrorSlideActive = terrorTransitionFrom !== null
             && terrorTransitionFrom !== gameState.terror_level
             && terrorElapsed < TERROR_ANIM_MS;
-        // Negative animation-delay resumes the CSS animation mid-stream on re-render.
-        const terrorAnimDelay = terrorXfadeActive ? `-${Math.floor(terrorElapsed)}ms` : "0ms";
 
         for (let i = 0; i <= 7; i++) {
             const slot = terrorCoords && terrorCoords[i];
@@ -1297,20 +1295,18 @@ function renderSVGMap() {
             // leaving the center hollow so the level number underneath stays visible.
             if (gameState.terror_level === i) {
                 const ring = createNeonRing(slotX, slotY, slotR, slotPoints);
-                if (terrorXfadeActive) {
-                    ring.classList.add("neon-ring-entering");
-                    ring.style.animationDelay = terrorAnimDelay;
+                if (terrorSlideActive) {
+                    const fromSlot = terrorCoords && terrorCoords[terrorTransitionFrom];
+                    if (fromSlot) {
+                        // CSS var drives the keyframe start point; negative delay resumes
+                        // the animation mid-stream on each re-render during the transition.
+                        const dx = fromSlot.x - slotX;
+                        ring.classList.add("neon-ring-sliding");
+                        ring.style.setProperty("--terror-dx", `${dx}px`);
+                        ring.style.animationDelay = `-${Math.floor(terrorElapsed)}ms`;
+                    }
                 }
                 terrorTrackG.appendChild(ring);
-            }
-
-            // Old ring: fades out while the new ring fades in; persists across re-renders
-            // for the full TERROR_ANIM_MS window using the elapsed-time offset.
-            if (terrorXfadeActive && terrorTransitionFrom === i) {
-                const oldRing = createNeonRing(slotX, slotY, slotR, slotPoints);
-                oldRing.classList.add("neon-ring-leaving");
-                oldRing.style.animationDelay = terrorAnimDelay;
-                terrorTrackG.appendChild(oldRing);
             }
             
             // Add a draggable hitbox for the terror track slot
