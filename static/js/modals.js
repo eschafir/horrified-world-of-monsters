@@ -144,6 +144,9 @@ function showLairImageModal(lairType) {
     } else if (lairType === "jiangshi") {
         imgSrc = "/Images/Lair Tokens/jianshi_lair_token.png";
         title = "Jiangshi Lair";
+    } else if (lairType === "cerberus") {
+        imgSrc = "/Images/Lair Tokens/cerberus_lair_token.png";
+        title = "Underworld Door";
     }
     const html = `
         <h2 style="margin-top:0;">${title}</h2>

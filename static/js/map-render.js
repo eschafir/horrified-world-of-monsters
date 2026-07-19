@@ -571,6 +571,7 @@ function renderSVGMap() {
         { id: "pattern-lair-back", url: "/Images/Lair Tokens/lair_token_back.png" },
         { id: "pattern-lair-yeti", url: "/Images/Lair Tokens/yeti_lair_token.png" },
         { id: "pattern-lair-jiangshi", url: "/Images/Lair Tokens/jianshi_lair_token.png" },
+        { id: "pattern-lair-cerberus", url: "/Images/Lair Tokens/cerberus_lair_token.png" },
         { id: "pattern-lair-blank", url: "/Images/Lair Tokens/blank_lair_token.png" }
     ];
     lairImages.forEach(lairImg => {
@@ -1053,6 +1054,7 @@ function renderSVGMap() {
                 const getLairUrl = (type) => {
                     if (type === "yeti") return "url(#pattern-lair-yeti)";
                     if (type === "jiangshi") return "url(#pattern-lair-jiangshi)";
+                    if (type === "cerberus") return "url(#pattern-lair-cerberus)";
                     return "url(#pattern-lair-blank)";
                 };
                 const patId = char.flipped ? getLairUrl(char.lair_type) : "url(#pattern-lair-back)";
