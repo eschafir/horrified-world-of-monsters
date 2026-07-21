@@ -184,6 +184,89 @@ window.openItemPicker = ({ title, description, items, validateFn, onConfirm, con
     refresh();
 };
 
+// Jiangshi's Coin Sword: an 18-cell sword-shaped pattern (gameState.monster_states
+// .Jiangshi.sword_cells) tiled by placing polyomino tokens (gameState.coin_sword_tokens).
+// These geometry helpers mirror _rotate_coin_sword_cells/the fit check in
+// src/game/monster_puzzles.py exactly, so the client can highlight valid placements
+// before sending the action (the server re-validates independently either way).
+function rotateJiangshiShapeCells(cells, rotation) {
+    const rotated = cells.map(([dr, dc]) => {
+        if (rotation === 90) return [dc, -dr];
+        if (rotation === 180) return [-dr, -dc];
+        if (rotation === 270) return [-dc, dr];
+        return [dr, dc];
+    });
+    const minR = Math.min(...rotated.map(c => c[0]));
+    const minC = Math.min(...rotated.map(c => c[1]));
+    return rotated.map(([r, c]) => [r - minR, c - minC]);
+}
+
+function jiangshiShapeFitsAt(normCells, anchorRow, anchorCol, patternSet, filledSet) {
+    return normCells.every(([dr, dc]) => {
+        const key = `${anchorRow + dr},${anchorCol + dc}`;
+        return patternSet.has(key) && !filledSet.has(key);
+    });
+}
+
+// Renders the 18-cell sword pattern with per-cell data-row/data-col attributes so the
+// drag-and-drop code in actions.js can hit-test the grid by mouse/touch position.
+// `interactive` (default true) makes filled cells click-to-remove; the drag workbench
+// renders with interactive:false since clicking during a placement flow shouldn't pull
+// tokens back off the board. `gridId` defaults to "coin-sword-grid" (the main status
+// panel's copy) - the workbench modal passes a distinct id since both can be in the DOM
+// simultaneously (the sidebar panel stays mounted behind the modal overlay).
+function renderJiangshiSwordGrid(js_state, options = {}) {
+    const interactive = options.interactive !== false;
+    const gridId = options.gridId || "coin-sword-grid";
+    const cells = js_state.sword_cells;
+    const maxRow = Math.max(...cells.map(c => c.row));
+    const maxCol = Math.max(...cells.map(c => c.col));
+    const cellByKey = {};
+    cells.forEach(c => cellByKey[`${c.row},${c.col}`] = c);
+    const pieceById = {};
+    (js_state.placed_pieces || []).forEach(p => pieceById[p.piece_id] = p);
+
+    let html = `<div id="${gridId}" style="display:grid; grid-template-columns: repeat(${maxCol + 1}, ${JIANGSHI_CELL_PX}px); grid-auto-rows:${JIANGSHI_CELL_PX}px; gap:${JIANGSHI_CELL_GAP}px; justify-content:center; margin:10px auto;">`;
+    for (let r = 0; r <= maxRow; r++) {
+        for (let c = 0; c <= maxCol; c++) {
+            const cell = cellByKey[`${r},${c}`];
+            if (!cell) { html += `<div></div>`; continue; }
+            const sizeStyle = `width:${JIANGSHI_CELL_PX}px;height:${JIANGSHI_CELL_PX}px;`;
+            if (cell.filled) {
+                const piece = pieceById[cell.piece_id];
+                const colorClass = piece ? `req-${piece.color.toLowerCase()}` : '';
+                const clickAttr = interactive ? `onclick="removeJiangshiPiece('${cell.piece_id}')" title="Remove this token"` : '';
+                html += `<div class="puzzle-slot filled ${colorClass}" data-row="${r}" data-col="${c}" style="${sizeStyle} font-size:0.6rem;" ${clickAttr}>${piece ? piece.value : ''}</div>`;
+            } else {
+                html += `<div class="puzzle-slot coin-sword-dropcell" data-row="${r}" data-col="${c}" style="${sizeStyle}"></div>`;
+            }
+        }
+    }
+    html += `</div>`;
+    return html;
+}
+
+// Renders a token's shape as a small polyomino preview (used in the drag tray and the
+// floating drag ghost) - filled cells only, no border on empty bounding-box gaps so the
+// piece's silhouette reads clearly instead of as a solid rectangle.
+function renderJiangshiShapePreview(shape, rotation, cellPx, gapPx) {
+    const norm = rotateJiangshiShapeCells(shape.cells, rotation);
+    const maxR = Math.max(...norm.map(c => c[0]));
+    const maxC = Math.max(...norm.map(c => c[1]));
+    const filled = new Set(norm.map(c => `${c[0]},${c[1]}`));
+    let html = `<div style="display:grid; grid-template-columns: repeat(${maxC + 1}, ${cellPx}px); grid-auto-rows:${cellPx}px; gap:${gapPx}px;">`;
+    for (let r = 0; r <= maxR; r++) {
+        for (let c = 0; c <= maxC; c++) {
+            const isFilled = filled.has(`${r},${c}`);
+            html += isFilled
+                ? `<div class="puzzle-slot filled req-${shape.color.toLowerCase()}" style="width:${cellPx}px; height:${cellPx}px;"></div>`
+                : `<div style="width:${cellPx}px; height:${cellPx}px;"></div>`;
+        }
+    }
+    html += `</div>`;
+    return html;
+}
+
 // Shortest-path distances from `start`, client-side mirror of the server's
 // _bfs_distances - used to constrain Perk card location pickers (e.g. "move up to N
 // spaces") to only the reachable/legal set instead of the whole board.
@@ -1047,20 +1130,17 @@ function renderMonstersStatusPanel() {
     } else if (m === "Jiangshi") {
         const js_state = gameState.monster_states["Jiangshi"];
         const found_shrine = (gameState.lair_tokens || []).find(t => t.type === "jiangshi" && t.revealed);
+        const cellsFilled = js_state.sword_cells.filter(c => c.filled).length;
         details += `
             <p style="font-size: 0.8rem; color: #b0a0cf;">Moon Shrine: <strong>${found_shrine ? found_shrine.location : "Hidden"}</strong></p>
-            <p style="font-size: 0.72rem; color: #a491c3;">At the Shrine, discard an item matching a slot's strength. Defeat: discard 9+ combined Purple strength at Jiangshi's location.</p>
-            <div class="monster-puzzle-grid">
+            <p style="font-size: 0.72rem; color: #a491c3;">At the Shrine, discard an item and fit a matching-color Coin Sword token (value &le; the item's strength) into the pattern (${cellsFilled}/${js_state.sword_cells.length} filled). Defeat: discard 9+ combined Purple strength at Jiangshi's location.</p>
+            ${renderJiangshiSwordGrid(js_state)}
         `;
-        js_state.sword_slots.forEach(slot => {
-            details += `
-                <div class="puzzle-slot ${slot.filled ? 'filled' : ''}" ${slot.filled ? '' : `onclick="advanceJiangshi(${slot.id})"`}>
-                    ${slot.filled ? `Sealed (${slot.item.strength})` : `Needs ${slot.target_strength}`}
-                </div>
-            `;
-        });
-        details += `</div>`;
-        if (!found_shrine) {
+        if (found_shrine) {
+            details += `<div style="text-align:center; margin-top:8px;">
+                <button class="btn btn-secondary btn-small" onclick="advanceJiangshi()">Forge Coin Sword Token</button>
+            </div>`;
+        } else {
             details += `<p style="font-size: 0.68rem; color: #a491c3; margin-top:6px;">Use Advance at an unexplored location to search for the Shrine.</p>`;
         }
 

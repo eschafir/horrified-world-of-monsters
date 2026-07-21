@@ -26,6 +26,10 @@ CATEGORY_COLOR_MAP: Dict[str, str] = _load_json("item_colors.json")
 FRENZY_ORDER: Dict[str, int] = _load_json("frenzy_order.json")
 GREEK_LOCATION_MAP: Dict[str, str] = _load_json("greek_location_map.json")
 
+_jiangshi_coin_sword = _load_json("jiangshi_coin_sword.json")
+SWORD_PATTERN_CELLS: List[List[int]] = _jiangshi_coin_sword["pattern_cells"]
+COIN_SWORD_TOKENS: List[Dict] = _jiangshi_coin_sword["tokens"]
+
 _default_board = _load_json("board/default_board.json")
 NODE_COORDINATES: Dict[str, Dict] = _default_board["nodes"]
 TERROR_TRACK_COORDS: List[Dict] = _default_board["terror"]

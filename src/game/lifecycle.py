@@ -5,7 +5,7 @@ import time
 import uuid
 from typing import Dict, List, Optional
 
-from src.data_loader import FRENZY_ORDER, HERO_CLASSES, ITEMS_POOL, MONSTER_CARDS, MONSTER_CATALOG, PERK_CARDS, load_map_coordinates
+from src.data_loader import COIN_SWORD_TOKENS, FRENZY_ORDER, HERO_CLASSES, ITEMS_POOL, MONSTER_CARDS, MONSTER_CATALOG, PERK_CARDS, SWORD_PATTERN_CELLS, load_map_coordinates
 
 
 class LifecycleMixin:
@@ -272,14 +272,14 @@ class LifecycleMixin:
                 }
             elif monster == "Jiangshi":
 
-                # The Coin Sword pattern: 3 slots, each filled by discarding an item whose
-                # strength exactly matches that slot's target.
+                # The Coin Sword pattern: an 18-cell sword-shaped grid (SWORD_PATTERN_CELLS)
+                # tiled by discarding items and placing the matching Coin Sword polyomino
+                # token (COIN_SWORD_TOKENS) - each token's color must match the discarded
+                # item's color, and its printed value must be <= the item's strength.
                 self.monster_states["Jiangshi"] = {
-                    "sword_slots": [
-                        {"id": 0, "target_strength": 2, "filled": False, "item": None},
-                        {"id": 1, "target_strength": 3, "filled": False, "item": None},
-                        {"id": 2, "target_strength": 4, "filled": False, "item": None}
-                    ]
+                    "sword_cells": [{"row": r, "col": c, "filled": False, "piece_id": None} for r, c in SWORD_PATTERN_CELLS],
+                    "placed_pieces": [],  # {piece_id, shape_id, color, value, cells: [[r, c], ...]}
+                    "available_shape_ids": [t["id"] for t in COIN_SWORD_TOKENS]
                 }
             elif monster == "Sphinx":
                 # 2x3 riddle grid (2 rows, 3 columns): row/column sums must match the

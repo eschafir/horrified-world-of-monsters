@@ -55,7 +55,7 @@
                     "number": 1,
                     "title": "Construct the Coin Sword",
                     "type": "Advance",
-                    "description": "Reveal the Moon shrine. At that location, discard an item. Place a Coin sword token that matches the item's strength into the sword pattern or move or remove any already placed Coin sword token."
+                    "description": "Reveal the Moon Shrine. At that location, either discard an item and fit a same-color Coin Sword token (value at or below the item's strength) into the 18-space sword pattern, or remove an already-placed token."
                 },
                 {
                     "number": 2,

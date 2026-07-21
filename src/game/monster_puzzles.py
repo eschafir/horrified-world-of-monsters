@@ -2,9 +2,11 @@
 and defeat condition is a completely different shape - read the relevant branch fully
 before touching monster logic, don't assume symmetry between monsters."""
 import random
+import uuid
 from collections import Counter
 from typing import Dict, List
 
+from src.data_loader import COIN_SWORD_TOKENS
 from src.pathfinding import find_shortest_path
 
 DIE_FACES = ["Hit", "Hit", "Power", "Blank", "Blank", "Blank"]
@@ -17,6 +19,25 @@ class MonsterPuzzlesMixin:
         rolled_counts = Counter(rolled)
         required_counts = Counter(required)
         return all(rolled_counts[g] >= n for g, n in required_counts.items())
+
+    def _rotate_coin_sword_cells(self, cells: List[List[int]], rotation: int, anchor_row: int, anchor_col: int):
+        """Rotates a Coin Sword token's cell offsets by `rotation` degrees (0/90/180/270),
+        normalizes so its bounding box starts at (0, 0), then anchors that corner at
+        (anchor_row, anchor_col) - the cell the player clicked to place it."""
+        rotated = []
+        for dr, dc in cells:
+            if rotation == 90:
+                r, c = dc, -dr
+            elif rotation == 180:
+                r, c = -dr, -dc
+            elif rotation == 270:
+                r, c = -dc, dr
+            else:
+                r, c = dr, dc
+            rotated.append((r, c))
+        min_r = min(r for r, c in rotated)
+        min_c = min(c for r, c in rotated)
+        return [(anchor_row + r - min_r, anchor_col + c - min_c) for r, c in rotated]
 
     def _check_sphinx_solved(self, sp_state: Dict):
         grid = sp_state["grid"]
@@ -283,24 +304,69 @@ class MonsterPuzzlesMixin:
                 self.add_log("Must be at the revealed Moon Shrine to work the Coin Sword.")
                 return False
 
-            slot_id = args.get("slot_id")
-            item_id = args.get("item_id")
-            slot = next((s for s in js_state["sword_slots"] if s["id"] == slot_id), None)
-            if not slot or slot["filled"]:
-                return False
+            action_type = args.get("type", "place")
 
-            item = next((i for i in h_state["items"] if i["id"] == item_id), None)
-            if not item or item["strength"] != slot["target_strength"]:
-                self.add_log(f"Item strength must exactly match slot {slot_id}'s target ({slot['target_strength']}).")
-                return False
+            if action_type == "remove":
+                piece_id = args.get("piece_id")
+                piece = next((p for p in js_state["placed_pieces"] if p["piece_id"] == piece_id), None)
+                if not piece:
+                    return False
+                for r, c in piece["cells"]:
+                    cell = next(cl for cl in js_state["sword_cells"] if cl["row"] == r and cl["col"] == c)
+                    cell["filled"] = False
+                    cell["piece_id"] = None
+                js_state["placed_pieces"].remove(piece)
+                js_state["available_shape_ids"].append(piece["shape_id"])
+                h_state["ap"] -= 1
+                self.add_log(f"{player_name} pried a strength-{piece['value']} Coin Sword token back off the pattern.")
+                return True
 
-            h_state["items"].remove(item)
-            self._commit_item("Jiangshi", item)
-            slot["filled"] = True
-            slot["item"] = item
-            h_state["ap"] -= 1
-            self.add_log(f"{player_name} placed a strength-{item['strength']} Coin Sword token into slot {slot_id}.")
-            return True
+            elif action_type == "place":
+                item_id = args.get("item_id")
+                shape_id = args.get("shape_id")
+                rotation = args.get("rotation", 0)
+                anchor_row = args.get("anchor_row")
+                anchor_col = args.get("anchor_col")
+                if rotation not in (0, 90, 180, 270) or anchor_row is None or anchor_col is None:
+                    return False
+
+                item = next((i for i in h_state["items"] if i["id"] == item_id), None)
+                if not item:
+                    return False
+
+                shape = next((t for t in COIN_SWORD_TOKENS if t["id"] == shape_id), None)
+                if not shape or shape_id not in js_state["available_shape_ids"]:
+                    self.add_log("That Coin Sword token isn't available.")
+                    return False
+
+                if item["color"] != shape["color"] or item["strength"] < shape["value"]:
+                    self.add_log(f"Need a {shape['color']} item of strength {shape['value']}+ to place that token.")
+                    return False
+
+                target_cells = self._rotate_coin_sword_cells(shape["cells"], rotation, anchor_row, anchor_col)
+                pattern_cells = {(cl["row"], cl["col"]) for cl in js_state["sword_cells"]}
+                filled_cells = {(cl["row"], cl["col"]) for cl in js_state["sword_cells"] if cl["filled"]}
+                if any(cell not in pattern_cells for cell in target_cells) or any(cell in filled_cells for cell in target_cells):
+                    self.add_log("That Coin Sword token doesn't fit there.")
+                    return False
+
+                h_state["items"].remove(item)
+                self._commit_item("Jiangshi", item)
+                piece_id = str(uuid.uuid4())
+                js_state["placed_pieces"].append({
+                    "piece_id": piece_id, "shape_id": shape_id, "color": shape["color"],
+                    "value": shape["value"], "cells": [[r, c] for r, c in target_cells]
+                })
+                js_state["available_shape_ids"].remove(shape_id)
+                for r, c in target_cells:
+                    cell = next(cl for cl in js_state["sword_cells"] if cl["row"] == r and cl["col"] == c)
+                    cell["filled"] = True
+                    cell["piece_id"] = piece_id
+                h_state["ap"] -= 1
+                self.add_log(f"{player_name} discarded {item['name']} to fit a strength-{shape['value']} {shape['color']} Coin Sword token into the pattern.")
+                return True
+
+            return False
 
         elif monster == "Sphinx":
             sp_state = self.monster_states["Sphinx"]
@@ -607,7 +673,7 @@ class MonsterPuzzlesMixin:
 
         elif monster == "Jiangshi":
             js_state = self.monster_states["Jiangshi"]
-            all_filled = all(s["filled"] for s in js_state["sword_slots"])
+            all_filled = all(cl["filled"] for cl in js_state["sword_cells"])
             hero_here = (loc == self.monster_locations["Jiangshi"])
 
             if not (all_filled and hero_here):

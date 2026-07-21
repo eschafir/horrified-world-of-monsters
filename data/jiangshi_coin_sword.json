@@ -1,0 +1,21 @@
+{
+    "pattern_cells": [
+        [0, 1], [0, 2],
+        [1, 0], [1, 1], [1, 2], [1, 3], [1, 4], [1, 5], [1, 6],
+        [2, 0], [2, 1], [2, 2], [2, 3], [2, 4], [2, 5], [2, 6],
+        [3, 1], [3, 2]
+    ],
+    "tokens": [
+        {"id": "purple_2", "color": "Purple", "value": 2, "cells": [[0, 0], [1, 0]]},
+        {"id": "purple_3", "color": "Purple", "value": 3, "cells": [[0, 0], [0, 1], [1, 0]]},
+        {"id": "purple_4", "color": "Purple", "value": 4, "cells": [[0, 0], [0, 1], [0, 2], [1, 0]]},
+        {"id": "purple_5", "color": "Purple", "value": 5, "cells": [[0, 0], [1, 0], [1, 1], [2, 0], [2, 1]]},
+        {"id": "purple_6", "color": "Purple", "value": 6, "cells": [[0, 0], [1, 0], [1, 1], [2, 0], [2, 1], [2, 2]]},
+        {"id": "green_2", "color": "Green", "value": 2, "cells": [[0, 0], [0, 1]]},
+        {"id": "green_3", "color": "Green", "value": 3, "cells": [[0, 0], [0, 1], [1, 0]]},
+        {"id": "green_4", "color": "Green", "value": 4, "cells": [[0, 0], [0, 1], [1, 1], [1, 2]]},
+        {"id": "blue_1", "color": "Blue", "value": 1, "cells": [[0, 0]]},
+        {"id": "blue_2", "color": "Blue", "value": 2, "cells": [[0, 0], [0, 1]]},
+        {"id": "blue_3", "color": "Blue", "value": 3, "cells": [[0, 0], [0, 1], [0, 2]]}
+    ]
+}

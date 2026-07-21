@@ -1712,6 +1712,36 @@ body {
 .puzzle-slot.req-blue { border-color: rgba(51, 204, 255, 0.4); color: #33ccff; }
 .puzzle-slot.req-green { border-color: rgba(51, 255, 102, 0.4); color: #33ff66; }
 
+.puzzle-slot.filled.req-purple { background: rgba(166, 77, 255, 0.18); }
+.puzzle-slot.filled.req-blue { background: rgba(51, 204, 255, 0.18); }
+.puzzle-slot.filled.req-green { background: rgba(51, 255, 102, 0.18); }
+
+.puzzle-slot.valid-anchor {
+    border-color: rgba(255, 213, 51, 0.8);
+    background: rgba(255, 213, 51, 0.12);
+    box-shadow: 0 0 6px rgba(255, 213, 51, 0.5);
+}
+
+.puzzle-slot.coin-sword-dropcell.drag-valid {
+    border-color: rgba(102, 255, 102, 0.9);
+    background: rgba(102, 255, 102, 0.18);
+    box-shadow: 0 0 8px rgba(102, 255, 102, 0.6);
+}
+
+.puzzle-slot.coin-sword-dropcell.drag-invalid {
+    border-color: rgba(255, 77, 77, 0.9);
+    background: rgba(255, 77, 77, 0.18);
+    box-shadow: 0 0 8px rgba(255, 77, 77, 0.6);
+}
+
+.coin-sword-tray-piece:active {
+    cursor: grabbing;
+}
+
+#coin-sword-ghost {
+    filter: drop-shadow(0 0 6px rgba(255, 213, 51, 0.7));
+}
+
 /* ---------------------------------------------------------
    MODAL WINDOWS
    --------------------------------------------------------- */

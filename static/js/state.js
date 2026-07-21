@@ -23,6 +23,18 @@ let mapEntityPickerCallback = null; // (name) => void, single-select; (names[]) 
 let mapEntityPickerMultiSelect = false;
 let mapEntityPickerSelected = null; // Set of currently-toggled names, only used when multi-select
 let fortuneTellerPeekActive = false; // true between clicking Special Action and clicking the glowing Monster Deck
+
+// Jiangshi's Coin Sword workbench (drag-and-drop token placement - see actions.js)
+let jiangshiWorkbenchItemId = null; // item id staged to discard for the token(s) offered in the open workbench modal
+let jiangshiWorkbenchShapes = null; // array of coin_sword_tokens entries eligible for that item, while the workbench modal is open
+let jiangshiWorkbenchRotations = {}; // shapeId -> 0/90/180/270, the tray's pre-drag rotation for each piece
+let jiangshiDrag = null; // {shape, rotation, grabbedIndex, lastX, lastY, lastAnchor} while a token is actively being dragged, else null
+let jiangshiDragGhostEl = null; // the floating element that follows the cursor while dragging
+const JIANGSHI_CELL_PX = 26;      // sword-pattern grid cell size (px), also used for the drag ghost
+const JIANGSHI_CELL_GAP = 3;      // must match the grid's `gap` in renderJiangshiSwordGrid
+const JIANGSHI_TRAY_CELL_PX = 18; // tray piece preview cell size (px)
+const JIANGSHI_TRAY_CELL_GAP = 2; // must match the gap in renderJiangshiShapePreview
+
 let chosenHero = "The Guardian";
 let dragType = null;
 let dragLocName = null;

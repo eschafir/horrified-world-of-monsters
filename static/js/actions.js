@@ -889,20 +889,232 @@ window.lureCerberus = () => {
     });
 };
 
-window.advanceJiangshi = (slotId) => {
+// Jiangshi's Coin Sword: pick an item to discard, then drag a matching token (color ===
+// item.color, value <= item.strength) from the tray onto the 18-cell pattern. Press "R"
+// while dragging (or the tray's Rotate button beforehand) to rotate 90deg. Uses Pointer
+// Events (not the native HTML5 Drag API) so the same code path covers mouse and touch.
+window.advanceJiangshi = () => {
     const myState = gameState.heroes_state[playerName];
-    const js_state = gameState.monster_states["Jiangshi"];
-    const slot = js_state.sword_slots.find(s => s.id === slotId);
-    const matching = myState.items.filter(i => i.strength === slot.target_strength);
-
     openItemPicker({
-        title: `Coin Sword Slot ${slotId + 1}`,
-        description: `Discard an item with strength exactly ${slot.target_strength} to fill this slot.`,
-        items: matching,
-        validateFn: (sel) => ({ valid: sel.length === 1, message: sel.length ? "" : "Select one item." }),
-        onConfirm: (ids) => sendMsg({ action: "advance", monster: "Jiangshi", args: { slot_id: slotId, item_id: ids[0] } })
+        title: "Discard an Item to Forge the Coin Sword",
+        description: "Discard an item, then drag a Coin Sword token of the same color (value at or below the item's strength) onto the pattern.",
+        items: myState.items,
+        validateFn: (sel) => ({ valid: sel.length === 1, message: sel.length ? "" : "Select one item to discard." }),
+        onConfirm: (ids) => openJiangshiWorkbench(ids[0])
     });
 };
+
+function openJiangshiWorkbench(itemId) {
+    const myState = gameState.heroes_state[playerName];
+    const item = myState.items.find(i => i.id === itemId);
+    const js_state = gameState.monster_states["Jiangshi"];
+    const eligible = (gameState.coin_sword_tokens || []).filter(t =>
+        js_state.available_shape_ids.includes(t.id) && t.color === item.color && item.strength >= t.value
+    );
+
+    if (!eligible.length) {
+        elModalContainer.classList.add("hidden");
+        gameState.log.push(">>> No available Coin Sword token matches that item's color and strength.");
+        renderLogs();
+        return;
+    }
+
+    jiangshiWorkbenchItemId = itemId;
+    jiangshiWorkbenchShapes = eligible;
+    jiangshiWorkbenchRotations = {};
+    eligible.forEach(t => { jiangshiWorkbenchRotations[t.id] = 0; });
+    renderJiangshiWorkbenchModal();
+}
+
+function renderJiangshiWorkbenchModal() {
+    const myState = gameState.heroes_state[playerName];
+    const item = myState.items.find(i => i.id === jiangshiWorkbenchItemId);
+    const js_state = gameState.monster_states["Jiangshi"];
+
+    const trayHtml = jiangshiWorkbenchShapes.map(shape => `
+        <div class="coin-sword-tray-piece" data-shape-id="${shape.id}" style="display:flex; flex-direction:column; align-items:center; cursor:grab; user-select:none; touch-action:none;">
+            <div class="tray-piece-preview">${renderJiangshiShapePreview(shape, jiangshiWorkbenchRotations[shape.id], JIANGSHI_TRAY_CELL_PX, JIANGSHI_TRAY_CELL_GAP)}</div>
+            <div style="font-size:0.62rem; color:#a491c3; margin-top:4px;">${shape.color} ${shape.value}</div>
+            <button class="btn btn-secondary btn-small" data-rotate-shape="${shape.id}" style="padding:1px 7px; font-size:0.58rem; margin-top:3px;">Rotate &#8635;</button>
+        </div>
+    `).join("");
+
+    const html = `<div style="text-align:center;">
+        <h3 style="margin-top:0;">Forge the Coin Sword</h3>
+        <p style="font-size:0.78rem; color:#b0a0cf;">Discarding <strong>${item.name}</strong> (${item.color} ${item.strength}). Drag a token onto the pattern - rotate first if it doesn't fit.</p>
+        <div id="coin-sword-tray" style="display:flex; flex-wrap:wrap; justify-content:center; gap:14px; margin:12px 0; min-height:70px;">${trayHtml}</div>
+        ${renderJiangshiSwordGrid(js_state, { interactive: false, gridId: "coin-sword-grid-workbench" })}
+        <button class="btn btn-secondary btn-small" onclick="cancelJiangshiWorkbench()">Cancel</button>
+    </div>`;
+    elModalBody.innerHTML = html;
+    elModalContainer.classList.remove("hidden");
+
+    elModalBody.querySelectorAll(".coin-sword-tray-piece").forEach(el => {
+        el.addEventListener("pointerdown", (e) => startJiangshiDrag(e, el));
+    });
+    elModalBody.querySelectorAll("[data-rotate-shape]").forEach(el => {
+        el.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const shapeId = el.dataset.rotateShape;
+            jiangshiWorkbenchRotations[shapeId] = (jiangshiWorkbenchRotations[shapeId] + 90) % 360;
+            renderJiangshiWorkbenchModal();
+        });
+    });
+}
+
+window.cancelJiangshiWorkbench = () => {
+    jiangshiWorkbenchItemId = null;
+    jiangshiWorkbenchShapes = null;
+    jiangshiWorkbenchRotations = {};
+    elModalContainer.classList.add("hidden");
+};
+
+window.removeJiangshiPiece = (pieceId) => {
+    sendMsg({ action: "advance", monster: "Jiangshi", args: { type: "remove", piece_id: pieceId } });
+};
+
+// --- Drag-and-drop for the Coin Sword workbench ---
+
+function startJiangshiDrag(e, trayPieceEl) {
+    e.preventDefault();
+    const shapeId = trayPieceEl.dataset.shapeId;
+    const shape = jiangshiWorkbenchShapes.find(s => s.id === shapeId);
+    const rotation = jiangshiWorkbenchRotations[shapeId] || 0;
+    const norm = rotateJiangshiShapeCells(shape.cells, rotation);
+
+    // Which local cell of the (rotated) preview was grabbed, so the same physical coin
+    // stays under the cursor through drag and any mid-drag rotation. Falls back to the
+    // shape's first cell if the pointer landed on an empty bounding-box gap.
+    const previewEl = trayPieceEl.querySelector(".tray-piece-preview");
+    const rect = previewEl.getBoundingClientRect();
+    const step = JIANGSHI_TRAY_CELL_PX + JIANGSHI_TRAY_CELL_GAP;
+    const localCol = Math.floor((e.clientX - rect.left) / step);
+    const localRow = Math.floor((e.clientY - rect.top) / step);
+    let grabbedIndex = norm.findIndex(([r, c]) => r === localRow && c === localCol);
+    if (grabbedIndex === -1) grabbedIndex = 0;
+
+    jiangshiDrag = { shape, rotation, grabbedIndex, lastX: e.clientX, lastY: e.clientY, lastAnchor: null };
+    createJiangshiGhost();
+    updateJiangshiDragAt(e.clientX, e.clientY);
+
+    document.addEventListener("pointermove", onJiangshiDragMove);
+    document.addEventListener("pointerup", onJiangshiDragEnd);
+    document.addEventListener("keydown", onJiangshiDragKeydown);
+}
+
+function createJiangshiGhost() {
+    const existing = document.getElementById("coin-sword-ghost");
+    if (existing) existing.remove();
+    const ghost = document.createElement("div");
+    ghost.id = "coin-sword-ghost";
+    ghost.style.position = "fixed";
+    ghost.style.zIndex = "10000";
+    ghost.style.pointerEvents = "none";
+    ghost.style.opacity = "0.85";
+    document.body.appendChild(ghost);
+    jiangshiDragGhostEl = ghost;
+    updateJiangshiGhostContent();
+}
+
+function updateJiangshiGhostContent() {
+    if (!jiangshiDragGhostEl || !jiangshiDrag) return;
+    jiangshiDragGhostEl.innerHTML = renderJiangshiShapePreview(jiangshiDrag.shape, jiangshiDrag.rotation, JIANGSHI_CELL_PX, JIANGSHI_CELL_GAP);
+}
+
+function positionJiangshiGhost(clientX, clientY) {
+    if (!jiangshiDragGhostEl || !jiangshiDrag) return;
+    const norm = rotateJiangshiShapeCells(jiangshiDrag.shape.cells, jiangshiDrag.rotation);
+    const [gr, gc] = norm[jiangshiDrag.grabbedIndex];
+    const step = JIANGSHI_CELL_PX + JIANGSHI_CELL_GAP;
+    jiangshiDragGhostEl.style.left = `${clientX - gc * step - JIANGSHI_CELL_PX / 2}px`;
+    jiangshiDragGhostEl.style.top = `${clientY - gr * step - JIANGSHI_CELL_PX / 2}px`;
+}
+
+// Hit-tests against the actual cell elements' own rects rather than computing an offset
+// from the grid container's rect - the container is `justify-content: center`, so its own
+// bounding box is wider than the (centered, narrower) track area it lays out, which made
+// an arithmetic offset-from-container-left approach land on the wrong cell entirely.
+function jiangshiGridCellUnder(clientX, clientY) {
+    const grid = elModalBody.querySelector("#coin-sword-grid-workbench");
+    if (!grid) return null;
+    const cells = grid.querySelectorAll("[data-row][data-col]");
+    for (const el of cells) {
+        const r = el.getBoundingClientRect();
+        if (clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom) {
+            return { row: parseInt(el.dataset.row, 10), col: parseInt(el.dataset.col, 10) };
+        }
+    }
+    return null;
+}
+
+function clearJiangshiDropHighlights() {
+    elModalBody.querySelectorAll(".coin-sword-dropcell.drag-valid, .coin-sword-dropcell.drag-invalid").forEach(el => {
+        el.classList.remove("drag-valid", "drag-invalid");
+    });
+}
+
+function updateJiangshiDragAt(clientX, clientY) {
+    if (!jiangshiDrag) return;
+    jiangshiDrag.lastX = clientX;
+    jiangshiDrag.lastY = clientY;
+    positionJiangshiGhost(clientX, clientY);
+    clearJiangshiDropHighlights();
+
+    const hovered = jiangshiGridCellUnder(clientX, clientY);
+    if (!hovered) { jiangshiDrag.lastAnchor = null; return; }
+
+    const norm = rotateJiangshiShapeCells(jiangshiDrag.shape.cells, jiangshiDrag.rotation);
+    const [gr, gc] = norm[jiangshiDrag.grabbedIndex];
+    const anchorRow = hovered.row - gr;
+    const anchorCol = hovered.col - gc;
+
+    const js_state = gameState.monster_states["Jiangshi"];
+    const patternSet = new Set(js_state.sword_cells.map(c => `${c.row},${c.col}`));
+    const filledSet = new Set(js_state.sword_cells.filter(c => c.filled).map(c => `${c.row},${c.col}`));
+    const fits = jiangshiShapeFitsAt(norm, anchorRow, anchorCol, patternSet, filledSet);
+    jiangshiDrag.lastAnchor = { row: anchorRow, col: anchorCol, fits };
+
+    norm.forEach(([dr, dc]) => {
+        const el = elModalBody.querySelector(`#coin-sword-grid-workbench [data-row="${anchorRow + dr}"][data-col="${anchorCol + dc}"]`);
+        if (el && el.classList.contains("coin-sword-dropcell")) {
+            el.classList.add(fits ? "drag-valid" : "drag-invalid");
+        }
+    });
+}
+
+function onJiangshiDragMove(e) {
+    updateJiangshiDragAt(e.clientX, e.clientY);
+}
+
+function onJiangshiDragKeydown(e) {
+    if (!jiangshiDrag) return;
+    if (e.key === "r" || e.key === "R") {
+        jiangshiDrag.rotation = (jiangshiDrag.rotation + 90) % 360;
+        updateJiangshiGhostContent();
+        updateJiangshiDragAt(jiangshiDrag.lastX, jiangshiDrag.lastY);
+    }
+}
+
+function onJiangshiDragEnd() {
+    document.removeEventListener("pointermove", onJiangshiDragMove);
+    document.removeEventListener("pointerup", onJiangshiDragEnd);
+    document.removeEventListener("keydown", onJiangshiDragKeydown);
+    clearJiangshiDropHighlights();
+    const ghost = document.getElementById("coin-sword-ghost");
+    if (ghost) ghost.remove();
+    jiangshiDragGhostEl = null;
+
+    const drag = jiangshiDrag;
+    jiangshiDrag = null;
+    if (drag && drag.lastAnchor && drag.lastAnchor.fits) {
+        const itemId = jiangshiWorkbenchItemId;
+        window.cancelJiangshiWorkbench();
+        sendMsg({
+            action: "advance", monster: "Jiangshi",
+            args: { type: "place", item_id: itemId, shape_id: drag.shape.id, rotation: drag.rotation, anchor_row: drag.lastAnchor.row, anchor_col: drag.lastAnchor.col }
+        });
+    }
+}
 
 window.advanceSphinx = (cellId) => {
     const myState = gameState.heroes_state[playerName];

@@ -117,7 +117,7 @@
         "Acropolis": {
             "x": 906,
             "y": 351,
-            "r": 85,
+            "r": 82,
             "type": "circle"
         },
         "Gymnasium": {
@@ -129,7 +129,7 @@
         "Stadium": {
             "x": 667,
             "y": 319,
-            "r": 95,
+            "r": 100,
             "type": "circle"
         },
         "Necropolis": {

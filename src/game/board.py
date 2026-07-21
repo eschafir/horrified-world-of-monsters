@@ -3,7 +3,7 @@ import random
 import uuid
 from typing import Dict, List, Optional
 
-from src.data_loader import GREEK_LOCATION_MAP, MONSTER_CATALOG, save_map_coordinates
+from src.data_loader import COIN_SWORD_TOKENS, GREEK_LOCATION_MAP, MONSTER_CATALOG, save_map_coordinates
 
 
 class BoardMixin:
@@ -103,7 +103,8 @@ class BoardMixin:
             "node_coordinates": self.node_coordinates,
             "adjacency_list": self.adjacency_list,
             "terror_track_coordinates": self.terror_track_coordinates,
-            "monster_catalog": MONSTER_CATALOG
+            "monster_catalog": MONSTER_CATALOG,
+            "coin_sword_tokens": COIN_SWORD_TOKENS
         }
 
     def update_coordinates(self, coords: Dict, terror_coords: List = None, adjacency: Dict = None):
